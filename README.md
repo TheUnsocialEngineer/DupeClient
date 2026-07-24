@@ -220,6 +220,8 @@ Each Minecraft version has its own branch — check out the branch for the versi
 
 `main` tracks **1.21.11** (primary development). Version-specific Gradle settings live in `gradle.properties` on each branch; version-specific sources use `src/*-1210/` vs `src/*-default/` trees wired by `mc_sources_variant`.
 
+See [docs/BRANCHES.md](docs/BRANCHES.md) for the full branching workflow.
+
 ### Build (current branch)
 
 ```bash
