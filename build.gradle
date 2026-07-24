@@ -10,7 +10,7 @@ def profiles = [
                 yarnMappings          : "1.21.10+build.1",
                 loaderVersion         : "0.18.4",
                 fabricApiVersion      : "0.137.0+1.21.10",
-                modmenuVersion        : "15.0.0-beta.3",
+                modmenuVersion        : "16.0.0",
                 minecraftVersionRange : ">=1.21.10 <1.21.11",
                 versionSuffix         : "1.21.10"
         ],

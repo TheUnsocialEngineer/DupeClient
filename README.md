@@ -153,8 +153,6 @@ Bot tools and bundle sync. See [MCPTools guide](docs/modules/mcptools.md).
 
 ![Vault](docs/assets/screenshots/screen-vault.png)
 
-![Security panel](docs/assets/screenshots/panel-security.png)
-
 ### Social
 
 Friends list and presence. See [Social guide](docs/modules/social.md).
@@ -197,7 +195,10 @@ Anticheat metrics overlay. See [AC Audit guide](docs/modules/ac-audit.md).
 
 ![Fuzzer overlay](docs/assets/screenshots/overlay-fuzzer.png)
 
-![Chat games overlay](docs/assets/screenshots/overlay-chat-games.png)
+![Account Switcher](docs/assets/screenshots/scren-accounts.png)
+
+![Proxies](docs/assets/screenshots/scren-proxies.png)
+
 
 ## Building
 

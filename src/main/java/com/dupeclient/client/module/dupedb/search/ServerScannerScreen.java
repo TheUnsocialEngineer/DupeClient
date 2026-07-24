@@ -211,8 +211,10 @@ public class ServerScannerScreen extends Screen {
       super.init();
       this.joinButtons.clear();
       this.addButtons.clear();
+      this.copyButtons.clear();
       this.liveJoinButtons.clear();
       this.liveAddButtons.clear();
+      this.liveCopyButtons.clear();
       this.clearChildren();
       this.dashboardTabButton = (ButtonWidget)this.addDrawableChild(
          ButtonWidget.builder(Text.literal("Dashboard"), b -> this.setActiveTab(ServerScannerScreen.Tab.DASHBOARD))
@@ -1116,11 +1118,19 @@ public class ServerScannerScreen extends Screen {
          b.visible = dashboard && b.active;
       }
 
+      for (ScannerActionButton b : this.copyButtons) {
+         b.visible = dashboard && b.active;
+      }
+
       for (ScannerActionButton b : this.liveJoinButtons) {
          b.visible = !dashboard && b.active;
       }
 
       for (ScannerActionButton b : this.liveAddButtons) {
+         b.visible = !dashboard && b.active;
+      }
+
+      for (ScannerActionButton b : this.liveCopyButtons) {
          b.visible = !dashboard && b.active;
       }
 
@@ -1819,6 +1829,7 @@ public class ServerScannerScreen extends Screen {
          this.renderTopStats(context);
          this.renderLivePanelBackgrounds(context);
          this.positionLiveActionButtons();
+         this.refreshLiveActionButtons();
          super.render(context, mouseX, mouseY, deltaTicks);
          this.renderLivePanelForeground(context);
          int liveColor = this.liveLoading ? -1261205 : (this.liveStatusText.startsWith("Live fetch failed") ? -32640 : -7937906);
@@ -1860,6 +1871,9 @@ public class ServerScannerScreen extends Screen {
          }
 
          context.drawTextWithShadow(this.textRenderer, Text.literal("Actions"), cols.actionsX() + 2, headerY, -5257217);
+
+         this.positionDashboardActionButtons();
+         this.refreshActionButtons();
 
          for (int row = 0; row < this.visibleRows; row++) {
             int idx = this.scrollOffset + row;
@@ -2024,6 +2038,20 @@ public class ServerScannerScreen extends Screen {
          this.liveJoinButtons.get(i).setPosition(joinX, y + 1);
          this.liveCopyButtons.get(i).setPosition(copyX, y + 1);
          this.liveAddButtons.get(i).setPosition(addX, y + 1);
+      }
+   }
+
+   private void positionDashboardActionButtons() {
+      int listTop = this.getListTop();
+      int joinX = this.actionJoinButtonX();
+      int copyX = this.actionCopyButtonX();
+      int addX = this.actionAddButtonX();
+
+      for (int i = 0; i < this.visibleRows; i++) {
+         int y = listTop + i * 30 + 2;
+         this.joinButtons.get(i).setPosition(joinX, y);
+         this.copyButtons.get(i).setPosition(copyX, y);
+         this.addButtons.get(i).setPosition(addX, y);
       }
    }
 
