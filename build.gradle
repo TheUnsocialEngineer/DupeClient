@@ -43,6 +43,9 @@ def javaRelease = selectedProfile.minecraftVersion.startsWith("26.") ? 25 : 21
 def macroCyclingSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/macrocycling-1210/java" : "src/macrocycling-default/java"
 sourceSets.main.java.srcDir(macroCyclingSrc)
 
+def screenshotBootstrapSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/screenshot-bootstrap-1210/java" : "src/screenshot-bootstrap-default/java"
+sourceSets.main.java.srcDir(screenshotBootstrapSrc)
+
 def generatedYarnLabelsDir = layout.buildDirectory.dir("generated/yarn-labels")
 sourceSets.main.resources.srcDir(generatedYarnLabelsDir)
 sourceSets.main.resources.exclude "dupeclient/yarn_labels.txt"
