@@ -166,7 +166,6 @@ Friends list and presence. See [Social guide](docs/modules/social.md).
 
 Shared waypoints and Baritone pathing. See [Waypoints guide](docs/modules/waypoints.md).
 
-![Waypoints panel](docs/assets/screenshots/panel-waypoints.png)
 
 ![Waypoints screen](docs/assets/screenshots/screen-waypoints.png)
 
@@ -174,7 +173,6 @@ Shared waypoints and Baritone pathing. See [Waypoints guide](docs/modules/waypoi
 
 Anticheat metrics overlay. See [AC Audit guide](docs/modules/ac-audit.md).
 
-![AC Audit panel](docs/assets/screenshots/panel-ac-audit.png)
 
 ![AC Audit overlay](docs/assets/screenshots/overlay-ac-audit.png)
 
@@ -187,8 +185,6 @@ Anticheat metrics overlay. See [AC Audit guide](docs/modules/ac-audit.md).
 
 ![Server search](docs/assets/screenshots/screen-server-search.png)
 
-![Server search sign-in](docs/assets/screenshots/screen-server-search-auth.png)
-
 ### Utility
 
 ```
@@ -196,8 +192,6 @@ Anticheat metrics overlay. See [AC Audit guide](docs/modules/ac-audit.md).
 /nbtedit
 /dupe <item> [count]
 ```
-
-![Utility panel](docs/assets/screenshots/panel-utility.png)
 
 ![NBT editor](docs/assets/screenshots/screen-nbt-edit.png)
 
