@@ -44,7 +44,7 @@ public final class DupeClientPresenceSettings {
     /**
      * {@code everyone} (default): your Social row is shown to all DupeClient users who fetch the list.
      * {@code friends_only}: only clients that added your UUID to {@code config/dupeclient/social_friends.json} show your row
-     * (others filter client-side; requires matching presence server).
+     * (others filter client-side; requires matching API configuration).
      */
     public String presenceListAudience = "everyone";
 
