@@ -10,7 +10,7 @@ public final class McpToolsSettings {
     public int overlayY = 96;
     public boolean moduleChatFeedback = true;
 
-    /** Run Node tools on the presence server (remote). When false, runs locally after bundle sync. */
+    /** Run Node tools via remote API (remote). When false, runs locally after bundle sync. */
     public boolean remoteRunner = false;
 
     public String lastHost = "127.0.0.1";

@@ -3,8 +3,6 @@ package com.dupeclient.client.core.session;
 import java.nio.charset.StandardCharsets;
 
 final class SessionSecrets {
-    private static final String DEFAULT_STAFF_HMAC_SECRET = "REDACTED";
-
     private SessionSecrets() {
     }
 
@@ -17,6 +15,6 @@ final class SessionSecrets {
         if (prop != null && !prop.isBlank()) {
             return prop.trim().getBytes(StandardCharsets.UTF_8);
         }
-        return DEFAULT_STAFF_HMAC_SECRET.getBytes(StandardCharsets.UTF_8);
+        return null;
     }
 }
