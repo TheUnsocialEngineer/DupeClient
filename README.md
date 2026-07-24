@@ -258,15 +258,6 @@ Copy `gradle.properties.example` to `gradle.properties.local` for local override
 
 Pages uses the **GitHub Actions** source (Settings → Pages → Build and deployment → Source: GitHub Actions). The workflow runs automatically when `docs/**` changes on `main`.
 
-### Presence API (private backend)
-
-Social presence, P2W registry, waypoints, and MCPTools bundle sync are served by a separate backend:
-
-- **Repo:** [TheUnsocialEngineer/REDACTED](https://github.com/TheUnsocialEngineer/REDACTED) (private)
-- **Deploy:** Vercel — see [`REDACTED/README.md`](REDACTED/README.md)
-- **Default client URL:** `https://dupeclient-presence.vercel.app/api/client/presence` (override at build time with `-PpresenceApiBase=...`)
-- **Health check:** `GET https://dupeclient-presence.vercel.app/api/client/presence/health`
-
 ## Repository layout
 
 ```
