@@ -5,9 +5,9 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.module.mcptools.McpToolsManager;
 import com.dupeclient.client.module.mcptools.McpToolsOverlay;
 import com.dupeclient.client.module.mcptools.McpToolsSettings;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public final class McpToolsPanel extends Panel {
     private static final int TOGGLE_H = UiTokens.ROW_STEP;
@@ -17,7 +17,7 @@ public final class McpToolsPanel extends Panel {
     private boolean capturingOverlayHotkey;
 
     public McpToolsPanel(int x, int y) {
-        super("mcp_tools", Text.literal("MCPTools"), x, y, 280, 140);
+        super("mcp_tools", Component.literal("MCPTools"), x, y, 280, 140);
     }
 
     private static int cardHeight() {
@@ -31,12 +31,12 @@ public final class McpToolsPanel extends Panel {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
         }
-        TextRenderer tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        Font tr = net.minecraft.client.Minecraft.getInstance().font;
         McpToolsSettings s = manager.getSettings();
         int tx = x + UiTokens.BODY_INSET;
         int ty = y + bodyTopOffset() + UiTokens.UI_GAP;
@@ -71,13 +71,13 @@ public final class McpToolsPanel extends Panel {
         String hint = manager.isSyncing()
                 ? manager.syncStatus()
                 : "Configure bots, join, and movement in the MCPTools overlay.";
-        context.drawTextWithShadow(tr, Text.literal(hint), rx, hintY, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal(hint), rx, hintY, UiTokens.TEXT_DIM);
 
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (capturingOverlayHotkey) {
-            context.drawTextWithShadow(
+            context.drawString(
                     tr,
-                    Text.literal("Press key for overlay hotkey (ESC to unbind)"),
+                    Component.literal("Press key for overlay hotkey (ESC to unbind)"),
                     x + 8,
                     y + height - 12,
                     0xFFFFC857);

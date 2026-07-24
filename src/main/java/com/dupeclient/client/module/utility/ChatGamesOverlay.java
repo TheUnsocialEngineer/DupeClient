@@ -4,10 +4,10 @@ import com.dupeclient.client.gui.modern.UiComponents;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.overlay.AbstractDraggableOverlay;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlay;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 public final class ChatGamesOverlay extends AbstractDraggableOverlay implements IngameModuleOverlay {
@@ -83,19 +83,19 @@ public final class ChatGamesOverlay extends AbstractDraggableOverlay implements 
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
         ChatGamesSettings s = manager.getSettings();
         int px = overlayX();
         int py = overlayY();
-        MinecraftClient mc = MinecraftClient.getInstance();
-        TextRenderer tr = mc.textRenderer;
+        Minecraft mc = Minecraft.getInstance();
+        Font tr = mc.font;
 
         context.fill(px, py, px + PANEL_W, py + PANEL_H, 0xE018181B);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, 0xFF27272A);
-        context.drawTextWithShadow(tr, Text.literal("Chat Games"), px + 6, py + 2, 0xFF60A5FA);
+        context.drawString(tr, Component.literal("Chat Games"), px + 6, py + 2, 0xFF60A5FA);
 
         int rx = px + 8;
         int inner = PANEL_W - 16;

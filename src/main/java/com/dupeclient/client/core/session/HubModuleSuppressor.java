@@ -15,7 +15,7 @@ import com.dupeclient.client.module.mcptools.McpToolsManager;
 import com.dupeclient.client.module.dupedb.DupedbManager;
 import com.dupeclient.client.module.utility.ChatGamesManager;
 import com.dupeclient.client.module.utility.crashes.CrashesManager;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
 public final class HubModuleSuppressor {
@@ -24,7 +24,7 @@ public final class HubModuleSuppressor {
     private HubModuleSuppressor() {
     }
 
-    public static void tick(@Nullable MinecraftClient client) {
+    public static void tick(@Nullable Minecraft client) {
         boolean restricted = HubModuleRules.viewerRestricted();
         if (restricted && !lastRestricted) {
             suppressExploits(client);
@@ -34,7 +34,7 @@ public final class HubModuleSuppressor {
         lastRestricted = restricted;
     }
 
-    private static void suppressExploitsSilent(@Nullable MinecraftClient client) {
+    private static void suppressExploitsSilent(@Nullable Minecraft client) {
         if (client != null) {
             MacroEngine.INSTANCE.stop(client);
         }
@@ -59,7 +59,7 @@ public final class HubModuleSuppressor {
         return lastRestricted;
     }
 
-    private static void suppressExploits(@Nullable MinecraftClient client) {
+    private static void suppressExploits(@Nullable Minecraft client) {
         if (client != null) {
             MacroEngine.INSTANCE.stop(client);
         }

@@ -15,12 +15,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -42,6 +36,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 import org.jetbrains.annotations.Nullable;
 
 public final class DupedbManager {
@@ -64,12 +63,12 @@ public final class DupedbManager {
             "karhu", "verus", "nocheatplus", "authme", "deluxemenus", "plotsquared", "supervanish"
     };
 
-    private void parseCommandTree(MinecraftClient client) {
+    private void parseCommandTree(Minecraft client) {
         try {
-            if (client.getNetworkHandler() == null) {
+            if (client.getConnection() == null) {
                 return;
             }
-            CommandDispatcher<?> dispatcher = client.getNetworkHandler().getCommandDispatcher();
+            CommandDispatcher<?> dispatcher = client.getConnection().getCommands();
             if (dispatcher == null) {
                 return;
             }
@@ -173,7 +172,7 @@ public final class DupedbManager {
         return Math.max(scanStartedAt, nextProbeSendAt - Math.max(10, settings.probeDelayMs));
     }
 
-    private Integer extractCompletionId(CommandSuggestionsS2CPacket packet) {
+    private Integer extractCompletionId(ClientboundCommandSuggestionsPacket packet) {
         try {
             Object value = packet.getClass().getMethod("getCompletionId").invoke(packet);
             if (value instanceof Integer i) return i;
@@ -322,7 +321,7 @@ public final class DupedbManager {
 
     /** Shown even when chat feedback is off (e.g. toggling the feedback option itself). */
     public void chatFeedbackConfigToggle(String message) {
-        sendClientFormatted(Text.literal(message).formatted(Formatting.GRAY));
+        sendClientFormatted(Component.literal(message).withStyle(ChatFormatting.GRAY));
     }
 
     public boolean isAuthenticated() {
@@ -355,11 +354,11 @@ public final class DupedbManager {
     }
 
     public String currentServerHost() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         return client == null ? "" : currentServerAddress(client);
     }
 
-    public void onPlaySessionJoin(MinecraftClient client) {
+    public void onPlaySessionJoin(Minecraft client) {
         joinedServerHost = client == null ? "" : currentServerAddress(client);
         lastAutoServerAddress = "";
         nextBackgroundScanAt = System.currentTimeMillis()
@@ -433,14 +432,14 @@ public final class DupedbManager {
 
     public void openSettingsPage() {
         try {
-            net.minecraft.util.Util.getOperatingSystem().open(SETTINGS_URL);
+            net.minecraft.util.Util.getPlatform().openUri(SETTINGS_URL);
         } catch (Exception ignored) {
         }
     }
 
     public void openDeveloperSettingsPage() {
         try {
-            net.minecraft.util.Util.getOperatingSystem().open(DEVELOPER_SETTINGS_URL);
+            net.minecraft.util.Util.getPlatform().openUri(DEVELOPER_SETTINGS_URL);
         } catch (Exception ignored) {
         }
     }
@@ -453,7 +452,7 @@ public final class DupedbManager {
         );
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null) {
             return;
         }
@@ -467,9 +466,9 @@ public final class DupedbManager {
             DupedbOverlay.INSTANCE.toggleOverlayVisible();
             chatFeedbackConfigToggle("DupeDB overlay " + (settings.overlayVisible ? "shown" : "hidden"));
         }
-        if (client.player == null || client.getNetworkHandler() == null) {
+        if (client.player == null || client.getConnection() == null) {
             scanning = false;
-            if (client.getNetworkHandler() == null) {
+            if (client.getConnection() == null) {
                 clearDiscoveredPluginState("");
             }
             return;
@@ -502,7 +501,7 @@ public final class DupedbManager {
         long now = System.currentTimeMillis();
         if (now >= nextProbeSendAt && !queuedProbes.isEmpty()) {
             PluginProbeRequest probe = queuedProbes.pollFirst();
-            client.getNetworkHandler().sendPacket(new RequestCommandCompletionsC2SPacket(probe.id, probe.spec.query));
+            client.getConnection().send(new ServerboundCommandSuggestionPacket(probe.id, probe.spec.query));
             nextProbeSendAt = now + Math.max(10, settings.probeDelayMs);
         }
 
@@ -519,12 +518,12 @@ public final class DupedbManager {
         }
     }
 
-    public void onCommandSuggestions(CommandSuggestionsS2CPacket packet) {
+    public void onCommandSuggestions(ClientboundCommandSuggestionsPacket packet) {
         if (!scanning) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.getNetworkHandler() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || client.getConnection() == null) {
             return;
         }
         if (!serverAutoContextKey(client).equals(scanContextAtStart)) {
@@ -536,7 +535,7 @@ public final class DupedbManager {
             pendingProbeIds.remove(id);
         }
         scanLastResponseAt = System.currentTimeMillis();
-        for (Suggestion suggestion : packet.getSuggestions().getList()) {
+        for (Suggestion suggestion : packet.toSuggestions().getList()) {
             consumeSuggestion(suggestion.getText(), probe);
         }
     }
@@ -565,8 +564,8 @@ public final class DupedbManager {
 
     private void startScan(boolean fromAutoMode, boolean pluginListOnly) {
         pluginListOnlyScan = pluginListOnly;
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.getNetworkHandler() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || client.getConnection() == null) {
             return;
         }
         discoveredPlugins.clear();
@@ -592,7 +591,7 @@ public final class DupedbManager {
         nextProbeSendAt = scanStartedAt + Math.max(10, settings.probeDelayMs);
         scanServerAddress = currentServerAddress(client);
         scanContextAtStart = serverAutoContextKey(client);
-        sendClientStatus(fromAutoMode ? "Auto mode: probing server plugins..." : "Probing server plugins...", Formatting.GRAY);
+        sendClientStatus(fromAutoMode ? "Auto mode: probing server plugins..." : "Probing server plugins...", ChatFormatting.GRAY);
     }
 
     private void finishScanAndQuery() {
@@ -606,17 +605,17 @@ public final class DupedbManager {
         inferFromObservedRoots();
         if (pluginListOnlyScan) {
             pluginListOnlyScan = false;
-            sendClientStatus("Plugin list scan: " + discoveredPlugins.size() + " plugin(s).", Formatting.AQUA);
+            sendClientStatus("Plugin list scan: " + discoveredPlugins.size() + " plugin(s).", ChatFormatting.AQUA);
             return;
         }
         if (discoveredPlugins.isEmpty()) {
-            sendClientStatus("No plugins discovered.", Formatting.GRAY);
+            sendClientStatus("No plugins discovered.", ChatFormatting.GRAY);
             if (settings.announceNoMatches) {
-                sendClientStatus("No DupeDB matches found.", Formatting.GRAY);
+                sendClientStatus("No DupeDB matches found.", ChatFormatting.GRAY);
             }
             return;
         }
-        sendClientStatus("Discovered " + discoveredPlugins.size() + " plugin(s), querying DupeDB...", Formatting.AQUA);
+        sendClientStatus("Discovered " + discoveredPlugins.size() + " plugin(s), querying DupeDB...", ChatFormatting.AQUA);
         Thread t = new Thread(this::queryDupedbForMatches, "DupeDB-MatchQuery");
         t.setDaemon(true);
         t.start();
@@ -627,14 +626,14 @@ public final class DupedbManager {
             String url = EXPLOITS_SEARCH_URL + "?page=1&limit=250&sort=date_submitted&order=desc";
             String json = fetch(url);
             if (json == null || json.isBlank()) {
-                sendClientStatus("Failed to query DupeDB API.", Formatting.RED);
+                sendClientStatus("Failed to query DupeDB API.", ChatFormatting.RED);
                 return;
             }
 
             JsonElement parsed = JsonParser.parseString(json);
             JsonArray exploits = parseExploitsArray(parsed);
             if (exploits == null || exploits.isEmpty()) {
-                sendClientStatus("No DupeDB exploits were returned.", Formatting.GRAY);
+                sendClientStatus("No DupeDB exploits were returned.", ChatFormatting.GRAY);
                 return;
             }
 
@@ -664,17 +663,17 @@ public final class DupedbManager {
 
             if (matches.isEmpty()) {
                 if (settings.announceNoMatches) {
-                    sendClientStatus("No plugin-specific DupeDB matches found.", Formatting.GRAY);
+                    sendClientStatus("No plugin-specific DupeDB matches found.", ChatFormatting.GRAY);
                 }
                 return;
             }
 
-            sendClientStatus("Found " + matches.size() + " DupeDB match(es):", Formatting.GREEN);
+            sendClientStatus("Found " + matches.size() + " DupeDB match(es):", ChatFormatting.GREEN);
             for (ExploitMatchLine match : matches) {
                 sendClientFormatted(DupeMiniMessage.exploitMatchLine(match.exploitName(), match.pluginName(), match.url()));
             }
         } catch (Exception e) {
-            sendClientStatus("DupeDB query failed: " + e.getMessage(), Formatting.RED);
+            sendClientStatus("DupeDB query failed: " + e.getMessage(), ChatFormatting.RED);
         }
     }
 
@@ -842,35 +841,35 @@ public final class DupedbManager {
         return configured.isBlank() ? DupedbSdk.DEFAULT_OAUTH_APP_ID : configured;
     }
 
-    private String currentServerAddress(MinecraftClient client) {
-        if (client.getCurrentServerEntry() != null && client.getCurrentServerEntry().address != null) {
-            return client.getCurrentServerEntry().address.trim().toLowerCase(Locale.ROOT);
+    private String currentServerAddress(Minecraft client) {
+        if (client.getCurrentServer() != null && client.getCurrentServer().ip != null) {
+            return client.getCurrentServer().ip.trim().toLowerCase(Locale.ROOT);
         }
-        if (client.getNetworkHandler() != null && client.getNetworkHandler().getConnection() != null
-                && client.getNetworkHandler().getConnection().getAddress() != null) {
-            String raw = client.getNetworkHandler().getConnection().getAddress().toString();
+        if (client.getConnection() != null && client.getConnection().getConnection() != null
+                && client.getConnection().getConnection().getRemoteAddress() != null) {
+            String raw = client.getConnection().getConnection().getRemoteAddress().toString();
             return raw == null ? "" : raw.replaceFirst("^/", "").trim().toLowerCase(Locale.ROOT);
         }
         return "";
     }
 
     private void sendClientMessage(String message) {
-        sendClientStatus(message, Formatting.WHITE);
+        sendClientStatus(message, ChatFormatting.WHITE);
     }
 
-    private void sendClientStatus(String message, Formatting color) {
-        sendClientFormatted(Text.literal(message).formatted(color));
+    private void sendClientStatus(String message, ChatFormatting color) {
+        sendClientFormatted(Component.literal(message).withStyle(color));
     }
 
-    private void sendClientFormatted(Text body) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private void sendClientFormatted(Component body) {
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
-        Text message = dupeDbPrefix().copy().append(body);
+        Component message = dupeDbPrefix().copy().append(body);
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(message, false);
+                client.player.displayClientMessage(message, false);
             }
         });
     }
@@ -878,12 +877,12 @@ public final class DupedbManager {
     private String scanContextAtStart = "";
     private String lastPluginInventoryKey = "";
 
-    private net.minecraft.text.MutableText dupeDbPrefix() {
-        return net.minecraft.text.Text.literal(PREFIX)
-                .styled(style -> style.withColor(net.minecraft.util.Formatting.GOLD).withBold(true));
+    private net.minecraft.network.chat.MutableComponent dupeDbPrefix() {
+        return net.minecraft.network.chat.Component.literal(PREFIX)
+                .withStyle(style -> style.withColor(net.minecraft.ChatFormatting.GOLD).withBold(true));
     }
 
-    private void sendClientText(net.minecraft.text.MutableText text) {
+    private void sendClientText(net.minecraft.network.chat.MutableComponent text) {
         sendClientFormatted(text);
     }
 
@@ -891,7 +890,7 @@ public final class DupedbManager {
         if (!settings.moduleChatFeedback) {
             return;
         }
-        sendClientFormatted(Text.literal(message).formatted(Formatting.GRAY));
+        sendClientFormatted(Component.literal(message).withStyle(ChatFormatting.GRAY));
     }
 
     private void clearDiscoveredPluginState(String reason) {
@@ -903,7 +902,7 @@ public final class DupedbManager {
         queuedProbes.clear();
     }
 
-    private void invalidateStalePluginInventory(MinecraftClient client) {
+    private void invalidateStalePluginInventory(Minecraft client) {
         String key = serverAutoContextKey(client);
         if (key.isBlank()) {
             return;
@@ -918,19 +917,19 @@ public final class DupedbManager {
         return reason == null ? "" : reason;
     }
 
-    private String serverAutoContextKey(MinecraftClient client) {
+    private String serverAutoContextKey(Minecraft client) {
         if (client == null || client.player == null) {
             return "";
         }
         return currentServerAddress(client) + "|" + commandTreeFingerprint(client);
     }
 
-    private String commandTreeFingerprint(MinecraftClient client) {
+    private String commandTreeFingerprint(Minecraft client) {
         try {
-            if (client.getNetworkHandler() == null) {
+            if (client.getConnection() == null) {
                 return "";
             }
-            CommandDispatcher<?> dispatcher = client.getNetworkHandler().getCommandDispatcher();
+            CommandDispatcher<?> dispatcher = client.getConnection().getCommands();
             if (dispatcher == null || dispatcher.getRoot() == null) {
                 return "";
             }

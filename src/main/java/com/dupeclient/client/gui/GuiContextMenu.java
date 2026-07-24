@@ -3,12 +3,11 @@ package com.dupeclient.client.gui;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.modern.theme.MidnightPalette;
 import com.dupeclient.client.gui.modern.theme.MidnightShapes;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public final class GuiContextMenu {
     private static final int ROW_H = 18;
@@ -30,7 +29,7 @@ public final class GuiContextMenu {
         entries.clear();
     }
 
-    public void open(int anchorX, int anchorY, int screenW, int screenH, int minY, List<Entry> items, TextRenderer textRenderer) {
+    public void open(int anchorX, int anchorY, int screenW, int screenH, int minY, List<Entry> items, Font textRenderer) {
         if (items == null || items.isEmpty()) {
             close();
             return;
@@ -39,7 +38,7 @@ public final class GuiContextMenu {
         entries.addAll(items);
         w = 96;
         for (Entry e : entries) {
-            w = Math.max(w, textRenderer.getWidth(e.label()) + PAD_X * 2 + 8);
+            w = Math.max(w, textRenderer.width(e.label()) + PAD_X * 2 + 8);
         }
         h = PAD_Y * 2 + entries.size() * ROW_H;
         x = Math.max(UiTokens.SP_2, Math.min(anchorX, screenW - w - UiTokens.SP_2));
@@ -47,7 +46,7 @@ public final class GuiContextMenu {
         open = true;
     }
 
-    public void render(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         if (!open || entries.isEmpty()) {
             return;
         }
@@ -66,9 +65,9 @@ public final class GuiContextMenu {
                         MidnightShapes.controlRadius(ROW_H),
                         MidnightPalette.SIDEBAR_ACTIVE_R);
             }
-            context.drawTextWithShadow(
+            context.drawString(
                     textRenderer,
-                    Text.literal(e.label()),
+                    Component.literal(e.label()),
                     x + PAD_X,
                     rowY + (ROW_H - 8) / 2,
                     hot ? MidnightPalette.TEXT_PRIMARY : MidnightPalette.TEXT_SECONDARY);

@@ -1,27 +1,20 @@
 plugins {
-    id "fabric-loom" version "1.15.3"
+    id "net.fabricmc.fabric-loom" version "${loom_version}"
     id "maven-publish"
 }
 
 def minecraftVersion = project.minecraft_version.toString()
-def yarnMappings = project.yarn_mappings.toString()
 def loaderVersion = project.loader_version.toString()
 def fabricApiVersion = project.fabric_api_version.toString()
 def modmenuVersion = project.modmenu_version.toString()
 def minecraftVersionRange = project.minecraft_version_range.toString()
 def versionSuffix = project.version_suffix.toString()
 def javaRelease = Integer.parseInt(project.java_version.toString())
-def mcSourcesVariant = (findProperty("mc_sources_variant") ?: "default").toString()
 
-def variantSuffix = mcSourcesVariant == "1210" ? "1210" : "default"
-sourceSets.main.java.srcDir("src/macrocycling-${variantSuffix == "1210" ? "1210" : "default"}/java")
-sourceSets.main.java.srcDir("src/screenshot-bootstrap-${variantSuffix == "1210" ? "1210" : "default"}/java")
-sourceSets.main.java.srcDir("src/gui-${variantSuffix == "1210" ? "1210" : "default"}/java")
-sourceSets.main.java.srcDir("src/waypoint-${variantSuffix == "1210" ? "1210" : "default"}/java")
-
-def generatedYarnLabelsDir = layout.buildDirectory.dir("generated/yarn-labels")
-sourceSets.main.resources.srcDir(generatedYarnLabelsDir)
-sourceSets.main.resources.exclude "dupeclient/yarn_labels.txt"
+sourceSets.main.java.srcDir("src/macrocycling-default/java")
+sourceSets.main.java.srcDir("src/screenshot-bootstrap-default/java")
+sourceSets.main.java.srcDir("src/gui-default/java")
+sourceSets.main.java.srcDir("src/waypoint-default/java")
 
 def generatedBuildConstantsDir = layout.buildDirectory.dir("generated/build-constants")
 sourceSets.main.java.srcDir(generatedBuildConstantsDir)
@@ -72,7 +65,6 @@ tasks.register("generateBuildConstants") {
     description = "Generate compile-time constants (presence API base, mod version, build tag)"
     inputs.property("presenceApiBase", resolvedPresenceApiBase)
     inputs.property("modVersion", resolvedModVersion)
-
     outputs.file(generatedBuildConstantsDir.map { it.file("com/dupeclient/DupeBuildConstants.java") })
 
     doLast {
@@ -96,7 +88,6 @@ public final class DupeBuildConstants {
     }
 }
 """, "UTF-8")
-        logger.lifecycle("Generated build constants: MOD_VERSION={}, BUILD_TAG={}, PRESENCE_API_BASE={}", resolvedModVersion, buildTag, resolvedPresenceApiBase)
     }
 }
 
@@ -104,7 +95,6 @@ def dupedbApiSrcDir = layout.buildDirectory.dir("generated/dupedb-api-src")
 
 tasks.register("prepareDupedbApiSources", Sync) {
     group = "build"
-    description = "Unpack DupeDB java-api sources (JitPack binary is Java 25; we compile at the project release)"
     from configurations.dupedbApiSources.collect { zipTree(it) }
     include "com/**"
     exclude "**/module-info.java"
@@ -139,7 +129,6 @@ tasks.register("prepareDupedbApiSources", Sync) {
 
     private static volatile BrowserOpener browserOpener;
 
-    /** Host app may register a browser opener (e.g. Minecraft Util.getOperatingSystem().open). */
     public static void setBrowserOpener(BrowserOpener opener) {
         browserOpener = opener;
     }
@@ -187,147 +176,6 @@ tasks.named("compileJava").configure {
     dependsOn tasks.named("prepareDupedbApiSources")
 }
 
-tasks.register("generateYarnLabels") {
-    group = "build"
-    description = "Extract Yarn class/field labels from mappings.tiny for runtime obfuscated-name decoding"
-    dependsOn configurations.mappings
-    inputs.files(configurations.mappings)
-    outputs.file(generatedYarnLabelsDir.map { it.file("dupeclient/yarn_labels.txt") })
-
-    doLast {
-        def mappingsJar = configurations.mappings.files.find { it.name.endsWith(".jar") }
-        if (mappingsJar == null) {
-            throw new GradleException("Yarn mappings jar not found")
-        }
-
-        def classLabels = new LinkedHashMap<String, String>()
-        def yarnClassKeys = new LinkedHashMap<String, String>()
-        def fieldLabels = new LinkedHashMap<String, String>()
-        def recordLabels = new LinkedHashMap<String, String>()
-        def methodLabels = new LinkedHashMap<String, String>()
-        String currentOwnerKey = null
-        int recordCompIndex = 0
-
-        def zip = new java.util.zip.ZipFile(mappingsJar)
-        def tinyEntry = zip.entries().find { it.name.endsWith("mappings.tiny") }
-        if (tinyEntry == null) {
-            zip.close()
-            throw new GradleException("mappings.tiny not found in ${mappingsJar}")
-        }
-
-        zip.getInputStream(tinyEntry).withReader("UTF-8") { reader ->
-            reader.eachLine { String line ->
-                if (line.startsWith("c\t")) {
-                    def parts = line.split("\t", -1)
-                    if (parts.length < 3) {
-                        return
-                    }
-                    def intermediaryPath = parts[1]
-                    def namedPath = parts[2]
-                    def namedSimple = namedPath.contains("/")
-                            ? namedPath.substring(namedPath.lastIndexOf("/") + 1)
-                            : namedPath
-                    def ownerKey = intermediaryPath.contains("/")
-                            ? intermediaryPath.substring(intermediaryPath.lastIndexOf("/") + 1)
-                            : intermediaryPath
-                    classLabels.put(ownerKey, namedSimple)
-                    yarnClassKeys.put(namedSimple, ownerKey)
-                    currentOwnerKey = ownerKey
-                    recordCompIndex = 0
-                } else if (line.startsWith("\tf\t")) {
-                    def parts = line.split("\t", -1)
-                    if (parts.length < 5 || currentOwnerKey == null) {
-                        return
-                    }
-                    def intermediary = parts[3]
-                    def named = parts[4]
-                    if (intermediary.startsWith("comp_") || intermediary.startsWith("field_")) {
-                        fieldLabels.put("${currentOwnerKey}/${intermediary}", named)
-                    }
-                    if (intermediary.startsWith("comp_")) {
-                        recordLabels.put("${currentOwnerKey}/${recordCompIndex}", named)
-                        recordLabels.put("${currentOwnerKey}/\$\$${recordCompIndex}", named)
-                        recordCompIndex++
-                    }
-                } else if (line.startsWith("\tm\t")) {
-                    def parts = line.split("\t", -1)
-                    if (parts.length < 5 || currentOwnerKey == null) {
-                        return
-                    }
-                    def intermediary = parts[3]
-                    def named = parts[4]
-                    if (intermediary.startsWith("method_")) {
-                        methodLabels.put("${currentOwnerKey}/${intermediary}", named)
-                    }
-                }
-            }
-        }
-        zip.close()
-
-        def outFile = generatedYarnLabelsDir.get().file("dupeclient/yarn_labels.txt").asFile
-        outFile.parentFile.mkdirs()
-        outFile.withWriter("UTF-8") { writer ->
-            writer.writeLine("# Generated from Yarn mappings — do not edit")
-            classLabels.each { key, value ->
-                writer.writeLine("C\t${key}\t${value}")
-            }
-            yarnClassKeys.each { key, value ->
-                writer.writeLine("Y\t${key}\t${value}")
-            }
-            recordLabels.each { key, value ->
-                def slash = key.indexOf("/")
-                if (slash < 0) {
-                    return
-                }
-                def suffix = key.substring(slash + 1)
-                def prefix = suffix.startsWith("\$\$") ? "D" : "R"
-                writer.writeLine("${prefix}\t${key.substring(0, slash)}\t${suffix}\t${value}")
-            }
-            fieldLabels.each { key, value ->
-                def slash = key.indexOf("/")
-                if (slash < 0) {
-                    return
-                }
-                writer.writeLine("F\t${key.substring(0, slash)}\t${key.substring(slash + 1)}\t${value}")
-            }
-            methodLabels.each { key, value ->
-                def slash = key.indexOf("/")
-                if (slash < 0) {
-                    return
-                }
-                writer.writeLine("M\t${key.substring(0, slash)}\t${key.substring(slash + 1)}\t${value}")
-            }
-        }
-        logger.lifecycle(
-                "Generated yarn labels: {} classes, {} yarn keys, {} record aliases, {} fields, {} methods -> {}",
-                classLabels.size(),
-                yarnClassKeys.size(),
-                recordLabels.size(),
-                fieldLabels.size(),
-                methodLabels.size(),
-                outFile
-        )
-    }
-}
-
-tasks.named("processResources").configure {
-    dependsOn tasks.named("generateYarnLabels")
-}
-
-tasks.named("jar").configure {
-    dependsOn tasks.named("generateYarnLabels")
-}
-
-afterEvaluate {
-    if (tasks.findByName("sourcesJar") != null) {
-        tasks.named("sourcesJar").configure {
-            dependsOn tasks.named("generateYarnLabels")
-            dependsOn tasks.named("generateBuildConstants")
-            dependsOn tasks.named("prepareDupedbApiSources")
-        }
-    }
-}
-
 version = "${resolvedModVersion}+${versionSuffix}"
 group = project.maven_group
 
@@ -341,16 +189,9 @@ repositories {
     maven { url = "https://maven.terraformersmc.com/releases/" }
     maven { url = "https://jitpack.io" }
     maven { url = "https://maven.bawnorton.com/releases" }
-    maven { url = "https://maven.meteordev.org/releases" }
-    maven { url = "https://maven.meteordev.org/snapshots" }
-    exclusiveContent {
-        forRepository { maven { url = "https://api.modrinth.com/maven" } }
-        filter { includeGroup "maven.modrinth" }
-    }
 }
 
 def dupedbApiVersion = "1.0.4"
-def baritoneVersion = (findProperty("baritone_version") ?: "1.21.10-SNAPSHOT").toString()
 
 configurations {
     dupedbApiSources
@@ -359,18 +200,14 @@ configurations {
 dependencies {
     dupedbApiSources "com.github.DupeDB:java-api:${dupedbApiVersion}:sources"
     minecraft "com.mojang:minecraft:${minecraftVersion}"
-    mappings "net.fabricmc:yarn:${yarnMappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${loaderVersion}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
+    implementation "net.fabricmc:fabric-loader:${loaderVersion}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
 
-    modCompileOnly "meteordevelopment:baritone:${baritoneVersion}"
-    modCompileOnly "com.terraformersmc:modmenu:${modmenuVersion}"
-
+    compileOnly "com.terraformersmc:modmenu:${modmenuVersion}"
     annotationProcessor "com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.4"
-    modImplementation include("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.4")
-
+    implementation include("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.4")
     compileOnly "io.netty:netty-handler-proxy:4.1.118.Final"
-    modImplementation include("org.xerial:sqlite-jdbc:3.47.2.0")
+    implementation include("org.xerial:sqlite-jdbc:3.47.2.0")
 }
 
 processResources {
@@ -390,20 +227,6 @@ processResources {
     }
 }
 
-def captureScreenshotsDir = layout.projectDirectory.dir("docs/assets/screenshots").asFile.absolutePath.replace('\\', '/')
-
-if (project.hasProperty("captureScreenshots")) {
-    tasks.named("runClient").configure {
-        jvmArgs "-Ddupeclient.captureScreenshots=true", "-Ddupeclient.captureDir=${captureScreenshotsDir}"
-    }
-}
-
-tasks.register("captureScreenshots") {
-    group = "documentation"
-    description = "Dev-only: capture UI screenshots into docs/assets/screenshots."
-    dependsOn tasks.named("runClient")
-}
-
 tasks.withType(JavaCompile).configureEach {
     it.options.release = javaRelease
 }
@@ -420,7 +243,6 @@ java {
 loom {
     accessWidenerPath = file("src/main/resources/ui_utils.accesswidener")
     mixin {
-        useLegacyMixinAp = true
         defaultRefmapName = "${project.archives_base_name}-refmap.json"
     }
 }

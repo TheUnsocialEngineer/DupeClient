@@ -2,14 +2,13 @@ package com.dupeclient.client.module.dupedb;
 
 import com.dupeclient.client.DupeClient;
 import com.dupeclient.client.core.notify.ClientNotificationHub;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 public final class P2wMarkManager {
     public static final P2wMarkManager INSTANCE = new P2wMarkManager();
@@ -92,12 +91,12 @@ public final class P2wMarkManager {
     public void confirm(String kindArg) {
         expirePendingIfStale();
         if (pendingKind == null || pendingServer.isBlank()) {
-            sendFeedback(Text.literal("No pending P2W action. Use /p2w mark or /p2w unmark first.").formatted(Formatting.YELLOW));
+            sendFeedback(Component.literal("No pending P2W action. Use /p2w mark or /p2w unmark first.").withStyle(ChatFormatting.YELLOW));
             return;
         }
         PendingKind expected = "unmark".equalsIgnoreCase(kindArg) ? PendingKind.UNMARK : PendingKind.MARK;
         if (pendingKind != expected) {
-            sendFeedback(Text.literal("Pending action mismatch. Start again with /p2w mark or /p2w unmark.").formatted(Formatting.YELLOW));
+            sendFeedback(Component.literal("Pending action mismatch. Start again with /p2w mark or /p2w unmark.").withStyle(ChatFormatting.YELLOW));
             return;
         }
         P2wVerification.Result check = P2wVerification.checkMark(expected == PendingKind.MARK);
@@ -111,11 +110,11 @@ public final class P2wMarkManager {
 
     public void abort() {
         if (pendingKind == null) {
-            sendFeedback(Text.literal("Nothing to abort.").formatted(Formatting.GRAY));
+            sendFeedback(Component.literal("Nothing to abort.").withStyle(ChatFormatting.GRAY));
             return;
         }
         clearPending();
-        sendFeedback(Text.literal("P2W action cancelled.").formatted(Formatting.YELLOW));
+        sendFeedback(Component.literal("P2W action cancelled.").withStyle(ChatFormatting.YELLOW));
     }
 
     private static String consensusHint() {
@@ -130,7 +129,7 @@ public final class P2wMarkManager {
     }
 
     private void submitPending() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
@@ -140,7 +139,7 @@ public final class P2wMarkManager {
         if (kind == null || server.isBlank()) {
             return;
         }
-        String uuid = client.player.getUuid().toString();
+        String uuid = client.player.getUUID().toString();
         String name = client.player.getName().getString();
         int gen = generation.incrementAndGet();
         boolean markAsP2w = kind == PendingKind.MARK;
@@ -149,23 +148,23 @@ public final class P2wMarkManager {
                 P2wVerification.evidenceScanCompleted(server),
                 P2wVerification.evidencePluginCount(server),
                 P2wVerification.evidenceSessionMinutes(server));
-        sendFeedback(Text.literal("Submitting verified P2W " + (markAsP2w ? "mark" : "non-P2W mark") + "…").formatted(Formatting.GRAY));
+        sendFeedback(Component.literal("Submitting verified P2W " + (markAsP2w ? "mark" : "non-P2W mark") + "…").withStyle(ChatFormatting.GRAY));
         EXEC.execute(() -> {
             try {
                 P2wPresenceApi.SubmitResult result = P2wPresenceApi.submitMark(server, evidence, markAsP2w, uuid, name);
                 if (generation.get() != gen) {
                     return;
                 }
-                MinecraftClient mc = MinecraftClient.getInstance();
+                Minecraft mc = Minecraft.getInstance();
                 if (mc == null) {
                     return;
                 }
                 mc.execute(() -> handleSubmitResult(server, markAsP2w, result));
             } catch (Exception e) {
                 DupeClient.LOGGER.warn("[P2W] mark submit failed", e);
-                MinecraftClient mc = MinecraftClient.getInstance();
+                Minecraft mc = Minecraft.getInstance();
                 if (mc != null) {
-                    mc.execute(() -> sendFeedback(Text.literal("P2W submit error: " + e.getMessage()).formatted(Formatting.RED)));
+                    mc.execute(() -> sendFeedback(Component.literal("P2W submit error: " + e.getMessage()).withStyle(ChatFormatting.RED)));
                 }
             }
         });
@@ -173,7 +172,7 @@ public final class P2wMarkManager {
 
     private void handleSubmitResult(String server, boolean markAsP2w, P2wPresenceApi.SubmitResult result) {
         if (!result.success()) {
-            sendFeedback(Text.literal(result.message()).formatted(Formatting.RED));
+            sendFeedback(Component.literal(result.message()).withStyle(ChatFormatting.RED));
             ClientNotificationHub.error(result.message());
             return;
         }
@@ -182,7 +181,7 @@ public final class P2wMarkManager {
             String msg = result.message().isBlank()
                     ? (markAsP2w ? "Server verified as P2W." : "Server verified as non-P2W.")
                     : result.message();
-            sendFeedback(Text.literal(msg).formatted(Formatting.GREEN));
+            sendFeedback(Component.literal(msg).withStyle(ChatFormatting.GREEN));
             ClientNotificationHub.success(msg);
             if (!markAsP2w) {
                 P2wServerPolicy.INSTANCE.applyPolicyForCurrentServer(true);
@@ -192,37 +191,37 @@ public final class P2wMarkManager {
         String pending = result.message().isBlank()
                 ? "Mark pending verification (" + result.votes() + "/" + result.required() + " submissions)."
                 : result.message();
-        sendFeedback(Text.literal(pending).formatted(Formatting.YELLOW));
+        sendFeedback(Component.literal(pending).withStyle(ChatFormatting.YELLOW));
         ClientNotificationHub.warn(pending);
         P2wServerPolicy.INSTANCE.refreshRegistryAsync();
     }
 
     public static String currentServerAddress() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return "";
         }
-        if (client.getCurrentServerEntry() != null && client.getCurrentServerEntry().address != null) {
-            return P2wPresenceApi.normalizeServer(client.getCurrentServerEntry().address);
+        if (client.getCurrentServer() != null && client.getCurrentServer().ip != null) {
+            return P2wPresenceApi.normalizeServer(client.getCurrentServer().ip);
         }
-        if (client.getNetworkHandler() != null && client.getNetworkHandler().getConnection() != null
-                && client.getNetworkHandler().getConnection().getAddress() != null) {
-            String raw = client.getNetworkHandler().getConnection().getAddress().toString();
+        if (client.getConnection() != null && client.getConnection().getConnection() != null
+                && client.getConnection().getConnection().getRemoteAddress() != null) {
+            String raw = client.getConnection().getConnection().getRemoteAddress().toString();
             raw = raw == null ? "" : raw.replaceFirst("^/", "").trim();
             return P2wPresenceApi.normalizeServer(raw);
         }
         return "";
     }
 
-    private static void sendFeedback(Text line) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private static void sendFeedback(Component line) {
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
         client.execute(() -> {
             if (client.player != null) {
-                MutableText msg = Text.literal("[P2W] ").formatted(Formatting.GOLD, Formatting.BOLD).append(line);
-                client.player.sendMessage(msg, false);
+                MutableComponent msg = Component.literal("[P2W] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD).append(line);
+                client.player.displayClientMessage(msg, false);
             }
         });
     }

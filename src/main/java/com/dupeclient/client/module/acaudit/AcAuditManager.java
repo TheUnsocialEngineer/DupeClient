@@ -6,23 +6,6 @@ import com.dupeclient.client.module.packet.FeatureHotkeyManager;
 import com.dupeclient.client.module.packet.fabricator.ClickSlotPackets;
 import com.mojang.brigadier.suggestion.Suggestion;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.BrandCustomPayload;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
-import net.minecraft.network.packet.s2c.common.CustomPayloadS2CPacket;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.screen.sync.ItemStackHash;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,6 +17,22 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.HashedStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
+import net.minecraft.network.protocol.common.custom.BrandPayload;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 
 public final class AcAuditManager {
     public static final AcAuditManager INSTANCE = new AcAuditManager();
@@ -116,9 +115,9 @@ public final class AcAuditManager {
 
     public AcAuditMetrics getMetrics() {
         int ping = -1;
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.player != null && client.getNetworkHandler() != null) {
-            var entry = client.getNetworkHandler().getPlayerListEntry(client.player.getUuid());
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.player != null && client.getConnection() != null) {
+            var entry = client.getConnection().getPlayerInfo(client.player.getUUID());
             if (entry != null) {
                 ping = entry.getLatency();
             }
@@ -168,7 +167,7 @@ public final class AcAuditManager {
         save();
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null || client.getWindow() == null) {
             return;
         }
@@ -197,7 +196,7 @@ public final class AcAuditManager {
             return;
         }
         inThisSec++;
-        if (packet instanceof WorldTimeUpdateS2CPacket) {
+        if (packet instanceof ClientboundSetTimePacket) {
             long now = System.currentTimeMillis();
             if (lastTimePacketMs != 0) {
                 long interval = now - lastTimePacketMs;
@@ -206,10 +205,10 @@ public final class AcAuditManager {
                 }
             }
             lastTimePacketMs = now;
-        } else if (packet instanceof PlayerPositionLookS2CPacket) {
+        } else if (packet instanceof ClientboundPlayerPositionPacket) {
             setbacksThisSec++;
-            if (MinecraftClient.getInstance().player != null
-                    && MinecraftClient.getInstance().player.getVelocity().horizontalLengthSquared() > 0.001) {
+            if (Minecraft.getInstance().player != null
+                    && Minecraft.getInstance().player.getDeltaMovement().horizontalDistanceSqr() > 0.001) {
                 setbacksMoving++;
             } else {
                 setbacksStill++;
@@ -229,7 +228,7 @@ public final class AcAuditManager {
             if (settings.setbackVerbose) {
                 appendLog("Setback received");
             }
-        } else if (packet instanceof CustomPayloadS2CPacket custom && custom.payload() instanceof BrandCustomPayload brandPayload) {
+        } else if (packet instanceof ClientboundCustomPayloadPacket custom && custom.payload() instanceof BrandPayload brandPayload) {
             brand = brandPayload.brand();
             platform = AcAuditPluginClassifier.classifyPlatform(brand);
             appendLog("Brand: \"" + brand + "\"");
@@ -237,7 +236,7 @@ public final class AcAuditManager {
             if (settings.announcePlatform) {
                 feedback("Platform: " + platform + " (\"" + brand + "\")");
             }
-        } else if (packet instanceof DisconnectS2CPacket disconnect) {
+        } else if (packet instanceof ClientboundDisconnectPacket disconnect) {
             lastDisconnect = disconnect.reason().getString();
             appendLog("Disconnect: " + lastDisconnect);
             if (AcAuditPluginClassifier.looksLikePacketLimiterKick(lastDisconnect)) {
@@ -245,7 +244,7 @@ public final class AcAuditManager {
                 feedback("Disconnect looks like packet-limiter kick.");
             }
             onSessionLeave();
-        } else if (packet instanceof CommandSuggestionsS2CPacket suggestions) {
+        } else if (packet instanceof ClientboundCommandSuggestionsPacket suggestions) {
             onCommandSuggestions(suggestions);
         }
 
@@ -261,40 +260,40 @@ public final class AcAuditManager {
             return;
         }
         outThisSec++;
-        if (packet instanceof PlayerMoveC2SPacket) {
+        if (packet instanceof ServerboundMovePlayerPacket) {
             lastMoveSentMs = System.currentTimeMillis();
         }
     }
 
-    public void fireManualClick(MinecraftClient client) {
-        if (!settings.enabled || client == null || client.player == null || client.getNetworkHandler() == null) {
+    public void fireManualClick(Minecraft client) {
+        if (!settings.enabled || client == null || client.player == null || client.getConnection() == null) {
             feedback("Join a world and enable AC Audit first.");
             return;
         }
-        ScreenHandler handler = client.player.currentScreenHandler;
+        AbstractContainerMenu handler = client.player.containerMenu;
         int syncId = settings.manualClickSyncMode == AcAuditSettings.ManualSyncMode.CUSTOM
                 ? settings.manualClickCustomSyncId
-                : handler != null ? handler.syncId : 0;
+                : handler != null ? handler.containerId : 0;
         int revision = switch (settings.manualClickRevMode) {
-            case CURRENT -> handler != null ? handler.getRevision() : 0;
+            case CURRENT -> handler != null ? handler.getStateId() : 0;
             case ZERO -> 0;
             case CUSTOM -> settings.manualClickCustomRev;
         };
-        SlotActionType action = resolveManualAction(settings.manualClickAction);
+        ClickType action = resolveManualAction(settings.manualClickAction);
         if (settings.manualClickPrePickupSlot >= 0) {
-            client.getNetworkHandler().sendPacket(ClickSlotPackets.create(
-                    syncId, revision, settings.manualClickPrePickupSlot, 0, SlotActionType.PICKUP));
+            client.getConnection().send(ClickSlotPackets.create(
+                    syncId, revision, settings.manualClickPrePickupSlot, 0, ClickType.PICKUP));
         }
         int count = Math.max(1, settings.manualClickCount);
         for (int i = 0; i < count; i++) {
-            client.getNetworkHandler().sendPacket(new ClickSlotC2SPacket(
+            client.getConnection().send(new ServerboundContainerClickPacket(
                     syncId,
                     revision,
                     (short) settings.manualClickSlot,
                     (byte) settings.manualClickButton,
                     action,
                     new Int2ObjectArrayMap<>(),
-                    ItemStackHash.EMPTY));
+                    HashedStack.EMPTY));
         }
         appendLog(String.format(Locale.ROOT,
                 "Manual click x%d sync=%d rev=%d slot=%d btn=%d %s",
@@ -432,8 +431,8 @@ public final class AcAuditManager {
         packetCadenceWindowStartMs = now;
     }
 
-    private void tickCommandFingerprint(MinecraftClient client) {
-        if (!settings.commandFingerprintActive || client.player == null || client.getNetworkHandler() == null) {
+    private void tickCommandFingerprint(Minecraft client) {
+        if (!settings.commandFingerprintActive || client.player == null || client.getConnection() == null) {
             return;
         }
         if (commandFingerprintTimer > 0) {
@@ -448,11 +447,11 @@ public final class AcAuditManager {
         } else {
             partial = settings.commandFingerprintPrefix != null ? settings.commandFingerprintPrefix : "/";
         }
-        client.getNetworkHandler().sendPacket(new RequestCommandCompletionsC2SPacket(commandCompletionId++, partial));
+        client.getConnection().send(new ServerboundCommandSuggestionPacket(commandCompletionId++, partial));
     }
 
-    private void tickSlotSyncProbe(MinecraftClient client) {
-        if (!settings.slotSyncProbeActive || client.player == null || client.getNetworkHandler() == null) {
+    private void tickSlotSyncProbe(Minecraft client) {
+        if (!settings.slotSyncProbeActive || client.player == null || client.getConnection() == null) {
             return;
         }
         if (slotProbes.isEmpty()) {
@@ -469,14 +468,14 @@ public final class AcAuditManager {
         SlotProbe probe = slotProbes.get(slotProbeIndex % slotProbes.size());
         slotSyncProbeLabel = probe.label;
         appendLog(String.format(Locale.ROOT, "[%d/%d] %s", slotProbeIndex + 1, slotProbes.size(), probe.label));
-        client.getNetworkHandler().sendPacket(new ClickSlotC2SPacket(
+        client.getConnection().send(new ServerboundContainerClickPacket(
                 probe.syncId,
                 probe.revision,
                 (short) probe.slot,
                 (byte) probe.button,
-                SlotActionType.PICKUP,
+                ClickType.PICKUP,
                 new Int2ObjectArrayMap<>(),
-                ItemStackHash.EMPTY));
+                HashedStack.EMPTY));
         slotSyncPacketsSent++;
         slotProbeIndex++;
         slotProbeTimer = Math.max(1, settings.slotSyncProbeDelayTicks);
@@ -489,12 +488,12 @@ public final class AcAuditManager {
         }
     }
 
-    private void onCommandSuggestions(CommandSuggestionsS2CPacket packet) {
+    private void onCommandSuggestions(ClientboundCommandSuggestionsPacket packet) {
         if (!settings.commandFingerprintActive) {
             return;
         }
         int before = discoveredCommands.size();
-        for (Suggestion suggestion : packet.getSuggestions().getList()) {
+        for (Suggestion suggestion : packet.toSuggestions().getList()) {
             String text = suggestion.getText();
             if (!discoveredCommands.add(text)) {
                 continue;
@@ -520,16 +519,16 @@ public final class AcAuditManager {
 
     private void rebuildSlotProbes() {
         slotProbes.clear();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
-        ScreenHandler handler = client.player.currentScreenHandler;
+        AbstractContainerMenu handler = client.player.containerMenu;
         if (handler == null) {
             return;
         }
-        int syncId = handler.syncId;
-        int revision = handler.getRevision();
+        int syncId = handler.containerId;
+        int revision = handler.getStateId();
         int slotCount = handler.slots.size();
         int validSlot = slotCount > 0 ? 0 : 0;
         AcAuditSettings.SlotSyncField field = settings.slotSyncProbeField != null
@@ -559,15 +558,15 @@ public final class AcAuditManager {
         }
     }
 
-    private static SlotActionType resolveManualAction(AcAuditSettings.ManualClickAction action) {
+    private static ClickType resolveManualAction(AcAuditSettings.ManualClickAction action) {
         return switch (action) {
-            case PICKUP -> SlotActionType.PICKUP;
-            case QUICK_MOVE -> SlotActionType.QUICK_MOVE;
-            case SWAP -> SlotActionType.SWAP;
-            case CLONE -> SlotActionType.CLONE;
-            case THROW -> SlotActionType.THROW;
-            case QUICK_CRAFT -> SlotActionType.QUICK_CRAFT;
-            case PICKUP_ALL -> SlotActionType.PICKUP_ALL;
+            case PICKUP -> ClickType.PICKUP;
+            case QUICK_MOVE -> ClickType.QUICK_MOVE;
+            case SWAP -> ClickType.SWAP;
+            case CLONE -> ClickType.CLONE;
+            case THROW -> ClickType.THROW;
+            case QUICK_CRAFT -> ClickType.QUICK_CRAFT;
+            case PICKUP_ALL -> ClickType.PICKUP_ALL;
         };
     }
 
@@ -608,9 +607,9 @@ public final class AcAuditManager {
     }
 
     private void feedback(String message) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client != null && client.player != null) {
-            client.player.sendMessage(Text.literal("[AC Audit] " + message).formatted(Formatting.AQUA), false);
+            client.player.displayClientMessage(Component.literal("[AC Audit] " + message).withStyle(ChatFormatting.AQUA), false);
         }
     }
 

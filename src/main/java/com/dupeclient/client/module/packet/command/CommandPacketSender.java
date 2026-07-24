@@ -2,16 +2,15 @@ package com.dupeclient.client.module.packet.command;
 
 import com.dupeclient.client.module.fuzzer.economy.EconomyCommandDetector;
 import com.dupeclient.client.module.packet.PacketUtilsManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
 
 /**
- * Sends slash commands as {@link CommandExecutionC2SPacket} (bypassing vanilla chat UI) with
+ * Sends slash commands as {@link ServerboundChatCommandPacket} (bypassing vanilla chat UI) with
  * pacing, burst limits, and adaptive backoff when servers reject spam.
  */
 public final class CommandPacketSender {
@@ -112,7 +111,7 @@ public final class CommandPacketSender {
     }
 
     /** Sends when pacing allows; returns false if throttled this tick. */
-    public boolean sendCommand(MinecraftClient client, String command) {
+    public boolean sendCommand(Minecraft client, String command) {
         if (!isReady()) {
             return false;
         }
@@ -122,7 +121,7 @@ public final class CommandPacketSender {
     }
 
     /** Sends immediately (still uses command packet); skips interval but respects active backoff. */
-    public boolean sendCommandImmediate(MinecraftClient client, String command) {
+    public boolean sendCommandImmediate(Minecraft client, String command) {
         long now = System.currentTimeMillis();
         if (now < backoffUntilMs) {
             return false;
@@ -150,7 +149,7 @@ public final class CommandPacketSender {
         }
     }
 
-    private void dispatch(MinecraftClient client, String command) {
+    private void dispatch(Minecraft client, String command) {
         if (client == null || command == null) {
             return;
         }
@@ -159,8 +158,8 @@ public final class CommandPacketSender {
             return;
         }
         client.execute(() -> {
-            if (client.player != null && client.getNetworkHandler() != null) {
-                PacketUtilsManager.INSTANCE.sendBypass(client, new CommandExecutionC2SPacket(normalized));
+            if (client.player != null && client.getConnection() != null) {
+                PacketUtilsManager.INSTANCE.sendBypass(client, new ServerboundChatCommandPacket(normalized));
             }
         });
     }

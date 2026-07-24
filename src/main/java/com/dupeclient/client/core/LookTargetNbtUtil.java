@@ -1,20 +1,20 @@
 package com.dupeclient.client.core;
 
 import com.dupeclient.client.core.LookTargetUtil;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.state.property.Property;
-import net.minecraft.storage.NbtWriteView;
-import net.minecraft.util.ErrorReporter;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.storage.TagValueOutput;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,11 +25,11 @@ public final class LookTargetNbtUtil {
     private LookTargetNbtUtil() {
     }
 
-    public record CaptureResult(String kind, String summary, String snbt, NbtCompound compound) {
+    public record CaptureResult(String kind, String summary, String snbt, CompoundTag compound) {
     }
 
     @Nullable
-    public static CaptureResult capture(MinecraftClient client) {
+    public static CaptureResult capture(Minecraft client) {
         LookTargetUtil.LookTarget target = LookTargetUtil.pick(client);
         if (target == null) {
             return null;
@@ -37,51 +37,51 @@ public final class LookTargetNbtUtil {
         if (target.entity() != null) {
             return captureEntity(client, target.entity().getEntity());
         }
-        if (target.block() != null && client.world != null) {
-            return captureBlock(client.world, target.block().getBlockPos());
+        if (target.block() != null && client.level != null) {
+            return captureBlock(client.level, target.block().getBlockPos());
         }
         return null;
     }
 
     @Nullable
-    private static CaptureResult captureEntity(MinecraftClient client, Entity entity) {
-        ClientWorld world = client.world;
+    private static CaptureResult captureEntity(Minecraft client, Entity entity) {
+        ClientLevel world = client.level;
         if (world == null) {
             return null;
         }
-        RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
-        NbtWriteView view = NbtWriteView.create(ErrorReporter.EMPTY, registries);
-        entity.writeData(view);
-        NbtCompound compound = view.getNbt();
-        Identifier typeId = Registries.ENTITY_TYPE.getId(entity.getType());
+        HolderLookup.Provider registries = world.registryAccess();
+        TagValueOutput view = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
+        entity.saveWithoutId(view);
+        CompoundTag compound = view.buildResult();
+        Identifier typeId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         String type = typeId == null ? "unknown" : typeId.toString();
         String summary = "entity " + type + " @ "
-            + formatPos(entity.getBlockPos())
-            + " (id=" + entity.getId() + ", uuid=" + entity.getUuidAsString() + ")";
+            + formatPos(entity.blockPosition())
+            + " (id=" + entity.getId() + ", uuid=" + entity.getStringUUID() + ")";
         return new CaptureResult("entity", summary, formatSnbt(compound), compound);
     }
 
     @Nullable
-    private static CaptureResult captureBlock(ClientWorld world, BlockPos pos) {
+    private static CaptureResult captureBlock(ClientLevel world, BlockPos pos) {
         BlockState state = world.getBlockState(pos);
         BlockEntity blockEntity = world.getBlockEntity(pos);
-        RegistryWrapper.WrapperLookup registries = world.getRegistryManager();
+        HolderLookup.Provider registries = world.registryAccess();
 
-        NbtCompound compound;
+        CompoundTag compound;
         String summary;
         if (blockEntity != null) {
-            compound = blockEntity.createNbt(registries);
-            Identifier typeId = Registries.BLOCK_ENTITY_TYPE.getId(blockEntity.getType());
+            compound = blockEntity.saveWithoutMetadata(registries);
+            Identifier typeId = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType());
             String type = typeId == null ? "block_entity" : typeId.toString();
             summary = "block_entity " + type + " @ " + formatPos(pos);
         } else {
-            compound = new NbtCompound();
-            Identifier blockId = Registries.BLOCK.getId(state.getBlock());
+            compound = new CompoundTag();
+            Identifier blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
             compound.putString("id", blockId == null ? "unknown" : blockId.toString());
             compound.putInt("x", pos.getX());
             compound.putInt("y", pos.getY());
             compound.putInt("z", pos.getZ());
-            NbtCompound properties = new NbtCompound();
+            CompoundTag properties = new CompoundTag();
             for (Property<?> property : state.getProperties()) {
                 appendProperty(properties, property, state);
             }
@@ -94,16 +94,16 @@ public final class LookTargetNbtUtil {
         return new CaptureResult(blockEntity == null ? "block" : "block_entity", summary, formatSnbt(compound), compound);
     }
 
-    private static <T extends Comparable<T>> void appendProperty(NbtCompound properties, Property<T> property, BlockState state) {
-        T value = state.get(property);
-        properties.putString(property.getName(), property.name(value));
+    private static <T extends Comparable<T>> void appendProperty(CompoundTag properties, Property<T> property, BlockState state) {
+        T value = state.getValue(property);
+        properties.putString(property.getName(), property.getName(value));
     }
 
     private static String formatPos(BlockPos pos) {
         return pos.getX() + " " + pos.getY() + " " + pos.getZ();
     }
 
-    private static String formatSnbt(NbtCompound compound) {
-        return NbtHelper.toFormattedString(compound, true);
+    private static String formatSnbt(CompoundTag compound) {
+        return NbtUtils.prettyPrint(compound, true);
     }
 }

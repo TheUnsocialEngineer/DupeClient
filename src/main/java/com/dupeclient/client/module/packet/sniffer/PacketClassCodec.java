@@ -4,20 +4,6 @@ import com.dupeclient.client.module.packet.sniffer.PacketFieldModel;
 import com.dupeclient.client.module.packet.sniffer.PacketRecordCodec;
 
 import com.dupeclient.client.module.packet.PacketUtils;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.config.ReadyC2SPacket;
-import net.minecraft.network.packet.c2s.login.EnterConfigurationC2SPacket;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdatePlayerAbilitiesC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
-import net.minecraft.network.packet.c2s.query.QueryRequestC2SPacket;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
@@ -33,6 +19,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.configuration.ServerboundFinishConfigurationPacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerAbilitiesPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
+import net.minecraft.network.protocol.login.ServerboundLoginAcknowledgedPacket;
+import net.minecraft.network.protocol.status.ServerboundStatusRequestPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Builds and describes C2S packets that are plain classes (not records), via public constructors or
@@ -48,7 +48,7 @@ public final class PacketClassCodec {
         if (clazz.isRecord() || Modifier.isAbstract(clazz.getModifiers())) {
             return false;
         }
-        if (PlayerMoveC2SPacket.class.equals(clazz)) {
+        if (ServerboundMovePlayerPacket.class.equals(clazz)) {
             return false;
         }
         return resolve(clazz) != null;
@@ -65,16 +65,16 @@ public final class PacketClassCodec {
             return singletonFields(PacketUtils.getPacketTypeName(packet));
         }
         if (descriptor.custom == CustomKind.PLAYER_INTERACT_ENTITY) {
-            return describePlayerInteractEntity((PlayerInteractEntityC2SPacket) packet);
+            return describePlayerInteractEntity((ServerboundInteractPacket) packet);
         }
         if (descriptor.custom == CustomKind.CLIENT_COMMAND) {
-            return describeClientCommand((ClientCommandC2SPacket) packet);
+            return describeClientCommand((ServerboundPlayerCommandPacket) packet);
         }
         if (descriptor.custom == CustomKind.PLAYER_ABILITIES) {
-            return describePlayerAbilities((UpdatePlayerAbilitiesC2SPacket) packet);
+            return describePlayerAbilities((ServerboundPlayerAbilitiesPacket) packet);
         }
         if (descriptor.custom == CustomKind.UPDATE_SIGN) {
-            return describeUpdateSign((UpdateSignC2SPacket) packet);
+            return describeUpdateSign((ServerboundSignUpdatePacket) packet);
         }
         List<PacketFieldModel> rows = new ArrayList<>();
         rows.add(typeField(PacketUtils.getPacketTypeName(packet)));
@@ -87,7 +87,7 @@ public final class PacketClassCodec {
     public static List<PacketFieldModel> describeType(
             String typeName,
             Class<? extends Packet<?>> clazz,
-            @Nullable MinecraftClient client) {
+            @Nullable Minecraft client) {
         Descriptor descriptor = resolve(clazz);
         if (descriptor == null) {
             return List.of();
@@ -106,7 +106,7 @@ public final class PacketClassCodec {
     public static Packet<?> build(
             Class<? extends Packet<?>> clazz,
             Map<String, String> fields,
-            @Nullable MinecraftClient client) throws PacketRecordCodec.PacketBuildException {
+            @Nullable Minecraft client) throws PacketRecordCodec.PacketBuildException {
         Descriptor descriptor = resolve(clazz);
         if (descriptor == null) {
             throw new PacketRecordCodec.PacketBuildException("No class builder for " + clazz.getSimpleName());
@@ -131,7 +131,7 @@ public final class PacketClassCodec {
             Class<? extends Packet<?>> clazz,
             Descriptor descriptor,
             Map<String, String> fields,
-            @Nullable MinecraftClient client) throws PacketRecordCodec.PacketBuildException {
+            @Nullable Minecraft client) throws PacketRecordCodec.PacketBuildException {
         Object[] args = new Object[descriptor.bindings.length];
         for (int i = 0; i < descriptor.bindings.length; i++) {
             Binding binding = descriptor.bindings[i];
@@ -147,7 +147,7 @@ public final class PacketClassCodec {
     private static Object decodeBinding(
             Binding binding,
             Map<String, String> fields,
-            @Nullable MinecraftClient client) throws PacketRecordCodec.PacketBuildException {
+            @Nullable Minecraft client) throws PacketRecordCodec.PacketBuildException {
         if (binding.type == Entity.class) {
             return resolveEntity(fields, client);
         }
@@ -158,17 +158,17 @@ public final class PacketClassCodec {
         return PacketRecordCodec.decodeField(binding.type, binding.genericType, raw);
     }
 
-    private static Entity resolveEntity(Map<String, String> fields, @Nullable MinecraftClient client)
+    private static Entity resolveEntity(Map<String, String> fields, @Nullable Minecraft client)
             throws PacketRecordCodec.PacketBuildException {
         String raw = fields.get("entityId");
         if (raw == null || raw.isBlank()) {
             throw new PacketRecordCodec.PacketBuildException("Missing field: entityId");
         }
         int entityId = Integer.parseInt(raw.trim());
-        if (client == null || client.world == null) {
+        if (client == null || client.level == null) {
             throw new PacketRecordCodec.PacketBuildException("Join a world to resolve entityId " + entityId);
         }
-        Entity entity = client.world.getEntityById(entityId);
+        Entity entity = client.level.getEntity(entityId);
         if (entity == null) {
             throw new PacketRecordCodec.PacketBuildException("Unknown entity id: " + entityId);
         }
@@ -200,16 +200,16 @@ public final class PacketClassCodec {
     }
 
     private static CustomKind customKind(Class<?> clazz) {
-        if (PlayerInteractEntityC2SPacket.class.equals(clazz)) {
+        if (ServerboundInteractPacket.class.equals(clazz)) {
             return CustomKind.PLAYER_INTERACT_ENTITY;
         }
-        if (ClientCommandC2SPacket.class.equals(clazz)) {
+        if (ServerboundPlayerCommandPacket.class.equals(clazz)) {
             return CustomKind.CLIENT_COMMAND;
         }
-        if (UpdatePlayerAbilitiesC2SPacket.class.equals(clazz)) {
+        if (ServerboundPlayerAbilitiesPacket.class.equals(clazz)) {
             return CustomKind.PLAYER_ABILITIES;
         }
-        if (UpdateSignC2SPacket.class.equals(clazz)) {
+        if (ServerboundSignUpdatePacket.class.equals(clazz)) {
             return CustomKind.UPDATE_SIGN;
         }
         return CustomKind.NONE;
@@ -221,14 +221,14 @@ public final class PacketClassCodec {
                     new Binding("interactType", String.class, null, null),
                     new Binding("entityId", int.class, null, null),
                     new Binding("sneaking", boolean.class, null, null),
-                    new Binding("hand", Hand.class, null, null),
+                    new Binding("hand", InteractionHand.class, null, null),
                     new Binding("targetX", double.class, null, null),
                     new Binding("targetY", double.class, null, null),
                     new Binding("targetZ", double.class, null, null),
             };
             case CLIENT_COMMAND -> new Binding[] {
                     new Binding("entityId", int.class, null, null),
-                    new Binding("mode", ClientCommandC2SPacket.Mode.class, null, null),
+                    new Binding("mode", ServerboundPlayerCommandPacket.Action.class, null, null),
                     new Binding("mountJumpHeight", int.class, null, null),
             };
             case PLAYER_ABILITIES -> new Binding[] {
@@ -239,7 +239,7 @@ public final class PacketClassCodec {
                     new Binding("allowModifyWorld", boolean.class, null, null),
             };
             case UPDATE_SIGN -> new Binding[] {
-                    new Binding("pos", net.minecraft.util.math.BlockPos.class, null, null),
+                    new Binding("pos", net.minecraft.core.BlockPos.class, null, null),
                     new Binding("front", boolean.class, null, null),
                     new Binding("line1", String.class, null, null),
                     new Binding("line2", String.class, null, null),
@@ -441,14 +441,14 @@ public final class PacketClassCodec {
     }
 
     private static @Nullable Packet<?> singletonInstance(Class<?> clazz) {
-        if (ReadyC2SPacket.class.equals(clazz)) {
-            return ReadyC2SPacket.INSTANCE;
+        if (ServerboundFinishConfigurationPacket.class.equals(clazz)) {
+            return ServerboundFinishConfigurationPacket.INSTANCE;
         }
-        if (QueryRequestC2SPacket.class.equals(clazz)) {
-            return QueryRequestC2SPacket.INSTANCE;
+        if (ServerboundStatusRequestPacket.class.equals(clazz)) {
+            return ServerboundStatusRequestPacket.INSTANCE;
         }
-        if (EnterConfigurationC2SPacket.class.equals(clazz)) {
-            return EnterConfigurationC2SPacket.INSTANCE;
+        if (ServerboundLoginAcknowledgedPacket.class.equals(clazz)) {
+            return ServerboundLoginAcknowledgedPacket.INSTANCE;
         }
         try {
             Field field = clazz.getField("INSTANCE");
@@ -466,92 +466,92 @@ public final class PacketClassCodec {
         return null;
     }
 
-    private static List<PacketFieldModel> describePlayerInteractEntity(PlayerInteractEntityC2SPacket packet) {
+    private static List<PacketFieldModel> describePlayerInteractEntity(ServerboundInteractPacket packet) {
         InteractCapture capture = new InteractCapture();
-        packet.handle(capture);
+        packet.dispatch(capture);
         List<PacketFieldModel> rows = new ArrayList<>();
         rows.add(typeField(PacketUtils.getPacketTypeName(packet)));
         rows.add(new PacketFieldModel("interactType", "String", capture.interactType, true, String.class));
         rows.add(new PacketFieldModel("entityId", "int", Integer.toString(readInteractEntityId(packet)), true, int.class));
-        rows.add(new PacketFieldModel("sneaking", "boolean", Boolean.toString(packet.isPlayerSneaking()), true, boolean.class));
-        rows.add(new PacketFieldModel("hand", "Hand", capture.hand.name(), true, Hand.class));
+        rows.add(new PacketFieldModel("sneaking", "boolean", Boolean.toString(packet.isUsingSecondaryAction()), true, boolean.class));
+        rows.add(new PacketFieldModel("hand", "Hand", capture.hand.name(), true, InteractionHand.class));
         rows.add(new PacketFieldModel("targetX", "double", Double.toString(capture.targetX), true, double.class));
         rows.add(new PacketFieldModel("targetY", "double", Double.toString(capture.targetY), true, double.class));
         rows.add(new PacketFieldModel("targetZ", "double", Double.toString(capture.targetZ), true, double.class));
         return rows;
     }
 
-    private static Packet<?> buildPlayerInteractEntity(Map<String, String> fields, @Nullable MinecraftClient client)
+    private static Packet<?> buildPlayerInteractEntity(Map<String, String> fields, @Nullable Minecraft client)
             throws PacketRecordCodec.PacketBuildException {
         String interactType = fields.getOrDefault("interactType", "ATTACK").trim().toUpperCase();
         Entity entity = resolveEntity(fields, client);
         boolean sneaking = Boolean.parseBoolean(fields.getOrDefault("sneaking", "false"));
-        Hand hand = Hand.valueOf(fields.getOrDefault("hand", Hand.MAIN_HAND.name()).trim().toUpperCase());
+        InteractionHand hand = InteractionHand.valueOf(fields.getOrDefault("hand", InteractionHand.MAIN_HAND.name()).trim().toUpperCase());
         return switch (interactType) {
-            case "INTERACT" -> PlayerInteractEntityC2SPacket.interact(entity, sneaking, hand);
+            case "INTERACT" -> ServerboundInteractPacket.createInteractionPacket(entity, sneaking, hand);
             case "INTERACT_AT" -> {
                 double x = Double.parseDouble(fields.getOrDefault("targetX", "0"));
                 double y = Double.parseDouble(fields.getOrDefault("targetY", "0"));
                 double z = Double.parseDouble(fields.getOrDefault("targetZ", "0"));
-                yield PlayerInteractEntityC2SPacket.interactAt(entity, sneaking, hand, new Vec3d(x, y, z));
+                yield ServerboundInteractPacket.createInteractionPacket(entity, sneaking, hand, new Vec3(x, y, z));
             }
-            default -> PlayerInteractEntityC2SPacket.attack(entity, sneaking);
+            default -> ServerboundInteractPacket.createAttackPacket(entity, sneaking);
         };
     }
 
-    private static List<PacketFieldModel> describeClientCommand(ClientCommandC2SPacket packet) {
+    private static List<PacketFieldModel> describeClientCommand(ServerboundPlayerCommandPacket packet) {
         List<PacketFieldModel> rows = new ArrayList<>();
         rows.add(typeField(PacketUtils.getPacketTypeName(packet)));
-        rows.add(new PacketFieldModel("entityId", "int", Integer.toString(packet.getEntityId()), true, int.class));
-        rows.add(new PacketFieldModel("mode", "Mode", packet.getMode().name(), true, ClientCommandC2SPacket.Mode.class));
-        rows.add(new PacketFieldModel("mountJumpHeight", "int", Integer.toString(packet.getMountJumpHeight()), true, int.class));
+        rows.add(new PacketFieldModel("entityId", "int", Integer.toString(packet.getId()), true, int.class));
+        rows.add(new PacketFieldModel("mode", "Mode", packet.getAction().name(), true, ServerboundPlayerCommandPacket.Action.class));
+        rows.add(new PacketFieldModel("mountJumpHeight", "int", Integer.toString(packet.getData()), true, int.class));
         return rows;
     }
 
-    private static Packet<?> buildClientCommand(Map<String, String> fields, @Nullable MinecraftClient client)
+    private static Packet<?> buildClientCommand(Map<String, String> fields, @Nullable Minecraft client)
             throws PacketRecordCodec.PacketBuildException {
         Entity entity = resolveEntity(fields, client);
         String modeRaw = fields.get("mode");
         if (modeRaw == null || modeRaw.isBlank()) {
             throw new PacketRecordCodec.PacketBuildException("Missing field: mode");
         }
-        ClientCommandC2SPacket.Mode mode = ClientCommandC2SPacket.Mode.valueOf(modeRaw.trim().toUpperCase());
+        ServerboundPlayerCommandPacket.Action mode = ServerboundPlayerCommandPacket.Action.valueOf(modeRaw.trim().toUpperCase());
         int mountJumpHeight = Integer.parseInt(fields.getOrDefault("mountJumpHeight", "0").trim());
         if (mountJumpHeight != 0) {
-            return new ClientCommandC2SPacket(entity, mode, mountJumpHeight);
+            return new ServerboundPlayerCommandPacket(entity, mode, mountJumpHeight);
         }
-        return new ClientCommandC2SPacket(entity, mode);
+        return new ServerboundPlayerCommandPacket(entity, mode);
     }
 
-    private static List<PacketFieldModel> describePlayerAbilities(UpdatePlayerAbilitiesC2SPacket packet) {
-        PlayerAbilities abilities = new PlayerAbilities();
+    private static List<PacketFieldModel> describePlayerAbilities(ServerboundPlayerAbilitiesPacket packet) {
+        Abilities abilities = new Abilities();
         abilities.flying = packet.isFlying();
         List<PacketFieldModel> rows = new ArrayList<>();
         rows.add(typeField(PacketUtils.getPacketTypeName(packet)));
         rows.add(new PacketFieldModel("invulnerable", "boolean", Boolean.toString(abilities.invulnerable), true, boolean.class));
         rows.add(new PacketFieldModel("flying", "boolean", Boolean.toString(abilities.flying), true, boolean.class));
-        rows.add(new PacketFieldModel("allowFlying", "boolean", Boolean.toString(abilities.allowFlying), true, boolean.class));
-        rows.add(new PacketFieldModel("creativeMode", "boolean", Boolean.toString(abilities.creativeMode), true, boolean.class));
-        rows.add(new PacketFieldModel("allowModifyWorld", "boolean", Boolean.toString(abilities.allowModifyWorld), true, boolean.class));
+        rows.add(new PacketFieldModel("allowFlying", "boolean", Boolean.toString(abilities.mayfly), true, boolean.class));
+        rows.add(new PacketFieldModel("creativeMode", "boolean", Boolean.toString(abilities.instabuild), true, boolean.class));
+        rows.add(new PacketFieldModel("allowModifyWorld", "boolean", Boolean.toString(abilities.mayBuild), true, boolean.class));
         return rows;
     }
 
     private static Packet<?> buildPlayerAbilities(Map<String, String> fields) {
-        PlayerAbilities abilities = new PlayerAbilities();
+        Abilities abilities = new Abilities();
         abilities.invulnerable = Boolean.parseBoolean(fields.getOrDefault("invulnerable", "false"));
         abilities.flying = Boolean.parseBoolean(fields.getOrDefault("flying", "false"));
-        abilities.allowFlying = Boolean.parseBoolean(fields.getOrDefault("allowFlying", "false"));
-        abilities.creativeMode = Boolean.parseBoolean(fields.getOrDefault("creativeMode", "false"));
-        abilities.allowModifyWorld = Boolean.parseBoolean(fields.getOrDefault("allowModifyWorld", "true"));
-        return new UpdatePlayerAbilitiesC2SPacket(abilities);
+        abilities.mayfly = Boolean.parseBoolean(fields.getOrDefault("allowFlying", "false"));
+        abilities.instabuild = Boolean.parseBoolean(fields.getOrDefault("creativeMode", "false"));
+        abilities.mayBuild = Boolean.parseBoolean(fields.getOrDefault("allowModifyWorld", "true"));
+        return new ServerboundPlayerAbilitiesPacket(abilities);
     }
 
-    private static List<PacketFieldModel> describeUpdateSign(UpdateSignC2SPacket packet) {
-        String[] lines = packet.getText();
+    private static List<PacketFieldModel> describeUpdateSign(ServerboundSignUpdatePacket packet) {
+        String[] lines = packet.getLines();
         List<PacketFieldModel> rows = new ArrayList<>();
         rows.add(typeField(PacketUtils.getPacketTypeName(packet)));
-        rows.add(new PacketFieldModel("pos", "BlockPos", PacketRecordCodec.encodeField(packet.getPos()), true, net.minecraft.util.math.BlockPos.class));
-        rows.add(new PacketFieldModel("front", "boolean", Boolean.toString(packet.isFront()), true, boolean.class));
+        rows.add(new PacketFieldModel("pos", "BlockPos", PacketRecordCodec.encodeField(packet.getPos()), true, net.minecraft.core.BlockPos.class));
+        rows.add(new PacketFieldModel("front", "boolean", Boolean.toString(packet.isFrontText()), true, boolean.class));
         for (int i = 0; i < 4; i++) {
             String line = i < lines.length ? lines[i] : "";
             rows.add(new PacketFieldModel("line" + (i + 1), "String", line, true, String.class));
@@ -560,10 +560,10 @@ public final class PacketClassCodec {
     }
 
     private static Packet<?> buildUpdateSign(Map<String, String> fields) throws PacketRecordCodec.PacketBuildException {
-        net.minecraft.util.math.BlockPos pos = (net.minecraft.util.math.BlockPos) PacketRecordCodec.decodeField(
-                net.minecraft.util.math.BlockPos.class, null, fields.get("pos"));
+        net.minecraft.core.BlockPos pos = (net.minecraft.core.BlockPos) PacketRecordCodec.decodeField(
+                net.minecraft.core.BlockPos.class, null, fields.get("pos"));
         boolean front = Boolean.parseBoolean(fields.getOrDefault("front", "true"));
-        return new UpdateSignC2SPacket(
+        return new ServerboundSignUpdatePacket(
                 pos,
                 front,
                 fields.getOrDefault("line1", ""),
@@ -572,9 +572,9 @@ public final class PacketClassCodec {
                 fields.getOrDefault("line4", ""));
     }
 
-    private static int readInteractEntityId(PlayerInteractEntityC2SPacket packet) {
+    private static int readInteractEntityId(ServerboundInteractPacket packet) {
         try {
-            Field field = PlayerInteractEntityC2SPacket.class.getDeclaredField("entityId");
+            Field field = ServerboundInteractPacket.class.getDeclaredField("entityId");
             field.setAccessible(true);
             return field.getInt(packet);
         } catch (ReflectiveOperationException e) {
@@ -582,21 +582,21 @@ public final class PacketClassCodec {
         }
     }
 
-    private static final class InteractCapture implements PlayerInteractEntityC2SPacket.Handler {
+    private static final class InteractCapture implements ServerboundInteractPacket.Handler {
         String interactType = "ATTACK";
-        Hand hand = Hand.MAIN_HAND;
+        InteractionHand hand = InteractionHand.MAIN_HAND;
         double targetX;
         double targetY;
         double targetZ;
 
         @Override
-        public void interact(Hand hand) {
+        public void onInteraction(InteractionHand hand) {
             interactType = "INTERACT";
             this.hand = hand;
         }
 
         @Override
-        public void interactAt(Hand hand, Vec3d pos) {
+        public void onInteraction(InteractionHand hand, Vec3 pos) {
             interactType = "INTERACT_AT";
             this.hand = hand;
             targetX = pos.x;
@@ -605,7 +605,7 @@ public final class PacketClassCodec {
         }
 
         @Override
-        public void attack() {
+        public void onAttack() {
             interactType = "ATTACK";
         }
     }

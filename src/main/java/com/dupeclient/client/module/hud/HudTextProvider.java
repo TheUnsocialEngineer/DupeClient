@@ -1,8 +1,8 @@
 package com.dupeclient.client.module.hud;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 @FunctionalInterface
 public interface HudTextProvider {
-    String text(MinecraftClient client, HudManager hud);
+    String text(Minecraft client, HudManager hud);
 }

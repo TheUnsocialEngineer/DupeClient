@@ -6,11 +6,10 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.overlay.AbstractDraggableOverlay;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlay;
 import com.dupeclient.client.module.macro.DupedbMacroBridge;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 public final class DupedbOverlay extends AbstractDraggableOverlay implements IngameModuleOverlay {
@@ -102,20 +101,20 @@ public final class DupedbOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
         int px = overlayX();
         int py = overlayY();
-        MinecraftClient mc = MinecraftClient.getInstance();
-        TextRenderer tr = mc.textRenderer;
+        Minecraft mc = Minecraft.getInstance();
+        Font tr = mc.font;
         DupedbSettings s = manager.getSettings();
 
         int panelH = computePanelHeight();
         context.fill(px, py, px + PANEL_W, py + panelH, 0xE018181B);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, 0xFF27272A);
-        context.drawTextWithShadow(tr, Text.literal("DupeDB"), px + 6, py + 2, 0xFF34D399);
+        context.drawString(tr, Component.literal("DupeDB"), px + 6, py + 2, 0xFF34D399);
 
         int tx = px + UiTokens.BODY_INSET;
         int ty = py + TITLE_H + UiTokens.UI_GAP;
@@ -130,13 +129,13 @@ public final class DupedbOverlay extends AbstractDraggableOverlay implements Ing
         boolean auth = manager.isAuthenticated();
         int dotC = auth ? UiTokens.EMERALD_500 : 0xFFEF4444;
         context.fill(rx, lineY + 5, rx + 3, lineY + 8, dotC);
-        context.drawTextWithShadow(tr, Text.literal("OAuth Status"), rx + 6, lineY + 2, UiTokens.TEXT);
+        context.drawString(tr, Component.literal("OAuth Status"), rx + 6, lineY + 2, UiTokens.TEXT);
         String st = auth
                 ? "Connected"
                 : (manager.isOauthInFlight() ? "Authenticating…" : "Disconnected");
         int stCol = auth ? UiTokens.EMERALD_500 : 0xFFF87171;
-        int stw = tr.getWidth(st);
-        context.drawTextWithShadow(tr, Text.literal(st), tx + sw - stw - UiTokens.SP_2, lineY + 2, stCol);
+        int stw = tr.width(st);
+        context.drawString(tr, Component.literal(st), tx + sw - stw - UiTokens.SP_2, lineY + 2, stCol);
         lineY += UiTokens.ROW_STEP;
 
         if (!auth) {
@@ -354,9 +353,9 @@ public final class DupedbOverlay extends AbstractDraggableOverlay implements Ing
         return false;
     }
 
-    private void drawModeRow(TextRenderer tr, DrawContext context, int sx, int sy, int rowW, DupedbSettings s) {
+    private void drawModeRow(Font tr, GuiGraphics context, int sx, int sy, int rowW, DupedbSettings s) {
         boolean autoMode = s.mode == DupedbMode.AUTO;
-        context.drawTextWithShadow(tr, Text.literal("Mode"), sx, sy + 2, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal("Mode"), sx, sy + 2, UiTokens.TEXT_DIM);
         int tabsX = sx + 42;
         int avail = rowW - 42;
         int half = (avail - 4) / 2;
@@ -365,9 +364,9 @@ public final class DupedbOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     private static void drawTrimmedText(
-            DrawContext context, TextRenderer tr, String value, int x, int y, int maxWidth, int color) {
-        String trimmed = tr.trimToWidth(value, Math.max(6, maxWidth));
-        context.drawTextWithShadow(tr, Text.literal(trimmed), x, y, color);
+            GuiGraphics context, Font tr, String value, int x, int y, int maxWidth, int color) {
+        String trimmed = tr.plainSubstrByWidth(value, Math.max(6, maxWidth));
+        context.drawString(tr, Component.literal(trimmed), x, y, color);
     }
 
     private static double sliderValue(double mouseX, int x, int w, double min, double max) {

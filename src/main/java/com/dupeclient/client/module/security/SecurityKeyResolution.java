@@ -1,17 +1,16 @@
 package com.dupeclient.client.module.security;
 
 import com.dupeclient.client.DupeClient;
-import net.minecraft.block.entity.SignText;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.KeybindTextContent;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextContent;
-import net.minecraft.text.TranslatableTextContent;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentContents;
+import net.minecraft.network.chat.contents.KeybindContents;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.world.level.block.entity.SignText;
 
 /**
  * Key-resolution protection aligned with OpSec goals: spoof {@code key.*} translations that look mod-specific,
@@ -29,11 +28,11 @@ public final class SecurityKeyResolution {
      * loading, replay, and singleplayer/LAN host.
      */
     private static boolean inRemoteMultiplayerPlay() {
-        MinecraftClient c = MinecraftClient.getInstance();
-        if (c.world == null || c.player == null) {
+        Minecraft c = Minecraft.getInstance();
+        if (c.level == null || c.player == null) {
             return false;
         }
-        return !c.isIntegratedServerRunning();
+        return !c.hasSingleplayerServer();
     }
 
     /** True when connected to a remote server world (alerts and sign exploit UI use this). */
@@ -41,7 +40,7 @@ public final class SecurityKeyResolution {
         return inRemoteMultiplayerPlay();
     }
 
-    public static boolean shouldApplySpoof(TranslatableTextContent content) {
+    public static boolean shouldApplySpoof(TranslatableContents content) {
         SecuritySettings s = SecurityManager.INSTANCE.getSettings();
         if (!s.keyResolutionProtection || !shouldSpoofTranslationKey(content.getKey())) {
             return false;
@@ -54,9 +53,9 @@ public final class SecurityKeyResolution {
         return true;
     }
 
-    public static boolean shouldApplySpoof(KeybindTextContent content) {
+    public static boolean shouldApplySpoof(KeybindContents content) {
         SecuritySettings s = SecurityManager.INSTANCE.getSettings();
-        String id = content.getKey();
+        String id = content.getName();
         if (!s.keyResolutionProtection || !shouldSpoofKeybindId(id)) {
             return false;
         }
@@ -127,7 +126,7 @@ public final class SecurityKeyResolution {
         return false;
     }
 
-    public static String replacementForTranslatable(TranslatableTextContent content) {
+    public static String replacementForTranslatable(TranslatableContents content) {
         String fb = content.getFallback();
         if (fb != null && !fb.isBlank()) {
             return fb;
@@ -175,7 +174,7 @@ public final class SecurityKeyResolution {
             return false;
         }
         for (int i = 0; i < 4; i++) {
-            Text line = st.getMessage(i, false);
+            Component line = st.getMessage(i, false);
             if (line != null && textTreeHasKeyResolutionProbe(line)) {
                 return true;
             }
@@ -183,30 +182,30 @@ public final class SecurityKeyResolution {
         return false;
     }
 
-    public static boolean textTreeHasKeyResolutionProbe(Text root) {
+    public static boolean textTreeHasKeyResolutionProbe(Component root) {
         if (root == null) {
             return false;
         }
-        ArrayDeque<Text> stack = new ArrayDeque<>();
+        ArrayDeque<Component> stack = new ArrayDeque<>();
         stack.push(root);
         while (!stack.isEmpty()) {
-            Text node = stack.pop();
-            TextContent content = node.getContent();
-            if (content instanceof TranslatableTextContent t) {
+            Component node = stack.pop();
+            ComponentContents content = node.getContents();
+            if (content instanceof TranslatableContents t) {
                 if (shouldSpoofTranslationKey(t.getKey())) {
                     return true;
                 }
                 for (Object arg : t.getArgs()) {
-                    if (arg instanceof Text argText) {
+                    if (arg instanceof Component argText) {
                         stack.push(argText);
                     }
                 }
-            } else if (content instanceof KeybindTextContent k) {
-                if (shouldSpoofTranslationKey(k.getKey())) {
+            } else if (content instanceof KeybindContents k) {
+                if (shouldSpoofTranslationKey(k.getName())) {
                     return true;
                 }
             }
-            for (Text sibling : node.getSiblings()) {
+            for (Component sibling : node.getSiblings()) {
                 stack.push(sibling);
             }
         }

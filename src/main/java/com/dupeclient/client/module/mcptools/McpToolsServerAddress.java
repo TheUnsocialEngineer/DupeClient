@@ -1,6 +1,6 @@
 package com.dupeclient.client.module.mcptools;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
 /** Parses MCPTools host/port fields (supports {@code host:port} in the host box). */
@@ -52,19 +52,19 @@ public record McpToolsServerAddress(String host, int port) {
 
     /** Host/port for the server the client is connected to, if any. */
     @Nullable
-    public static McpToolsServerAddress fromConnectedClient(@Nullable MinecraftClient client) {
+    public static McpToolsServerAddress fromConnectedClient(@Nullable Minecraft client) {
         if (client == null || client.player == null) {
             return null;
         }
-        if (client.getCurrentServerEntry() != null && client.getCurrentServerEntry().address != null) {
-            String raw = client.getCurrentServerEntry().address.trim();
+        if (client.getCurrentServer() != null && client.getCurrentServer().ip != null) {
+            String raw = client.getCurrentServer().ip.trim();
             if (!raw.isEmpty()) {
                 return resolve(raw, DEFAULT_PORT);
             }
         }
-        if (client.getNetworkHandler() != null && client.getNetworkHandler().getConnection() != null
-                && client.getNetworkHandler().getConnection().getAddress() != null) {
-            String raw = client.getNetworkHandler().getConnection().getAddress().toString();
+        if (client.getConnection() != null && client.getConnection().getConnection() != null
+                && client.getConnection().getConnection().getRemoteAddress() != null) {
+            String raw = client.getConnection().getConnection().getRemoteAddress().toString();
             if (raw != null) {
                 raw = raw.replaceFirst("^/", "").trim();
                 if (!raw.isEmpty()) {

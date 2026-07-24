@@ -6,23 +6,23 @@ import com.ui_utils.gui.CustomButtonWidget;
 import com.ui_utils.mixin.accessor.ScreenAccessor;
 import java.lang.reflect.Field;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.MouseInput;
-import net.minecraft.client.session.Session;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(MultiplayerScreen.class)
+@Mixin(JoinMultiplayerScreen.class)
 public class MultiplayerScreenMixin {
     @Inject(at = @At("RETURN"), method = "init", require = 0)
     private void replaceViaFabricPlusButton(CallbackInfo ci) {
@@ -32,10 +32,10 @@ public class MultiplayerScreenMixin {
         if (!FabricLoader.getInstance().isModLoaded("viafabricplus")) {
             return;
         }
-        MultiplayerScreen self = (MultiplayerScreen) (Object) this;
-        ButtonWidget vfpButton = null;
-        for (Element child : self.children()) {
-            if (!(child instanceof ButtonWidget button)) {
+        JoinMultiplayerScreen self = (JoinMultiplayerScreen) (Object) this;
+        Button vfpButton = null;
+        for (GuiEventListener child : self.children()) {
+            if (!(child instanceof Button button)) {
                 continue;
             }
             String msg = button.getMessage().getString();
@@ -46,7 +46,7 @@ public class MultiplayerScreenMixin {
             break;
         }
         if (vfpButton != null) {
-            ButtonWidget originalButton = vfpButton;
+            Button originalButton = vfpButton;
             ((ScreenAccessor) self).uiUtils$remove(vfpButton);
             Screen screen = self;
             int margin = 5;
@@ -55,16 +55,16 @@ public class MultiplayerScreenMixin {
             int buttonHeight = 14;
             int rightX = screen.width - margin - buttonWidth;
             int bottomY = screen.height - 60;
-            self.addDrawableChild(CustomButtonWidget.createSmall(
+            self.addRenderableWidget(CustomButtonWidget.createSmall(
                     rightX,
                     bottomY + buttonHeight + spacing,
                     buttonWidth,
-                    Text.of("Via+"),
+                    Component.nullToEmpty("Via+"),
                     button -> originalButton.onClick(
-                            new Click(
+                            new MouseButtonEvent(
                                     originalButton.getX() + 1,
                                     originalButton.getY() + 1,
-                                    new MouseInput(0, 0)),
+                                    new MouseButtonInfo(0, 0)),
                             false)));
         }
     }
@@ -74,36 +74,36 @@ public class MultiplayerScreenMixin {
         if (!SharedVariables.enabled) {
             return;
         }
-        MultiplayerScreen self = (MultiplayerScreen) (Object) this;
+        JoinMultiplayerScreen self = (JoinMultiplayerScreen) (Object) this;
         Screen screen = self;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         int margin = 5;
         int spacing = 4;
         int buttonWidth = 50;
         int buttonHeight = 14;
         int bottomY = screen.height - 60;
 
-        self.addDrawableChild(CustomButtonWidget.createSmall(margin, bottomY, buttonWidth, Text.of("Bypass"), button -> {
+        self.addRenderableWidget(CustomButtonWidget.createSmall(margin, bottomY, buttonWidth, Component.nullToEmpty("Bypass"), button -> {
             SharedVariables.bypassResourcePack = !SharedVariables.bypassResourcePack;
-            button.setMessage(Text.literal(SharedVariables.bypassResourcePack ? "§aBypass" : "Bypass"));
+            button.setMessage(Component.literal(SharedVariables.bypassResourcePack ? "§aBypass" : "Bypass"));
         }));
 
-        self.addDrawableChild(CustomButtonWidget.createSmall(
-                margin, bottomY + buttonHeight + spacing, buttonWidth, Text.of("Deny"), button -> {
+        self.addRenderableWidget(CustomButtonWidget.createSmall(
+                margin, bottomY + buttonHeight + spacing, buttonWidth, Component.nullToEmpty("Deny"), button -> {
                     SharedVariables.resourcePackForceDeny = !SharedVariables.resourcePackForceDeny;
-                    button.setMessage(Text.literal(SharedVariables.resourcePackForceDeny ? "§aDeny" : "Deny"));
+                    button.setMessage(Component.literal(SharedVariables.resourcePackForceDeny ? "§aDeny" : "Deny"));
                 }));
 
         int rightX = screen.width - margin - buttonWidth;
-        self.addDrawableChild(CustomButtonWidget.createSmall(
-                rightX, bottomY, buttonWidth, Text.of("User"), button -> mc.setScreen(new UsernameScreen(self, mc))));
+        self.addRenderableWidget(CustomButtonWidget.createSmall(
+                rightX, bottomY, buttonWidth, Component.nullToEmpty("User"), button -> mc.setScreen(new UsernameScreen(self, mc))));
 
         if (!FabricLoader.getInstance().isModLoaded("viafabricplus")) {
-            self.addDrawableChild(CustomButtonWidget.createSmall(
+            self.addRenderableWidget(CustomButtonWidget.createSmall(
                     rightX,
                     bottomY + buttonHeight + spacing,
                     buttonWidth,
-                    Text.of("Via+"),
+                    Component.nullToEmpty("Via+"),
                     button -> {
                         if (FabricLoader.getInstance().isModLoaded("viafabric")) {
                             try {
@@ -135,7 +135,7 @@ public class MultiplayerScreenMixin {
         private final String message;
 
         private ViaNotFoundScreen(Screen parent, String message) {
-            super(Text.literal("ViaFabricPlus"));
+            super(Component.literal("ViaFabricPlus"));
             this.parent = parent;
             this.message = message;
         }
@@ -144,28 +144,28 @@ public class MultiplayerScreenMixin {
         protected void init() {
             int centerX = this.width / 2;
             int centerY = this.height / 2;
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("OK"), button -> MinecraftClient.getInstance()
+            this.addRenderableWidget(Button.builder(Component.literal("OK"), button -> Minecraft.getInstance()
                             .setScreen(this.parent))
-                    .dimensions(centerX - 50, centerY + 20, 100, 20)
+                    .bounds(centerX - 50, centerY + 20, 100, 20)
                     .build());
         }
 
         @Override
-        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
             super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, this.height / 2 - 30, 0xFFFFFF);
-            context.drawCenteredTextWithShadow(
-                    this.textRenderer, Text.literal(this.message), this.width / 2, this.height / 2, 0xFF5555);
+            context.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 30, 0xFFFFFF);
+            context.drawCenteredString(
+                    this.font, Component.literal(this.message), this.width / 2, this.height / 2, 0xFF5555);
         }
     }
 
     private static final class UsernameScreen extends Screen {
         private final Screen parent;
-        private final MinecraftClient mc;
-        private TextFieldWidget usernameField;
+        private final Minecraft mc;
+        private EditBox usernameField;
 
-        private UsernameScreen(Screen parent, MinecraftClient mc) {
-            super(Text.literal("Set Username"));
+        private UsernameScreen(Screen parent, Minecraft mc) {
+            super(Component.literal("Set Username"));
             this.parent = parent;
             this.mc = mc;
         }
@@ -174,17 +174,17 @@ public class MultiplayerScreenMixin {
         protected void init() {
             int centerX = this.width / 2;
             int centerY = this.height / 2;
-            this.usernameField = new TextFieldWidget(this.textRenderer, centerX - 100, centerY - 20, 200, 20, Text.literal("Username"));
-            this.usernameField.setText(this.mc.getSession().getUsername());
+            this.usernameField = new EditBox(this.font, centerX - 100, centerY - 20, 200, 20, Component.literal("Username"));
+            this.usernameField.setValue(this.mc.getUser().getName());
             this.usernameField.setMaxLength(16);
-            this.addSelectableChild(this.usernameField);
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("Apply"), button -> {
-                        String newName = this.usernameField.getText().trim();
+            this.addWidget(this.usernameField);
+            this.addRenderableWidget(Button.builder(Component.literal("Apply"), button -> {
+                        String newName = this.usernameField.getValue().trim();
                         if (!newName.isEmpty()) {
                             try {
-                                Session oldSession = this.mc.getSession();
-                                Session newSession = SessionUtils.copyWith(oldSession, newName, null);
-                                Field sessionField = MinecraftClient.class.getDeclaredField("session");
+                                User oldSession = this.mc.getUser();
+                                User newSession = SessionUtils.copyWith(oldSession, newName, null);
+                                Field sessionField = Minecraft.class.getDeclaredField("session");
                                 sessionField.setAccessible(true);
                                 sessionField.set(this.mc, newSession);
                             } catch (Exception ignored) {
@@ -192,17 +192,17 @@ public class MultiplayerScreenMixin {
                         }
                         this.mc.setScreen(this.parent);
                     })
-                    .dimensions(centerX - 100, centerY + 10, 95, 20)
+                    .bounds(centerX - 100, centerY + 10, 95, 20)
                     .build());
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("Cancel"), button -> this.mc.setScreen(this.parent))
-                    .dimensions(centerX + 5, centerY + 10, 95, 20)
+            this.addRenderableWidget(Button.builder(Component.literal("Cancel"), button -> this.mc.setScreen(this.parent))
+                    .bounds(centerX + 5, centerY + 10, 95, 20)
                     .build());
         }
 
         @Override
-        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
             super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
+            context.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
             this.usernameField.render(context, mouseX, mouseY, delta);
         }
     }

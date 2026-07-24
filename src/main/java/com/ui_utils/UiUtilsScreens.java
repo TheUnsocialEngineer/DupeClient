@@ -4,11 +4,11 @@ import com.dupeclient.client.gui.ClientGuiScreen;
 import com.dupeclient.client.gui.DupeClientUtilityScreen;
 import com.dupeclient.client.gui.MacroEditorScreen;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlayScreen;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
 /**
  * Decides which {@link Screen}s receive the UI Utils button overlay.
@@ -25,7 +25,7 @@ public final class UiUtilsScreens {
         if (!SharedVariables.enabled || screen == null) {
             return false;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return false;
         }
@@ -52,7 +52,7 @@ public final class UiUtilsScreens {
 
     public static boolean shouldRenderSyncPanel(Screen screen) {
         return SharedVariables.enabled
-                && MinecraftClient.getInstance().player != null
-                && screen instanceof HandledScreen;
+                && Minecraft.getInstance().player != null
+                && screen instanceof AbstractContainerScreen;
     }
 }

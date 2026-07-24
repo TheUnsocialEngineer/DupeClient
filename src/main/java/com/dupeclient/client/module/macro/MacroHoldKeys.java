@@ -1,11 +1,11 @@
 package com.dupeclient.client.module.macro;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.GameOptions;
-import net.minecraft.client.option.KeyBinding;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 
 /** Maps macro {@code holdKeyId} strings to vanilla movement / interact key bindings. */
 public final class MacroHoldKeys {
@@ -56,26 +56,26 @@ public final class MacroHoldKeys {
     }
 
     @Nullable
-    public static KeyBinding binding(MinecraftClient client, String holdKeyId) {
+    public static KeyMapping binding(Minecraft client, String holdKeyId) {
         if (client == null || client.options == null) {
             return null;
         }
-        GameOptions o = client.options;
+        Options o = client.options;
         return switch (normalize(holdKeyId)) {
-            case "FORWARD" -> o.forwardKey;
-            case "BACK" -> o.backKey;
-            case "LEFT" -> o.leftKey;
-            case "RIGHT" -> o.rightKey;
-            case "JUMP" -> o.jumpKey;
-            case "SNEAK" -> o.sneakKey;
-            case "SPRINT" -> o.sprintKey;
-            case "ATTACK" -> o.attackKey;
-            case "USE" -> o.useKey;
-            case "DROP" -> o.dropKey;
-            case "INVENTORY" -> o.inventoryKey;
-            case "PICK_BLOCK" -> o.pickItemKey;
-            case "SWAP_HANDS" -> o.swapHandsKey;
-            default -> o.forwardKey;
+            case "FORWARD" -> o.keyUp;
+            case "BACK" -> o.keyDown;
+            case "LEFT" -> o.keyLeft;
+            case "RIGHT" -> o.keyRight;
+            case "JUMP" -> o.keyJump;
+            case "SNEAK" -> o.keyShift;
+            case "SPRINT" -> o.keySprint;
+            case "ATTACK" -> o.keyAttack;
+            case "USE" -> o.keyUse;
+            case "DROP" -> o.keyDrop;
+            case "INVENTORY" -> o.keyInventory;
+            case "PICK_BLOCK" -> o.keyPickItem;
+            case "SWAP_HANDS" -> o.keySwapOffhand;
+            default -> o.keyUp;
         };
     }
 }

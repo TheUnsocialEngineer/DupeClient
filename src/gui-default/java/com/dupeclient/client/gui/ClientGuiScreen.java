@@ -5,15 +5,14 @@ import com.dupeclient.client.gui.modern.HubShell;
 import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.overlay.IngameOverlayHost;
 import com.dupeclient.client.gui.render.UiNativeRenderer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import com.dupeclient.client.gui.panel.Panel;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -24,17 +23,17 @@ public class ClientGuiScreen extends Screen {
     private final HubShell hub = new HubShell();
 
     public ClientGuiScreen(Screen returnScreen) {
-        super(Text.literal("DupeClient"));
+        super(Component.literal("DupeClient"));
         this.returnScreen = returnScreen;
     }
 
     private void applyFullWindowBounds() {
-        MinecraftClient c = client;
+        Minecraft c = minecraft;
         if (c == null || c.getWindow() == null) {
             return;
         }
-        int sw = c.getWindow().getScaledWidth();
-        int sh = c.getWindow().getScaledHeight();
+        int sw = c.getWindow().getGuiScaledWidth();
+        int sh = c.getWindow().getGuiScaledHeight();
         if (sw <= 0 || sh <= 0) {
             return;
         }
@@ -45,10 +44,10 @@ public class ClientGuiScreen extends Screen {
 
     @Override
     public void resize(int width, int height) {
-        MinecraftClient c = client;
+        Minecraft c = minecraft;
         if (c != null && c.getWindow() != null) {
-            int sw = c.getWindow().getScaledWidth();
-            int sh = c.getWindow().getScaledHeight();
+            int sw = c.getWindow().getGuiScaledWidth();
+            int sh = c.getWindow().getGuiScaledHeight();
             super.resize(sw, sh);
         } else {
             super.resize(width, height);
@@ -58,32 +57,32 @@ public class ClientGuiScreen extends Screen {
 
     @Override
     protected void init() {
-        clearChildren();
+        clearWidgets();
         applyFullWindowBounds();
         hub.setReserveTopForVanillaCloseButton(false);
         hub.onScreenOpen();
     }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         applyFullWindowBounds();
         super.renderBackground(context, mouseX, mouseY, deltaTicks);
         UiDraw.fillMidnightBackground(context, this.width, this.height);
-        hub.render(context, this.textRenderer, mouseX, mouseY, deltaTicks, this.width, this.height);
+        hub.render(context, this.font, mouseX, mouseY, deltaTicks, this.width, this.height);
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         applyFullWindowBounds();
         hub.updateNavHover(mouseX, mouseY);
         super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean doubleClick) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         applyFullWindowBounds();
-        if (client != null) {
-            hub.applyEmbeddedLayout(client.textRenderer);
+        if (minecraft != null) {
+            hub.applyEmbeddedLayout(minecraft.font);
         }
         if (IngameOverlayHost.onScreenOverlayMouseClicked(click.x(), click.y(), click.button())) {
             return true;
@@ -103,7 +102,7 @@ public class ClientGuiScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         if (IngameOverlayHost.onScreenOverlayMouseReleased(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -116,7 +115,7 @@ public class ClientGuiScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
         if (IngameOverlayHost.onScreenOverlayMouseDragged(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -141,7 +140,7 @@ public class ClientGuiScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyInput keyInput) {
+    public boolean keyPressed(KeyEvent keyInput) {
         for (Panel panel : DupeClient.getGuiManager().getPanels()) {
             if (panel.isVisible() && panel.keyPressed(keyInput.key(), keyInput.scancode(), keyInput.modifiers())) {
                 return true;
@@ -151,7 +150,7 @@ public class ClientGuiScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(CharInput charInput) {
+    public boolean charTyped(CharacterEvent charInput) {
         if (super.charTyped(charInput)) {
             return true;
         }
@@ -171,14 +170,14 @@ public class ClientGuiScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void close() {
-        if (this.client != null) {
-            this.client.setScreen(returnScreen);
+    public void onClose() {
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(returnScreen);
         }
     }
 

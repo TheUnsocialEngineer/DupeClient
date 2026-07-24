@@ -1,23 +1,23 @@
 package com.dupeclient.client.gui.overlay;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 /**
  * Transparent full-screen host for in-game module overlays (same interaction model as
- * {@link com.dupeclient.client.module.packet.fabricator.PacketFabricatorOverlay} on {@link net.minecraft.client.gui.screen.ingame.HandledScreen}).
+ * {@link com.dupeclient.client.module.packet.fabricator.PacketFabricatorOverlay} on {@link net.minecraft.client.gui.screens.inventory.AbstractContainerScreen}).
  */
 public final class IngameModuleOverlayScreen extends Screen {
     private static final IngameModuleOverlayScreen INSTANCE = new IngameModuleOverlayScreen();
 
     private IngameModuleOverlayScreen() {
-        super(Text.empty());
+        super(Component.empty());
     }
 
     public static IngameModuleOverlayScreen get() {
@@ -29,19 +29,19 @@ public final class IngameModuleOverlayScreen extends Screen {
     }
 
     private void syncBounds() {
-        MinecraftClient mc = client;
+        Minecraft mc = minecraft;
         if (mc == null || mc.getWindow() == null) {
             return;
         }
-        width = mc.getWindow().getScaledWidth();
-        height = mc.getWindow().getScaledHeight();
+        width = mc.getWindow().getGuiScaledWidth();
+        height = mc.getWindow().getGuiScaledHeight();
     }
 
     @Override
     public void resize(int width, int height) {
-        MinecraftClient mc = client;
+        Minecraft mc = minecraft;
         if (mc != null && mc.getWindow() != null) {
-            super.resize(mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
+            super.resize(mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         } else {
             super.resize(width, height);
         }
@@ -50,23 +50,23 @@ public final class IngameModuleOverlayScreen extends Screen {
 
     @Override
     protected void init() {
-        clearChildren();
+        clearWidgets();
         syncBounds();
     }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         // Do not darken or blur the world — overlays draw in {@link #render}.
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         syncBounds();
         IngameOverlayHost.renderAll(context, mouseX, mouseY, delta);
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean doubleClick) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         if (IngameOverlayHost.onScreenOverlayMouseClicked(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -77,7 +77,7 @@ public final class IngameModuleOverlayScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         if (IngameOverlayHost.onScreenOverlayMouseReleased(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -85,7 +85,7 @@ public final class IngameModuleOverlayScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
         if (IngameOverlayHost.onScreenOverlayMouseDragged(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -101,7 +101,7 @@ public final class IngameModuleOverlayScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         if (IngameOverlayHost.onKeyPressed(input.key())) {
             return true;
         }
@@ -113,7 +113,7 @@ public final class IngameModuleOverlayScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(CharInput input) {
+    public boolean charTyped(CharacterEvent input) {
         if (IngameOverlayHost.onCharTyped(input.codepoint())) {
             return true;
         }
@@ -121,7 +121,7 @@ public final class IngameModuleOverlayScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 

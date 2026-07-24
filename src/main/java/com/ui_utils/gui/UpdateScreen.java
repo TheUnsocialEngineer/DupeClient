@@ -1,36 +1,36 @@
 package com.ui_utils.gui;
 
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 public class UpdateScreen extends Screen {
 
-    public UpdateScreen(Text title) {
+    public UpdateScreen(Component title) {
         super(title);
     }
 
     @Override
     protected void init() {
         super.init();
-        Text message1 = Text.of("In order to update UI-Utils, first quit the game then");
-        Text message2 = Text.of("delete the old UI-Utils jar file, and replace it with the new one you got on the website.");
+        Component message1 = Component.nullToEmpty("In order to update UI-Utils, first quit the game then");
+        Component message2 = Component.nullToEmpty("delete the old UI-Utils jar file, and replace it with the new one you got on the website.");
         int centerX = this.width / 2;
 
-        this.addDrawableChild(new TextWidget(centerX - textRenderer.getWidth(message1) / 2, 80, textRenderer.getWidth(message1), 20, message1, this.textRenderer));
-        this.addDrawableChild(new TextWidget(centerX - textRenderer.getWidth(message2) / 2, 95, textRenderer.getWidth(message2), 20, Text.of(message2), this.textRenderer));
+        this.addRenderableWidget(new StringWidget(centerX - font.width(message1) / 2, 80, font.width(message1), 20, message1, this.font));
+        this.addRenderableWidget(new StringWidget(centerX - font.width(message2) / 2, 95, font.width(message2), 20, Component.translationArg(message2), this.font));
 
         int quitX = centerX - 85;
         int backX = centerX + 5;
 
-        this.addDrawableChild(ButtonWidget.builder(Text.of("Quit"), (button) -> {
-            this.client.stop();
-        }).width(80).position(quitX, 145).build());
+        this.addRenderableWidget(Button.builder(Component.nullToEmpty("Quit"), (button) -> {
+            this.minecraft.destroy();
+        }).width(80).pos(quitX, 145).build());
 
-        this.addDrawableChild(ButtonWidget.builder(Text.of("Back"), (button) -> {
-            this.client.setScreen(null);
-        }).width(80).position(backX, 145).build());
+        this.addRenderableWidget(Button.builder(Component.nullToEmpty("Back"), (button) -> {
+            this.minecraft.setScreen(null);
+        }).width(80).pos(backX, 145).build());
     }
 
 }

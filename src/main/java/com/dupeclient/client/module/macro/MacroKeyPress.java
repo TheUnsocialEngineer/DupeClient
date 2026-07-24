@@ -1,13 +1,13 @@
 package com.dupeclient.client.module.macro;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
 import com.dupeclient.client.mixin.KeyboardInvoker;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 
 /** Simulates a one-shot keyboard press for {@link MacroStepType#PRESS_BUTTON}. */
 public final class MacroKeyPress {
@@ -113,21 +113,21 @@ public final class MacroKeyPress {
         };
     }
 
-    public static void simulatePress(MinecraftClient client, int keyCode, int modifiers) {
-        if (client == null || client.getWindow() == null || client.keyboard == null) {
+    public static void simulatePress(Minecraft client, int keyCode, int modifiers) {
+        if (client == null || client.getWindow() == null || client.keyboardHandler == null) {
             return;
         }
         if (keyCode < 0 || keyCode == UNKNOWN) {
             return;
         }
-        long window = client.getWindow().getHandle();
+        long window = client.getWindow().handle();
         int scancode = GLFW.glfwGetKeyScancode(keyCode);
-        KeyInput input = new KeyInput(keyCode, scancode, modifiers);
-        KeyboardInvoker keyboard = (KeyboardInvoker) client.keyboard;
+        KeyEvent input = new KeyEvent(keyCode, scancode, modifiers);
+        KeyboardInvoker keyboard = (KeyboardInvoker) client.keyboardHandler;
         keyboard.dupeclient$invokeOnKey(window, GLFW.GLFW_PRESS, input);
         Integer codepoint = codepointForKey(keyCode, modifiers);
         if (codepoint != null) {
-            keyboard.dupeclient$invokeOnChar(window, new CharInput(codepoint, modifiers));
+            keyboard.dupeclient$invokeOnChar(window, new CharacterEvent(codepoint, modifiers));
         }
         keyboard.dupeclient$invokeOnKey(window, GLFW.GLFW_RELEASE, input);
     }

@@ -7,11 +7,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.MinecraftClient;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.player.PlayerEntity;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,6 +24,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * <p>Feather/Lunar-style cape visibility without the logical Minecraft server running this mod: each client
@@ -86,7 +85,7 @@ public final class DupeClientCapePresence {
         // Keep failure backoff across reconnects if the API was recently unreachable.
         queryImmediatelyAfterJoin = consecutiveFailures == 0;
         tickCounter = QUERY_EVERY_TICKS;
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         UUID uuid = resolvePresenceUuid(client);
         if (uuid != null) {
             lastPresenceUuid = uuid;
@@ -100,7 +99,7 @@ public final class DupeClientCapePresence {
         UUID uuid = lastPresenceUuid;
         String username = lastPresenceUsername;
         if (uuid == null) {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             uuid = resolvePresenceUuid(client);
             username = resolvePresenceUsername(client);
         }
@@ -119,7 +118,7 @@ public final class DupeClientCapePresence {
         return presenceBase();
     }
 
-    public static void tick(MinecraftClient client) {
+    public static void tick(Minecraft client) {
         if (client == null || client.player == null) {
             return;
         }
@@ -151,24 +150,24 @@ public final class DupeClientCapePresence {
         tickCounter = 0;
         Set<UUID> targets = collectQueryTargets(client);
         if (!targets.isEmpty()) {
-            scheduleQuery(new ArrayList<>(targets), client.player.getUuid());
+            scheduleQuery(new ArrayList<>(targets), client.player.getUUID());
         }
     }
 
-    private static Set<UUID> collectQueryTargets(MinecraftClient client) {
+    private static Set<UUID> collectQueryTargets(Minecraft client) {
         Set<UUID> out = new LinkedHashSet<>();
-        if (client.world != null) {
-            for (PlayerEntity p : client.world.getPlayers()) {
-                if (p != null && p.getUuid() != null) {
-                    out.add(p.getUuid());
+        if (client.level != null) {
+            for (Player p : client.level.players()) {
+                if (p != null && p.getUUID() != null) {
+                    out.add(p.getUUID());
                     if (out.size() >= MAX_UUIDS_PER_QUERY) {
                         return out;
                     }
                 }
             }
         }
-        if (client.getNetworkHandler() != null) {
-            for (PlayerListEntry e : client.getNetworkHandler().getPlayerList()) {
+        if (client.getConnection() != null) {
+            for (PlayerInfo e : client.getConnection().getOnlinePlayers()) {
                 if (e.getProfile() != null && e.getProfile().id() != null) {
                     out.add(e.getProfile().id());
                     if (out.size() >= MAX_UUIDS_PER_QUERY) {
@@ -223,7 +222,7 @@ public final class DupeClientCapePresence {
                 if (Boolean.TRUE.equals(cfg.shareCurrentServer)) {
                     String hint = capturedServerHint;
                     if (hint == null) {
-                        MinecraftClient mc = MinecraftClient.getInstance();
+                        Minecraft mc = Minecraft.getInstance();
                         hint = currentServerHint(mc);
                     }
                     if (hint != null && !hint.isBlank()) {
@@ -234,7 +233,7 @@ public final class DupeClientCapePresence {
                     }
                 }
                 if (Boolean.TRUE.equals(cfg.shareCurrentCoords)) {
-                    MinecraftClient mc = MinecraftClient.getInstance();
+                    Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
                         String coords = mc.player.getBlockX() + " " + mc.player.getBlockY() + " " + mc.player.getBlockZ();
                         body.addProperty("coords", coords);
@@ -315,7 +314,7 @@ public final class DupeClientCapePresence {
                 }
                 List<UUID> online = parseOnlineUuids(response);
                 noteSuccess();
-                MinecraftClient client = MinecraftClient.getInstance();
+                Minecraft client = Minecraft.getInstance();
                 if (client == null) {
                     return;
                 }
@@ -418,28 +417,28 @@ public final class DupeClientCapePresence {
         return presenceBase() + "/query";
     }
 
-    private static @Nullable UUID resolvePresenceUuid(MinecraftClient mc) {
+    private static @Nullable UUID resolvePresenceUuid(Minecraft mc) {
         if (mc == null) {
             return null;
         }
         if (mc.player != null) {
-            return mc.player.getUuid();
+            return mc.player.getUUID();
         }
-        if (mc.getSession() != null) {
-            return mc.getSession().getUuidOrNull();
+        if (mc.getUser() != null) {
+            return mc.getUser().getProfileId();
         }
         return null;
     }
 
-    private static String resolvePresenceUsername(MinecraftClient mc) {
+    private static String resolvePresenceUsername(Minecraft mc) {
         if (mc == null) {
             return "";
         }
         if (mc.player != null) {
             return mc.player.getName().getString();
         }
-        if (mc.getSession() != null && mc.getSession().getUsername() != null) {
-            return mc.getSession().getUsername();
+        if (mc.getUser() != null && mc.getUser().getName() != null) {
+            return mc.getUser().getName();
         }
         return "";
     }
@@ -453,17 +452,17 @@ public final class DupeClientCapePresence {
         return base;
     }
 
-    private static String currentServerHint(MinecraftClient mc) {
+    private static String currentServerHint(Minecraft mc) {
         if (mc == null) {
             return null;
         }
-        if (mc.getCurrentServerEntry() != null && mc.getCurrentServerEntry().address != null) {
-            String a = mc.getCurrentServerEntry().address.trim();
+        if (mc.getCurrentServer() != null && mc.getCurrentServer().ip != null) {
+            String a = mc.getCurrentServer().ip.trim();
             if (!a.isEmpty()) {
                 return a;
             }
         }
-        if (mc.world != null && mc.player != null) {
+        if (mc.level != null && mc.player != null) {
             return "Singleplayer";
         }
         return null;

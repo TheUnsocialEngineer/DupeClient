@@ -2,8 +2,8 @@ package com.dupeclient.client.multiplayer;
 
 import com.dupeclient.client.module.security.SecurityManager;
 import com.ui_utils.SessionUtils;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.session.Session;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
 
 public final class OfflineAccountManager {
     private static volatile String activeUsername = "";
@@ -15,18 +15,18 @@ public final class OfflineAccountManager {
         return activeUsername;
     }
 
-    public static void apply(MinecraftClient client, OfflineAccount account) {
+    public static void apply(Minecraft client, OfflineAccount account) {
         if (client == null || account == null || account.username().isBlank()) {
             return;
         }
-        Session oldSession = client.getSession();
-        Session newSession = SessionUtils.copyWith(oldSession, account.username(), account.uuid());
+        User oldSession = client.getUser();
+        User newSession = SessionUtils.copyWith(oldSession, account.username(), account.uuid());
         SecurityManager.INSTANCE.onSessionUsernameChanged(account.username());
         SessionManager.setSession(newSession);
         activeUsername = account.username();
     }
 
-    public static void applyUsername(MinecraftClient client, String username) {
+    public static void applyUsername(Minecraft client, String username) {
         apply(client, OfflineAccount.ofUsername(username));
     }
 

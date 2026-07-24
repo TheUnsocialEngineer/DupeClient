@@ -3,19 +3,19 @@ package com.dupeclient.client.gui.widget;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.modern.theme.MidnightPalette;
 import com.dupeclient.client.gui.modern.theme.MidnightShapes;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
-public class StylishButtonWidget extends ClickableWidget {
+public class StylishButtonWidget extends AbstractWidget {
     private final Runnable onPress;
     private boolean selected;
 
-    public StylishButtonWidget(int x, int y, int width, int height, Text text, Runnable onPress) {
+    public StylishButtonWidget(int x, int y, int width, int height, Component text, Runnable onPress) {
         super(x, y, width, height, text);
         this.onPress = onPress;
     }
@@ -24,12 +24,12 @@ public class StylishButtonWidget extends ClickableWidget {
         this.selected = selected;
     }
 
-    public boolean isSelected() {
+    public boolean isHoveredOrFocused() {
         return selected;
     }
 
     @Override
-    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
         boolean hovered = this.isHovered();
         int x1 = getX();
         int y1 = getY();
@@ -55,8 +55,8 @@ public class StylishButtonWidget extends ClickableWidget {
         int textColor = !this.active
                 ? MidnightPalette.TEXT_MUTED
                 : (selected ? MidnightPalette.TEXT_PRIMARY : (hovered ? MidnightPalette.TEXT_PRIMARY : MidnightPalette.TEXT_SECONDARY));
-        context.drawCenteredTextWithShadow(
-                MinecraftClient.getInstance().textRenderer,
+        context.drawCenteredString(
+                Minecraft.getInstance().font,
                 getMessage(),
                 x1 + w / 2,
                 y1 + (h - 8) / 2,
@@ -65,7 +65,7 @@ public class StylishButtonWidget extends ClickableWidget {
     }
 
     private static int blend(int c0, int c1, float t) {
-        t = MathHelper.clamp(t, 0f, 1f);
+        t = Mth.clamp(t, 0f, 1f);
         int a0 = (c0 >>> 24) & 0xFF;
         int r0 = (c0 >> 16) & 0xFF;
         int g0 = (c0 >> 8) & 0xFF;
@@ -82,14 +82,14 @@ public class StylishButtonWidget extends ClickableWidget {
     }
 
     @Override
-    public void onClick(Click click, boolean doubleClick) {
+    public void onClick(MouseButtonEvent click, boolean doubleClick) {
         if (this.active) {
             this.onPress.run();
         }
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        appendDefaultNarrations(builder);
+    protected void updateWidgetNarration(NarrationElementOutput builder) {
+        defaultButtonNarrationText(builder);
     }
 }

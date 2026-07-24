@@ -2,9 +2,8 @@ package com.dupeclient.client.module.security.nochatrestrictions;
 
 import com.dupeclient.client.mixin.MinecraftClientUserApiAccessor;
 import com.mojang.authlib.minecraft.UserApiService;
-import net.minecraft.client.MinecraftClient;
-
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.client.Minecraft;
 
 /** Applies or removes the wrapped UserApiService on the live client. */
 public final class NoChatRestrictionsRuntime {
@@ -12,7 +11,7 @@ public final class NoChatRestrictionsRuntime {
     }
 
     public static void sync(boolean enabled) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }

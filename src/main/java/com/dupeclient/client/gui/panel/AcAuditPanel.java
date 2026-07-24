@@ -6,12 +6,12 @@ import com.dupeclient.client.module.acaudit.AcAuditGitHubCard;
 import com.dupeclient.client.module.acaudit.AcAuditManager;
 import com.dupeclient.client.module.acaudit.AcAuditOverlay;
 import com.dupeclient.client.module.acaudit.AcAuditSettings;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public final class AcAuditPanel extends Panel {
     private static final int TOGGLE_H = UiTokens.ROW_STEP;
@@ -25,7 +25,7 @@ public final class AcAuditPanel extends Panel {
     private int githubCardY;
 
     public AcAuditPanel(int x, int y) {
-        super("ac_audit", Text.literal("AC Audit"), x, y, 280, 168);
+        super("ac_audit", Component.literal("AC Audit"), x, y, 280, 168);
     }
 
     private static int rowBlock(int... rowHeights) {
@@ -49,12 +49,12 @@ public final class AcAuditPanel extends Panel {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
         }
-        TextRenderer tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        Font tr = net.minecraft.client.Minecraft.getInstance().font;
         AcAuditSettings s = manager.getSettings();
         int tx = x + UiTokens.BODY_INSET;
         int ty = y + bodyTopOffset() + UiTokens.UI_GAP;
@@ -92,13 +92,13 @@ public final class AcAuditPanel extends Panel {
                 smoothToggle("ac.leave", s.disableOnLeave, delta));
 
         int hintY = y4 + TOGGLE_H + UiTokens.UI_GAP;
-        context.drawTextWithShadow(tr, Text.literal("Diagnostics & probes — use in-game overlay"), rx, hintY, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal("Diagnostics & probes — use in-game overlay"), rx, hintY, 0xFF9CA3AF);
 
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (captureMode != CaptureMode.IDLE) {
-            context.drawTextWithShadow(
+            context.drawString(
                     tr,
-                    Text.literal("Press key for " + captureMode.label + " (ESC to unbind)"),
+                    Component.literal("Press key for " + captureMode.label + " (ESC to unbind)"),
                     x + 8,
                     y + height - 12,
                     0xFFFFC857);
@@ -176,7 +176,7 @@ public final class AcAuditPanel extends Panel {
     }
 
     private void drawBindRow(
-            TextRenderer tr, DrawContext context, int x, int y, int w, String label, int keyCode, CaptureMode mode) {
+            Font tr, GuiGraphics context, int x, int y, int w, String label, int keyCode, CaptureMode mode) {
         boolean listening = captureMode == mode;
         UiComponents.drawPillKeybind(
                 tr, context, x, y, w, KEYBIND_H, label,

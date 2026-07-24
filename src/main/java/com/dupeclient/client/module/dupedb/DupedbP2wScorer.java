@@ -1,13 +1,6 @@
 package com.dupeclient.client.module.dupedb;
 
 import com.dupeclient.client.module.dupedb.DupeDbPluginMatcher;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +11,12 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Pay-to-win heuristics ported from DupeDB companion logic: weighted signals from known P2W plugins,
@@ -111,11 +110,11 @@ public final class DupedbP2wScorer {
         scanText(line);
     }
 
-    public void trackOpenGui(MinecraftClient client) {
+    public void trackOpenGui(Minecraft client) {
         if (client == null) {
             return;
         }
-        Screen screen = client.currentScreen;
+        Screen screen = client.screen;
         if (screen == null) {
             lastTrackedScreenTitle = "";
             return;
@@ -126,7 +125,7 @@ public final class DupedbP2wScorer {
         }
         lastTrackedScreenTitle = title;
         scanText(title);
-        if (screen instanceof HandledScreen<?> handled) {
+        if (screen instanceof AbstractContainerScreen<?> handled) {
             scanHandledScreen(handled);
         }
     }
@@ -230,8 +229,8 @@ public final class DupedbP2wScorer {
         }
     }
 
-    private void scanHandledScreen(HandledScreen<?> handled) {
-        ScreenHandler handler = handled.getScreenHandler();
+    private void scanHandledScreen(AbstractContainerScreen<?> handled) {
+        AbstractContainerMenu handler = handled.getMenu();
         if (handler == null) {
             return;
         }
@@ -239,11 +238,11 @@ public final class DupedbP2wScorer {
             if (slot == null) {
                 continue;
             }
-            ItemStack stack = slot.getStack();
+            ItemStack stack = slot.getItem();
             if (stack == null || stack.isEmpty()) {
                 continue;
             }
-            scanText(stack.getName().getString());
+            scanText(stack.getHoverName().getString());
         }
     }
 

@@ -7,14 +7,14 @@ import com.dupeclient.client.gui.modern.UiComponents;
 import com.dupeclient.client.gui.overlay.AbstractDraggableOverlay;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlay;
 import com.dupeclient.client.gui.overlay.SearchableDropdown;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public final class FuzzerOverlay extends AbstractDraggableOverlay implements IngameModuleOverlay {
     public static final FuzzerOverlay INSTANCE = new FuzzerOverlay();
@@ -183,24 +183,24 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
         syncTabFromSettings();
         EconomyFuzzerSettings s = EconomyFuzzerManager.INSTANCE.getSettings();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
-        TextRenderer tr = client.textRenderer;
+        Font tr = client.font;
         int px = s.overlayX;
         int py = s.overlayY;
         int contentRight = px + PANEL_W - PAD;
 
         context.fill(px, py, px + PANEL_W, py + panelHeight(), 0xE018181B);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, 0xFF27272A);
-        context.drawTextWithShadow(tr, Text.literal("Fuzzer"), px + PAD, py + 2, 0xFFFBBF24);
+        context.drawString(tr, Component.literal("Fuzzer"), px + PAD, py + 2, 0xFFFBBF24);
 
         int tabY = py + TITLE_H + GAP;
         int tabW = (PANEL_W - PAD * 2 - GAP * 2) / 3;
@@ -226,7 +226,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         y += GAP;
         renderActionButtons(context, tr, px, y, mouseX, mouseY);
         y += CTRL_H + GAP;
-        context.drawTextWithShadow(tr, Text.literal("Log"), px + PAD, y, 0xFF6B7280);
+        context.drawString(tr, Component.literal("Log"), px + PAD, y, 0xFF6B7280);
         y += 10 + GAP;
         int logBoxH = LOG_LINES * LOG_LINE_H + 4;
         hitLogX = px + 4;
@@ -243,7 +243,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
             String line = idx < logs.size() ? logs.get(idx) : "";
             int color = line.contains("SUSPECT") || line.contains("TAG_LEAK") || line.contains("ABNORMAL")
                     || line.contains("ACCEPTED_BAD") ? 0xFFFF6B6B : 0xFF9CA3AF;
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(line, PANEL_W - PAD * 2)), px + PAD, y, color);
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(line, PANEL_W - PAD * 2)), px + PAD, y, color);
             y += LOG_LINE_H;
         }
 
@@ -251,7 +251,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     private void renderOpenDropdownPopups(
-            DrawContext context, TextRenderer tr, MinecraftClient client, int mouseX, int mouseY) {
+            GuiGraphics context, Font tr, Minecraft client, int mouseX, int mouseY) {
         switch (activeTab) {
             case ECONOMY -> {
                 targetDropdown.renderPopupLayer(context, tr,
@@ -267,7 +267,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     private int renderEconomy(
-            DrawContext context, TextRenderer tr, MinecraftClient client, EconomyFuzzerSettings s,
+            GuiGraphics context, Font tr, Minecraft client, EconomyFuzzerSettings s,
             int px, int y, int controlW, int contentRight, int mouseX, int mouseY) {
         EconomyFuzzerManager mgr = EconomyFuzzerManager.INSTANCE;
         boolean needsTarget = mgr.commandNeedsTarget();
@@ -298,7 +298,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         hitDelayY = y;
         drawButton(context, tr, hitDelayMinusX, hitDelayY, hitDelayBtnW, CTRL_H, "-", mouseX, mouseY, true);
         int delayCenterX = hitDelayMinusX + hitDelayBtnW + (hitDelayPlusX - hitDelayMinusX - hitDelayBtnW) / 2;
-        context.drawCenteredTextWithShadow(tr, Text.literal(Long.toString(s.delayMs)), delayCenterX, y + 4, 0xFF86EFAC);
+        context.drawCenteredString(tr, Component.literal(Long.toString(s.delayMs)), delayCenterX, y + 4, 0xFF86EFAC);
         drawButton(context, tr, hitDelayPlusX, hitDelayY, hitDelayBtnW, CTRL_H, "+", mouseX, mouseY, true);
         y += ROW_STEP + GAP;
 
@@ -306,14 +306,14 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         String status = mgr.isRunning()
                 ? (mgr.isPaused() ? "Paused" : "Running") + " " + mgr.getFuzzIndex() + "/" + mgr.getFuzzTotal()
                 : "Idle";
-        int statusW = tr.getWidth(status);
-        context.drawTextWithShadow(tr, Text.literal(status), contentRight - statusW, y + 4,
+        int statusW = tr.width(status);
+        context.drawString(tr, Component.literal(status), contentRight - statusW, y + 4,
                 mgr.isRunning() ? 0xFF86EFAC : 0xFF9CA3AF);
         return y + ROW_STEP;
     }
 
     private int renderSqli(
-            DrawContext context, TextRenderer tr, MinecraftClient client,
+            GuiGraphics context, Font tr, Minecraft client,
             int px, int y, int controlW, int contentRight, int mouseX, int mouseY) {
         SqliFuzzerManager mgr = SqliFuzzerManager.INSTANCE;
         CommandArgDiscovery discovery = CommandArgDiscovery.INSTANCE;
@@ -334,7 +334,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         drawLabel(context, tr, "Inject", px + PAD, y);
         String inject = mgr.getArgSummary();
         int injectColor = inject.equals("append") ? 0xFF9CA3AF : 0xFF86EFAC;
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(inject, controlW)), px + LABEL_COL, y + 4, injectColor);
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(inject, controlW)), px + LABEL_COL, y + 4, injectColor);
         y += ROW_STEP;
 
         EconomyFuzzerSettings sqliSettings = EconomyFuzzerManager.INSTANCE.getSettings();
@@ -346,7 +346,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
                 ? "Enum + destructive (" + mgr.payloadCount() + ")"
                 : "Enum only (" + mgr.payloadCount() + ")";
         drawButton(context, tr, hitSqliDestructiveX, hitSqliDestructiveY, hitSqliDestructiveW, CTRL_H,
-                tr.trimToWidth(payloadMode, hitSqliDestructiveW - 8), mouseX, mouseY, true);
+                tr.plainSubstrByWidth(payloadMode, hitSqliDestructiveW - 8), mouseX, mouseY, true);
         y += ROW_STEP;
 
         drawLabel(context, tr, "Delay ms", px + PAD, y);
@@ -357,18 +357,18 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         drawButton(context, tr, hitDelayMinusX, hitDelayY, hitDelayBtnW, CTRL_H, "-", mouseX, mouseY, true);
         long delay = EconomyFuzzerManager.INSTANCE.getSettings().sqliDelayMs;
         int delayCenterX = hitDelayMinusX + hitDelayBtnW + (hitDelayPlusX - hitDelayMinusX - hitDelayBtnW) / 2;
-        context.drawCenteredTextWithShadow(tr, Text.literal(Long.toString(delay)), delayCenterX, y + 4, 0xFF86EFAC);
+        context.drawCenteredString(tr, Component.literal(Long.toString(delay)), delayCenterX, y + 4, 0xFF86EFAC);
         drawButton(context, tr, hitDelayPlusX, hitDelayY, hitDelayBtnW, CTRL_H, "+", mouseX, mouseY, true);
         y += ROW_STEP + GAP;
 
         drawLabel(context, tr, "Status", px + PAD, y);
         String status = sqliStatusLine(mgr, discovery, client);
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(status, controlW + LABEL_COL - PAD)),
-                contentRight - tr.getWidth(tr.trimToWidth(status, controlW + LABEL_COL - PAD)), y + 4, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(status, controlW + LABEL_COL - PAD)),
+                contentRight - tr.width(tr.plainSubstrByWidth(status, controlW + LABEL_COL - PAD)), y + 4, 0xFF9CA3AF);
         return y + ROW_STEP;
     }
 
-    private static String sqliStatusLine(SqliFuzzerManager mgr, CommandArgDiscovery discovery, MinecraftClient client) {
+    private static String sqliStatusLine(SqliFuzzerManager mgr, CommandArgDiscovery discovery, Minecraft client) {
         if (discovery.isDiscovering()) {
             return discovery.status();
         }
@@ -380,7 +380,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     private int renderMinimessage(
-            DrawContext context, TextRenderer tr, MinecraftClient client,
+            GuiGraphics context, Font tr, Minecraft client,
             int px, int y, int controlW, int contentRight, int mouseX, int mouseY) {
         MinimessageFuzzerManager mgr = MinimessageFuzzerManager.INSTANCE;
         boolean msgMode = mgr.isMsgMode();
@@ -403,7 +403,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
                 ? (mgr.getTarget().isBlank() ? "pick player" : mgr.getTarget())
                 : "public chat";
         int hintColor = msgMode && mgr.getTarget().isBlank() ? 0xFFFF6B6B : 0xFF9CA3AF;
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(hint, controlW)), px + LABEL_COL, y + 4, hintColor);
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(hint, controlW)), px + LABEL_COL, y + 4, hintColor);
         y += ROW_STEP;
 
         drawLabel(context, tr, "Delay ms", px + PAD, y);
@@ -414,7 +414,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         drawButton(context, tr, hitDelayMinusX, hitDelayY, hitDelayBtnW, CTRL_H, "-", mouseX, mouseY, true);
         long delay = EconomyFuzzerManager.INSTANCE.getSettings().minimessageDelayMs;
         int delayCenterX = hitDelayMinusX + hitDelayBtnW + (hitDelayPlusX - hitDelayMinusX - hitDelayBtnW) / 2;
-        context.drawCenteredTextWithShadow(tr, Text.literal(Long.toString(delay)), delayCenterX, y + 4, 0xFF86EFAC);
+        context.drawCenteredString(tr, Component.literal(Long.toString(delay)), delayCenterX, y + 4, 0xFF86EFAC);
         drawButton(context, tr, hitDelayPlusX, hitDelayY, hitDelayBtnW, CTRL_H, "+", mouseX, mouseY, true);
         y += ROW_STEP + GAP;
 
@@ -422,11 +422,11 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         String status = mgr.isRunning()
                 ? (mgr.isPaused() ? "Paused" : "Running") + " " + mgr.getIndex() + "/" + mgr.getTotal()
                 : "Idle";
-        context.drawTextWithShadow(tr, Text.literal(status), contentRight - tr.getWidth(status), y + 4, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal(status), contentRight - tr.width(status), y + 4, 0xFF9CA3AF);
         return y + ROW_STEP;
     }
 
-    private void renderActionButtons(DrawContext context, TextRenderer tr, int px, int y, int mouseX, int mouseY) {
+    private void renderActionButtons(GuiGraphics context, Font tr, int px, int y, int mouseX, int mouseY) {
         hitBtnY = y;
         int btnAvail = PANEL_W - PAD * 2;
         hitBtnW = (btnAvail - GAP * 3) / 4;
@@ -479,13 +479,13 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
             return false;
         }
         if (!onPanel && onDropdown) {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             return handleTabInput(mouseX, mouseY, button, client);
         }
         if (beginTitleDrag(mouseX, mouseY, button, px, py, PANEL_W, TITLE_H)) {
             return true;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (inBtn(mouseX, mouseY, hitTabEcoX, hitTabY, hitTabW, TAB_H)) {
             activeTab = Tab.ECONOMY;
             logScrollOffset = 0;
@@ -524,7 +524,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         };
     }
 
-    private boolean handleTabInput(double mouseX, double mouseY, int button, MinecraftClient client) {
+    private boolean handleTabInput(double mouseX, double mouseY, int button, Minecraft client) {
         EconomyFuzzerSettings s = EconomyFuzzerManager.INSTANCE.getSettings();
         return switch (activeTab) {
             case ECONOMY -> {
@@ -621,7 +621,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
         return false;
     }
 
-    private boolean handleButtons(double mouseX, double mouseY, MinecraftClient client) {
+    private boolean handleButtons(double mouseX, double mouseY, Minecraft client) {
         if (inBtn(mouseX, mouseY, hitStartX, hitBtnY, hitBtnW, CTRL_H)) {
             switch (activeTab) {
                 case ECONOMY -> EconomyFuzzerManager.INSTANCE.start(client);
@@ -681,7 +681,7 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
             logScrollOffset = Math.max(0, Math.min(maxScroll, logScrollOffset - delta));
             return true;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         return switch (activeTab) {
             case ECONOMY -> {
                 if (targetDropdown.mouseScrolled(mouseX, mouseY, verticalAmount,
@@ -721,17 +721,17 @@ public final class FuzzerOverlay extends AbstractDraggableOverlay implements Ing
                 || sqliCmdDropdown.charTyped(codePoint) || miniTargetDropdown.charTyped(codePoint));
     }
 
-    private static void drawLabel(DrawContext c, TextRenderer tr, String label, int x, int y) {
-        c.drawTextWithShadow(tr, Text.literal(label), x, y + 4, 0xFFA1A1AA);
+    private static void drawLabel(GuiGraphics c, Font tr, String label, int x, int y) {
+        c.drawString(tr, Component.literal(label), x, y + 4, 0xFFA1A1AA);
     }
 
     private static void drawButton(
-            DrawContext c, TextRenderer tr, int x, int y, int w, int h, String label, double mx, double my, boolean enabled) {
+            GuiGraphics c, Font tr, int x, int y, int w, int h, String label, double mx, double my, boolean enabled) {
         boolean hot = enabled && inBtn(mx, my, x, y, w, h);
         int bg = hot ? 0xFF3F3F46 : (enabled ? 0xFF27272A : 0xFF1C1C1F);
         c.fill(x, y, x + w, y + h, bg);
         c.fill(x, y, x + w, y + 1, enabled ? 0xFF52525B : 0xFF3F3F46);
-        c.drawCenteredTextWithShadow(tr, Text.literal(label), x + w / 2, y + (h - 8) / 2, enabled ? 0xFFE5E7EB : 0xFF6B7280);
+        c.drawCenteredString(tr, Component.literal(label), x + w / 2, y + (h - 8) / 2, enabled ? 0xFFE5E7EB : 0xFF6B7280);
     }
 
     private static boolean inBtn(double mx, double my, int x, int y, int w, int h) {

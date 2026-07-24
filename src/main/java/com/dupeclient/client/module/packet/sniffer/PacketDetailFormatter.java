@@ -1,9 +1,8 @@
 package com.dupeclient.client.module.packet.sniffer;
 
-import net.minecraft.network.packet.Packet;
-
 import java.lang.reflect.RecordComponent;
 import java.util.List;
+import net.minecraft.network.protocol.Packet;
 
 public final class PacketDetailFormatter {
     private static final int SUMMARY_MAX = 160;

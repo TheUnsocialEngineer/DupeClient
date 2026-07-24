@@ -1,7 +1,7 @@
 package com.dupeclient.client.module.dupedb;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 public final class P2wVerification {
     private static final long MIN_SESSION_MS = 5L * 60_000L;
@@ -13,13 +13,13 @@ public final class P2wVerification {
     private P2wVerification() {
     }
 
-    public record Result(boolean ok, String code, Text message) {
+    public record Result(boolean ok, String code, Component message) {
         static Result pass() {
-            return new Result(true, "ok", Text.empty());
+            return new Result(true, "ok", Component.empty());
         }
 
         static Result fail(String code, String message) {
-            return new Result(false, code, Text.literal(message).formatted(Formatting.RED));
+            return new Result(false, code, Component.literal(message).withStyle(ChatFormatting.RED));
         }
     }
 

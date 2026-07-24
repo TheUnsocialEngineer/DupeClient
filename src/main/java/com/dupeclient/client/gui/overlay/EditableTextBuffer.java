@@ -1,10 +1,10 @@
 package com.dupeclient.client.gui.overlay;
 
 import com.dupeclient.client.gui.modern.ModernTextInputChrome;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -93,7 +93,7 @@ public final class EditableTextBuffer {
         clearSelection();
     }
 
-    public void setCursorFromClick(TextRenderer tr, int clickX, int fieldX, int maxWidth) {
+    public void setCursorFromClick(Font tr, int clickX, int fieldX, int maxWidth) {
         int relX = clickX - fieldX;
         if (relX <= 0) {
             cursor = 0;
@@ -102,7 +102,7 @@ public final class EditableTextBuffer {
         }
         int best = text.length();
         for (int i = 0; i <= text.length(); i++) {
-            int w = tr.getWidth(text.substring(0, i));
+            int w = tr.width(text.substring(0, i));
             if (w > relX) {
                 best = Math.max(0, i - 1);
                 break;
@@ -211,8 +211,8 @@ public final class EditableTextBuffer {
     }
 
     public void draw(
-            TextRenderer tr,
-            DrawContext context,
+            Font tr,
+            GuiGraphics context,
             int x,
             int y,
             int maxWidth,
@@ -224,13 +224,13 @@ public final class EditableTextBuffer {
             int selEnd = selectionEnd();
             String before = shown.substring(0, selStart);
             String selected = shown.substring(selStart, selEnd);
-            int selX = x + tr.getWidth(before);
-            int selW = tr.getWidth(selected);
+            int selX = x + tr.width(before);
+            int selW = tr.width(selected);
             context.fill(selX - 1, y - 1, selX + selW + 1, y + 9, ModernTextInputChrome.SELECTION_COLOR);
         }
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(shown, maxWidth)), x, y, textColor);
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(shown, maxWidth)), x, y, textColor);
         if (focused && ModernTextInputChrome.caretVisible()) {
-            int caretX = x + tr.getWidth(shown.substring(0, Math.min(cursor, shown.length())));
+            int caretX = x + tr.width(shown.substring(0, Math.min(cursor, shown.length())));
             context.fill(caretX, y - 1, caretX + 1, y + 9, ModernTextInputChrome.CARET_COLOR);
         }
     }
@@ -278,9 +278,9 @@ public final class EditableTextBuffer {
         if (!hasSelection()) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.keyboard != null) {
-            client.keyboard.setClipboard(text.substring(selectionStart(), selectionEnd()));
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.keyboardHandler != null) {
+            client.keyboardHandler.setClipboard(text.substring(selectionStart(), selectionEnd()));
         }
     }
 
@@ -290,11 +290,11 @@ public final class EditableTextBuffer {
     }
 
     private void pasteClipboard() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.keyboard == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.keyboardHandler == null) {
             return;
         }
-        String clip = client.keyboard.getClipboard();
+        String clip = client.keyboardHandler.getClipboard();
         if (clip != null) {
             insert(clip);
         }
@@ -312,11 +312,11 @@ public final class EditableTextBuffer {
     }
 
     public static int liveModifiers() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.getWindow() == null) {
             return 0;
         }
-        long window = client.getWindow().getHandle();
+        long window = client.getWindow().handle();
         int mods = 0;
         if (pressed(window, GLFW.GLFW_KEY_LEFT_CONTROL) || pressed(window, GLFW.GLFW_KEY_RIGHT_CONTROL)) {
             mods |= GLFW.GLFW_MOD_CONTROL;

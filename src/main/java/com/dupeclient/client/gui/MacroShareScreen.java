@@ -8,10 +8,10 @@ import com.dupeclient.client.module.macro.MacroImportResult;
 import com.dupeclient.client.module.macro.MacroShare;
 import com.dupeclient.client.module.macro.MacroStorage;
 import com.dupeclient.client.module.utility.nbtedit.SnbtTextAreaWidget;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,16 +34,16 @@ public final class MacroShareScreen extends Screen {
     private int contentWidth;
 
     public MacroShareScreen(Screen parent, @Nullable String suggestedId) {
-        super(Text.literal("Import macro"));
+        super(Component.literal("Import macro"));
         this.parent = parent;
         this.suggestedId = suggestedId;
     }
 
-    public static void open(MinecraftClient client, @Nullable Screen parent, @Nullable String suggestedId) {
+    public static void open(Minecraft client, @Nullable Screen parent, @Nullable String suggestedId) {
         if (client == null) {
             return;
         }
-        Screen back = parent != null ? parent : client.currentScreen;
+        Screen back = parent != null ? parent : client.screen;
         client.setScreen(new MacroShareScreen(back, suggestedId));
     }
 
@@ -55,36 +55,36 @@ public final class MacroShareScreen extends Screen {
 
         int areaH = Math.max(160, height - 220);
         jsonArea = new SnbtTextAreaWidget(contentLeft, y, contentWidth, areaH);
-        addDrawableChild(jsonArea);
+        addRenderableWidget(jsonArea);
         y += areaH + GAP;
 
-        String clip = client != null ? client.keyboard.getClipboard() : "";
+        String clip = minecraft != null ? minecraft.keyboardHandler.getClipboard() : "";
         if (clip != null && !clip.isBlank() && looksLikeMacroJson(clip)) {
             jsonArea.setText(clip.trim());
         }
 
         int half = (contentWidth - GAP) / 2;
-        idField = StylishTextFieldWidget.create(textRenderer, contentLeft, y, half, FIELD_H, Text.literal("Save as id"));
+        idField = StylishTextFieldWidget.create(font, contentLeft, y, half, FIELD_H, Component.literal("Save as id"));
         idField.setMaxLength(64);
-        idField.setPlaceholder(Text.literal("auto from JSON"));
+        idField.setHint(Component.literal("auto from JSON"));
         if (suggestedId != null && !suggestedId.isBlank()) {
-            idField.setText(suggestedId);
+            idField.setValue(suggestedId);
         }
-        addDrawableChild(idField);
+        addRenderableWidget(idField);
         y += FIELD_H + GAP;
 
         int btnW = (contentWidth - GAP * 2) / 3;
-        addDrawableChild(new StylishButtonWidget(contentLeft, y, btnW, BTN_H, Text.literal("Paste clipboard"), this::pasteClipboard));
-        addDrawableChild(new StylishButtonWidget(contentLeft + btnW + GAP, y, btnW, BTN_H, Text.literal("Validate"), this::validateJson));
-        addDrawableChild(new StylishButtonWidget(contentLeft + (btnW + GAP) * 2, y, btnW, BTN_H, Text.literal("Import"), this::importJson));
+        addRenderableWidget(new StylishButtonWidget(contentLeft, y, btnW, BTN_H, Component.literal("Paste clipboard"), this::pasteClipboard));
+        addRenderableWidget(new StylishButtonWidget(contentLeft + btnW + GAP, y, btnW, BTN_H, Component.literal("Validate"), this::validateJson));
+        addRenderableWidget(new StylishButtonWidget(contentLeft + (btnW + GAP) * 2, y, btnW, BTN_H, Component.literal("Import"), this::importJson));
 
-        addDrawableChild(new StylishButtonWidget(contentLeft, height - PAD - BTN_H, 96, BTN_H, Text.literal("Back"), () -> {
-            if (client != null) {
-                client.setScreen(parent);
+        addRenderableWidget(new StylishButtonWidget(contentLeft, height - PAD - BTN_H, 96, BTN_H, Component.literal("Back"), () -> {
+            if (minecraft != null) {
+                minecraft.setScreen(parent);
             }
         }));
-        addDrawableChild(new StylishButtonWidget(contentLeft + contentWidth - 148, height - PAD - BTN_H, 148, BTN_H,
-                Text.literal("Import & edit"), this::importAndEdit));
+        addRenderableWidget(new StylishButtonWidget(contentLeft + contentWidth - 148, height - PAD - BTN_H, 148, BTN_H,
+                Component.literal("Import & edit"), this::importAndEdit));
 
         setInitialFocus(jsonArea);
         validateJson();
@@ -96,10 +96,10 @@ public final class MacroShareScreen extends Screen {
     }
 
     private void pasteClipboard() {
-        if (client == null) {
+        if (minecraft == null) {
             return;
         }
-        String clip = client.keyboard.getClipboard();
+        String clip = minecraft.keyboardHandler.getClipboard();
         if (clip == null || clip.isBlank()) {
             setStatus("Clipboard is empty.", 0xFFFF6B6B);
             return;
@@ -111,9 +111,9 @@ public final class MacroShareScreen extends Screen {
     private void validateJson() {
         try {
             var def = MacroStorage.parseImportDefinition(jsonArea.text());
-            String idHint = idField.getText().isBlank() ? def.id : idField.getText().trim();
-            if (idField.getText().isBlank() && def.id != null && !def.id.isBlank()) {
-                idField.setText(def.id);
+            String idHint = idField.getValue().isBlank() ? def.id : idField.getValue().trim();
+            if (idField.getValue().isBlank() && def.id != null && !def.id.isBlank()) {
+                idField.setValue(def.id);
             }
             String name = def.displayName == null || def.displayName.isBlank() ? idHint : def.displayName;
             int nodes = def.nodes == null ? 0 : def.nodes.size();
@@ -136,19 +136,19 @@ public final class MacroShareScreen extends Screen {
     }
 
     private void performImport(boolean openEditor) {
-        if (client == null) {
+        if (minecraft == null) {
             return;
         }
-        String targetId = idField.getText().isBlank() ? null : idField.getText().trim();
-        MacroImportResult result = MacroShare.importJson(client, jsonArea.text(), targetId, false);
+        String targetId = idField.getValue().isBlank() ? null : idField.getValue().trim();
+        MacroImportResult result = MacroShare.importJson(minecraft, jsonArea.text(), targetId, false);
         if (!result.success()) {
             setStatus(result.error() == null ? "Import failed" : result.error(), 0xFFFF6B6B);
             return;
         }
         if (openEditor) {
-            MacroEditorScreen.open(client, result.savedId());
+            MacroEditorScreen.open(minecraft, result.savedId());
         } else {
-            client.setScreen(parent);
+            minecraft.setScreen(parent);
         }
     }
 
@@ -158,20 +158,20 @@ public final class MacroShareScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, width, height);
         context.fill(0, 0, width, 40, 0xCC0A0E14);
         context.fill(0, 39, width, 40, 0x66334155);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 14, UiTokens.ACCENT);
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("Paste a DupeClient export bundle or raw macro JSON"),
+        context.drawCenteredString(font, title, width / 2, 14, UiTokens.ACCENT);
+        context.drawCenteredString(font,
+                Component.literal("Paste a DupeClient export bundle or raw macro JSON"),
                 width / 2, 26, UiTokens.TEXT_DIM);
         super.render(context, mouseX, mouseY, delta);
-        context.drawTextWithShadow(textRenderer, Text.literal(statusLine), contentLeft, height - PAD - BTN_H - 14, statusColor);
+        context.drawString(font, Component.literal(statusLine), contentLeft, height - PAD - BTN_H - 14, statusColor);
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 }

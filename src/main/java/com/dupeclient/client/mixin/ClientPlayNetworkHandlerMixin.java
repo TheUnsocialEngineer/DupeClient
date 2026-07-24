@@ -13,40 +13,40 @@ import com.dupeclient.client.module.security.SecurityManager;
 import com.dupeclient.client.module.security.SecurityTextMarking;
 import com.dupeclient.client.module.serverpassword.ServerPasswordManager;
 import com.dupeclient.client.module.utility.ChatGamesManager;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.entity.boss.BossBar;
-import net.minecraft.network.packet.s2c.play.BossBarS2CPacket;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
-import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
-import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerListHeaderS2CPacket;
-import net.minecraft.network.packet.s2c.play.SignEditorOpenS2CPacket;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.UUID;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBossEventPacket;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.protocol.game.ClientboundOpenSignEditorPacket;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.network.protocol.game.ClientboundTabListPacket;
+import net.minecraft.world.BossEvent;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
 
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 public abstract class ClientPlayNetworkHandlerMixin {
-    @Inject(method = "onSignEditorOpen", at = @At("HEAD"), cancellable = true)
-    private void dupeClient$onSignEditorOpen(SignEditorOpenS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "handleOpenSignEditor", at = @At("HEAD"), cancellable = true)
+    private void dupeClient$onSignEditorOpen(ClientboundOpenSignEditorPacket packet, CallbackInfo ci) {
         if (packet == null
                 || !SecurityManager.INSTANCE.getSettings().keyResolutionBlockSignEditorOnKeyProbe
                 || !SecurityManager.INSTANCE.getSettings().keyResolutionProtection) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.level == null) {
             return;
         }
-        BlockEntity be = client.world.getBlockEntity(packet.getPos());
+        BlockEntity be = client.level.getBlockEntity(packet.getPos());
         if (!(be instanceof SignBlockEntity sign)) {
             return;
         }
@@ -60,14 +60,14 @@ public abstract class ClientPlayNetworkHandlerMixin {
         }
     }
 
-    @Inject(method = "onCommandSuggestions", at = @At("HEAD"))
-    private void dupeClient$onCommandSuggestions(CommandSuggestionsS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "handleCommandSuggestions", at = @At("HEAD"))
+    private void dupeClient$onCommandSuggestions(ClientboundCommandSuggestionsPacket packet, CallbackInfo ci) {
         DupedbManager.INSTANCE.onCommandSuggestions(packet);
         CommandArgDiscovery.INSTANCE.onCommandSuggestions(packet);
     }
 
-    @Inject(method = "onGameMessage", at = @At("HEAD"))
-    private void dupeClient$onGameMessage(GameMessageS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "handleSystemChat", at = @At("HEAD"))
+    private void dupeClient$onGameMessage(ClientboundSystemChatPacket packet, CallbackInfo ci) {
         if (packet != null && packet.content() != null) {
             SecurityTextMarking.markServerSourced(packet.content());
             PayAllManager.INSTANCE.onIncomingChatLine(packet.content().getString());
@@ -78,26 +78,26 @@ public abstract class ClientPlayNetworkHandlerMixin {
             ChatGamesManager.INSTANCE.onIncomingGameMessage(packet.content().getString());
             DupedbManager.INSTANCE.onIncomingChatLine(packet.content().getString());
             CommandPacketSender.INSTANCE.onIncomingChatLine(packet.content().getString());
-            ServerPasswordManager.INSTANCE.onIncomingChatLine(MinecraftClient.getInstance(), packet.content().getString());
+            ServerPasswordManager.INSTANCE.onIncomingChatLine(Minecraft.getInstance(), packet.content().getString());
         }
     }
 
-    @Inject(method = "onTitle", at = @At("HEAD"))
-    private void dupeClient$onTitle(TitleS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "setTitleText", at = @At("HEAD"))
+    private void dupeClient$onTitle(ClientboundSetTitleTextPacket packet, CallbackInfo ci) {
         if (packet != null && packet.text() != null) {
             SecurityTextMarking.markServerSourced(packet.text());
         }
     }
 
-    @Inject(method = "onOverlayMessage", at = @At("HEAD"))
-    private void dupeClient$onOverlayMessage(OverlayMessageS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "setActionBarText", at = @At("HEAD"))
+    private void dupeClient$onOverlayMessage(ClientboundSetActionBarTextPacket packet, CallbackInfo ci) {
         if (packet != null && packet.text() != null) {
             SecurityTextMarking.markServerSourced(packet.text());
         }
     }
 
-    @Inject(method = "onPlayerListHeader", at = @At("HEAD"))
-    private void dupeClient$onPlayerListHeader(PlayerListHeaderS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "handleTabListCustomisation", at = @At("HEAD"))
+    private void dupeClient$onPlayerListHeader(ClientboundTabListPacket packet, CallbackInfo ci) {
         if (packet == null) {
             return;
         }
@@ -109,12 +109,12 @@ public abstract class ClientPlayNetworkHandlerMixin {
         }
     }
 
-    @Inject(method = "onBossBar", at = @At("HEAD"))
-    private void dupeClient$onBossBar(BossBarS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "handleBossUpdate", at = @At("HEAD"))
+    private void dupeClient$onBossBar(ClientboundBossEventPacket packet, CallbackInfo ci) {
         if (packet == null) {
             return;
         }
-        packet.accept(new BossBarS2CPacket.Consumer() {
+        packet.dispatch(new ClientboundBossEventPacket.Handler() {
             @Override
             public void remove(UUID uuid) {
             }
@@ -124,16 +124,16 @@ public abstract class ClientPlayNetworkHandlerMixin {
             }
 
             @Override
-            public void updateStyle(UUID uuid, BossBar.Color color, BossBar.Style style) {
+            public void updateStyle(UUID uuid, BossEvent.BossBarColor color, BossEvent.BossBarOverlay style) {
             }
 
             @Override
-            public void updateName(UUID uuid, Text name) {
+            public void updateName(UUID uuid, Component name) {
                 SecurityTextMarking.markServerSourced(name);
             }
 
             @Override
-            public void add(UUID uuid, Text name, float percent, BossBar.Color color, BossBar.Style style,
+            public void add(UUID uuid, Component name, float percent, BossEvent.BossBarColor color, BossEvent.BossBarOverlay style,
                     boolean darkenSky, boolean dragonMusic, boolean thickenFog) {
                 SecurityTextMarking.markServerSourced(name);
             }

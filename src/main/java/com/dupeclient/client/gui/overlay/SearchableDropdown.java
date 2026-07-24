@@ -5,14 +5,6 @@ import com.dupeclient.client.gui.overlay.EditableTextBuffer;
 import com.dupeclient.client.gui.modern.theme.MidnightPalette;
 import com.dupeclient.client.gui.modern.theme.MidnightShapes;
 import com.dupeclient.client.module.packet.sniffer.PacketNameSearch;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.PlayerSkinDrawer;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -22,6 +14,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Consumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.PlayerSkin;
 
 /**
  * Inline searchable combobox: closed field, optional search row, and scrollable results.
@@ -116,8 +116,8 @@ public final class SearchableDropdown {
     }
 
     public void render(
-            DrawContext context,
-            TextRenderer tr,
+            GuiGraphics context,
+            Font tr,
             int x,
             int y,
             int w,
@@ -133,8 +133,8 @@ public final class SearchableDropdown {
         String shown = displayValue.isBlank() ? placeholder : displayValue;
         drawField(context, tr, x, y, w, h, shown, open || searchFocused);
         String chevron = open ? "⌄" : "›";
-        int chevronX = x + w - tr.getWidth(chevron) - 6;
-        context.drawTextWithShadow(tr, Text.literal(chevron), chevronX, y + (h - 8) / 2, MidnightPalette.TEXT_MUTED);
+        int chevronX = x + w - tr.width(chevron) - 6;
+        context.drawString(tr, Component.literal(chevron), chevronX, y + (h - 8) / 2, MidnightPalette.TEXT_MUTED);
 
         if (open) {
             // Keep hitboxes current even before popup paint (scroll/click between frames).
@@ -159,8 +159,8 @@ public final class SearchableDropdown {
 
     /** Draws only the expanded search + list (call after the rest of the panel so it paints on top). */
     public void renderPopupLayer(
-            DrawContext context,
-            TextRenderer tr,
+            GuiGraphics context,
+            Font tr,
             List<String> options,
             double mouseX,
             double mouseY) {
@@ -170,8 +170,8 @@ public final class SearchableDropdown {
     }
 
     private void renderPopup(
-            DrawContext context,
-            TextRenderer tr,
+            GuiGraphics context,
+            Font tr,
             List<String> options,
             double mouseX,
             double mouseY) {
@@ -199,7 +199,7 @@ public final class SearchableDropdown {
             drawSquareBox(context, listX, listY, listW, listH, 0xF00F172B, 0xFF3A4A5E);
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         for (int row = 0; row < visibleRows; row++) {
             int idx = scroll + row;
             if (idx >= filtered.size()) {
@@ -220,17 +220,17 @@ public final class SearchableDropdown {
 
             int textX = listX + 5;
             if (showPlayerAvatars) {
-                SkinTextures skin = skinForName(client, name);
+                PlayerSkin skin = skinForName(client, name);
                 int ay = rowY + (rh - AVATAR) / 2;
                 if (skin != null) {
-                    PlayerSkinDrawer.draw(context, skin, textX, ay, AVATAR);
+                    PlayerFaceRenderer.draw(context, skin, textX, ay, AVATAR);
                 }
                 textX += AVATAR + 4;
             }
             int maxText = Math.max(4, listX + listW - textX - 6);
-            String rowText = tr.trimToWidth(name, maxText);
-            context.drawTextWithShadow(
-                    tr, Text.literal(rowText), textX, rowY + (rh - 8) / 2, MidnightPalette.TEXT_PRIMARY);
+            String rowText = tr.plainSubstrByWidth(name, maxText);
+            context.drawString(
+                    tr, Component.literal(rowText), textX, rowY + (rh - 8) / 2, MidnightPalette.TEXT_PRIMARY);
         }
 
         if (maxScroll > 0 && modernChrome) {
@@ -270,7 +270,7 @@ public final class SearchableDropdown {
         }
         if (rect(mouseX, mouseY, searchX, searchY, searchW, SEARCH_H)) {
             searchFocused = true;
-            TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+            Font tr = Minecraft.getInstance().font;
             search.setCursorFromClick(tr, (int) mouseX, searchX + ModernTextInputChrome.PAD_X, searchW - ModernTextInputChrome.PAD_X * 2);
             return true;
         }
@@ -368,21 +368,21 @@ public final class SearchableDropdown {
     }
 
     private void drawField(
-            DrawContext context, TextRenderer tr, int x, int y, int w, int h, String text, boolean focused) {
+            GuiGraphics context, Font tr, int x, int y, int w, int h, String text, boolean focused) {
         if (modernChrome) {
             ModernTextInputChrome.drawField(context, x, y, w, h, focused);
-            String shown = tr.trimToWidth(text == null ? "" : text, Math.max(4, w - 20));
-            context.drawTextWithShadow(tr, Text.literal(shown), x + ModernTextInputChrome.PAD_X, ModernTextInputChrome.textY(y, h), ModernTextInputChrome.TEXT_COLOR);
+            String shown = tr.plainSubstrByWidth(text == null ? "" : text, Math.max(4, w - 20));
+            context.drawString(tr, Component.literal(shown), x + ModernTextInputChrome.PAD_X, ModernTextInputChrome.textY(y, h), ModernTextInputChrome.TEXT_COLOR);
             return;
         }
         int bg = 0xFF18181F;
         int border = focused ? 0xFF6A9EFF : 0xFF3A4A5E;
         drawSquareBox(context, x, y, w, h, bg, border);
-        String shown = tr.trimToWidth(text == null ? "" : text, Math.max(4, w - 14));
-        context.drawTextWithShadow(tr, Text.literal(shown), x + 5, y + (h - 8) / 2, 0xFFE5E7EB);
+        String shown = tr.plainSubstrByWidth(text == null ? "" : text, Math.max(4, w - 14));
+        context.drawString(tr, Component.literal(shown), x + 5, y + (h - 8) / 2, 0xFFE5E7EB);
     }
 
-    private static void drawSquareBox(DrawContext context, int x, int y, int w, int h, int fill, int border) {
+    private static void drawSquareBox(GuiGraphics context, int x, int y, int w, int h, int fill, int border) {
         context.fill(x, y, x + w, y + h, fill);
         context.fill(x, y, x + w, y + 1, border);
         context.fill(x, y + h - 1, x + w, y + h, border);
@@ -395,23 +395,23 @@ public final class SearchableDropdown {
     }
 
     @Nullable
-    private static SkinTextures skinForName(MinecraftClient client, String name) {
+    private static PlayerSkin skinForName(Minecraft client, String name) {
         if (name == null || name.isBlank()) {
             return null;
         }
-        if (client != null && client.getNetworkHandler() != null) {
-            for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+        if (client != null && client.getConnection() != null) {
+            for (PlayerInfo entry : client.getConnection().getOnlinePlayers()) {
                 if (entry == null || entry.getProfile() == null) {
                     continue;
                 }
                 String entryName = entry.getProfile().name();
                 if (entryName != null && entryName.equalsIgnoreCase(name)) {
-                    return entry.getSkinTextures();
+                    return entry.getSkin();
                 }
             }
         }
         UUID uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name.toLowerCase(Locale.ROOT))
                 .getBytes(StandardCharsets.UTF_8));
-        return DefaultSkinHelper.getSkinTextures(uuid);
+        return DefaultPlayerSkin.get(uuid);
     }
 }

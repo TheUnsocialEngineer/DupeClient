@@ -6,24 +6,24 @@ import com.dupeclient.client.module.waypoint.DupeClientWaypoint;
 import com.dupeclient.client.module.waypoint.DupeClientWaypointManager;
 import com.dupeclient.client.module.waypoint.SharedDupeClientWaypoint;
 import com.dupeclient.client.module.waypoint.WaypointShape;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.StringVisitable;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.joml.Quaternionfc;
@@ -48,28 +48,28 @@ public final class WaypointWorldRenderer {
         if (!Boolean.TRUE.equals(DupeClientPresenceConfigManager.get().showSharedWaypointsInWorld)) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.player == null || client.world == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.player == null || client.level == null) {
             return;
         }
-        VertexConsumerProvider consumers = context.consumers();
+        MultiBufferSource consumers = context.consumers();
         if (consumers == null) {
             return;
         }
         GameRenderer gameRenderer = context.gameRenderer();
-        Camera camera = gameRenderer.getCamera();
-        float tickDelta = camera.getLastTickProgress();
-        Vec3d cam = client.player.getCameraPosVec(tickDelta);
-        MatrixStack matrices = context.matrices();
-        matrices.push();
+        Camera camera = gameRenderer.getMainCamera();
+        float tickDelta = camera.getPartialTickTime();
+        Vec3 cam = client.player.getEyePosition(tickDelta);
+        PoseStack matrices = context.matrices();
+        matrices.pushPose();
         try {
-            Matrix4f matrix = matrices.peek().getPositionMatrix();
-            VertexConsumer solids = consumers.getBuffer(RenderLayers.debugFilledBox());
-            VertexConsumer quads = consumers.getBuffer(RenderLayers.debugQuads());
-            VertexConsumer triangles = consumers.getBuffer(RenderLayers.debugTriangleFan());
-            double px = MathHelper.lerp((double)tickDelta, (double)client.player.lastRenderX, (double)client.player.getX());
-            double py = MathHelper.lerp((double)tickDelta, (double)client.player.lastRenderY, (double)client.player.getY());
-            double pz = MathHelper.lerp((double)tickDelta, (double)client.player.lastRenderZ, (double)client.player.getZ());
+            Matrix4f matrix = matrices.last().pose();
+            VertexConsumer solids = consumers.getBuffer(RenderTypes.debugFilledBox());
+            VertexConsumer quads = consumers.getBuffer(RenderTypes.debugQuads());
+            VertexConsumer triangles = consumers.getBuffer(RenderTypes.debugTriangleFan());
+            double px = Mth.lerp((double)tickDelta, (double)client.player.xOld, (double)client.player.getX());
+            double py = Mth.lerp((double)tickDelta, (double)client.player.yOld, (double)client.player.getY());
+            double pz = Mth.lerp((double)tickDelta, (double)client.player.zOld, (double)client.player.getZ());
             for (SharedDupeClientWaypoint row : DupeClientWaypointManager.INSTANCE.visibleWaypoints(client)) {
                 DupeClientWaypoint wp = row.waypoint();
                 float r = (float)(wp.colorArgb() >> 16 & 0xFF) / 255.0f;
@@ -89,31 +89,31 @@ public final class WaypointWorldRenderer {
                 int dist = Math.round((float)Math.sqrt(dx * dx + dy * dy + dz * dz));
                 String label = wp.name() + "  " + dist + "m";
                 float labelY = hoverY + WaypointWorldRenderer.shapeTopOffset(wp.shape()) + 1.5f;
-                WaypointWorldRenderer.drawWorldLabel(matrices, client.textRenderer, consumers, camera, cam, label, wx, labelY, wz, wp.colorArgb() | 0xFF000000);
+                WaypointWorldRenderer.drawWorldLabel(matrices, client.font, consumers, camera, cam, label, wx, labelY, wz, wp.colorArgb() | 0xFF000000);
             }
         }
         catch (Exception ex) {
             DupeClient.LOGGER.debug("Waypoint world render failed", (Throwable)ex);
         }
         finally {
-            matrices.pop();
+            matrices.popPose();
         }
     }
 
-    public static void renderHud(DrawContext context, RenderTickCounter tickCounter) {
+    public static void renderHud(GuiGraphics context, DeltaTracker tickCounter) {
     }
 
-    private static void drawWorldLabel(MatrixStack matrices, TextRenderer textRenderer, VertexConsumerProvider consumers, Camera camera, Vec3d cam, String text, float wx, float wy, float wz, int color) {
-        matrices.push();
+    private static void drawWorldLabel(PoseStack matrices, Font textRenderer, MultiBufferSource consumers, Camera camera, Vec3 cam, String text, float wx, float wy, float wz, int color) {
+        matrices.pushPose();
         matrices.translate((double)wx - cam.x, (double)wy - cam.y, (double)wz - cam.z);
-        matrices.multiply((Quaternionfc)RotationAxis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
-        matrices.multiply((Quaternionfc)RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+        matrices.mulPose((Quaternionfc)Axis.YP.rotationDegrees(-camera.yRot()));
+        matrices.mulPose((Quaternionfc)Axis.XP.rotationDegrees(camera.xRot()));
         matrices.scale(-0.022f, -0.022f, 0.022f);
-        Matrix4f matrix = matrices.peek().getPositionMatrix();
-        MutableText literal = Text.literal(text);
-        float tx = (float)(-textRenderer.getWidth((StringVisitable)literal)) / 2.0f;
-        textRenderer.draw((Text)literal, tx, 0.0f, color, true, matrix, consumers, TextRenderer.TextLayerType.SEE_THROUGH, 0, 0xF000F0);
-        matrices.pop();
+        Matrix4f matrix = matrices.last().pose();
+        MutableComponent literal = Component.literal(text);
+        float tx = (float)(-textRenderer.width((FormattedText)literal)) / 2.0f;
+        textRenderer.drawInBatch((Component)literal, tx, 0.0f, color, true, matrix, consumers, Font.DisplayMode.SEE_THROUGH, 0, 0xF000F0);
+        matrices.popPose();
     }
 
     private static float shapeTopOffset(WaypointShape shape) {
@@ -220,16 +220,16 @@ public final class WaypointWorldRenderer {
     }
 
     private static void solidQuad(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float r, float g, float b, float a) {
-        consumer.vertex((Matrix4fc)matrix, x0, y0, z0).color(r, g, b, a);
-        consumer.vertex((Matrix4fc)matrix, x1, y1, z1).color(r, g, b, a);
-        consumer.vertex((Matrix4fc)matrix, x2, y2, z2).color(r, g, b, a);
-        consumer.vertex((Matrix4fc)matrix, x3, y3, z3).color(r, g, b, a);
+        consumer.addVertex((Matrix4fc)matrix, x0, y0, z0).setColor(r, g, b, a);
+        consumer.addVertex((Matrix4fc)matrix, x1, y1, z1).setColor(r, g, b, a);
+        consumer.addVertex((Matrix4fc)matrix, x2, y2, z2).setColor(r, g, b, a);
+        consumer.addVertex((Matrix4fc)matrix, x3, y3, z3).setColor(r, g, b, a);
     }
 
     private static void solidTriangle(VertexConsumer consumer, Matrix4f matrix, float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2, float r, float g, float b, float a) {
-        consumer.vertex((Matrix4fc)matrix, x0, y0, z0).color(r, g, b, a);
-        consumer.vertex((Matrix4fc)matrix, x1, y1, z1).color(r, g, b, a);
-        consumer.vertex((Matrix4fc)matrix, x2, y2, z2).color(r, g, b, a);
+        consumer.addVertex((Matrix4fc)matrix, x0, y0, z0).setColor(r, g, b, a);
+        consumer.addVertex((Matrix4fc)matrix, x1, y1, z1).setColor(r, g, b, a);
+        consumer.addVertex((Matrix4fc)matrix, x2, y2, z2).setColor(r, g, b, a);
     }
 }
 

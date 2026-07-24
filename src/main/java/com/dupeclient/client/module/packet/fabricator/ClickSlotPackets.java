@@ -2,43 +2,43 @@ package com.dupeclient.client.module.packet.fabricator;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.screen.sync.ItemStackHash;
+import net.minecraft.network.HashedStack;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 
 /**
- * Builds and refreshes {@link ClickSlotC2SPacket} for the active screen handler (1.21.11 sync hash).
+ * Builds and refreshes {@link ServerboundContainerClickPacket} for the active screen handler (1.21.11 sync hash).
  */
 public final class ClickSlotPackets {
     private ClickSlotPackets() {
     }
 
-    public static ClickSlotC2SPacket create(
+    public static ServerboundContainerClickPacket create(
             int syncId,
             int revision,
             int slot,
             int button,
-            SlotActionType action) {
-        return new ClickSlotC2SPacket(
+            ClickType action) {
+        return new ServerboundContainerClickPacket(
                 syncId,
                 revision,
                 (short) slot,
                 (byte) button,
                 action,
                 new Int2ObjectArrayMap<>(),
-                ItemStackHash.EMPTY);
+                HashedStack.EMPTY);
     }
 
-    public static ClickSlotC2SPacket refresh(ClickSlotC2SPacket packet, ScreenHandler handler) {
+    public static ServerboundContainerClickPacket refresh(ServerboundContainerClickPacket packet, AbstractContainerMenu handler) {
         if (packet == null || handler == null) {
             return packet;
         }
         return create(
-                handler.syncId,
-                handler.getRevision(),
-                packet.slot(),
-                packet.button(),
-                packet.actionType());
+                handler.containerId,
+                handler.getStateId(),
+                packet.slotNum(),
+                packet.buttonNum(),
+                packet.clickType());
     }
 }

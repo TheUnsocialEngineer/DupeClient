@@ -308,15 +308,15 @@ public final class PresenceRosterSync {
     }
 
     private static UUID currentViewerUuid() {
-        var mc = net.minecraft.client.MinecraftClient.getInstance();
+        var mc = net.minecraft.client.Minecraft.getInstance();
         if (mc == null) {
             return null;
         }
         if (mc.player != null) {
-            return mc.player.getUuid();
+            return mc.player.getUUID();
         }
-        if (mc.getSession() != null) {
-            return mc.getSession().getUuidOrNull();
+        if (mc.getUser() != null) {
+            return mc.getUser().getProfileId();
         }
         return null;
     }

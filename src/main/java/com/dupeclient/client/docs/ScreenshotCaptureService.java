@@ -33,12 +33,7 @@ import com.dupeclient.client.module.utility.ChatGamesOverlay;
 import com.dupeclient.client.module.utility.nbtedit.NbtEditScreen;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.util.ScreenshotRecorder;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-
+import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,6 +44,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public final class ScreenshotCaptureService {
     public static final ScreenshotCaptureService INSTANCE = new ScreenshotCaptureService();
@@ -67,8 +66,8 @@ public final class ScreenshotCaptureService {
         DONE
     }
 
-    private record CaptureTarget(String id, int settleTicks, Consumer<MinecraftClient> prepare) {
-        CaptureTarget(String id, Consumer<MinecraftClient> prepare) {
+    private record CaptureTarget(String id, int settleTicks, Consumer<Minecraft> prepare) {
+        CaptureTarget(String id, Consumer<Minecraft> prepare) {
             this(id, SETTLE_TICKS, prepare);
         }
     }
@@ -104,13 +103,13 @@ public final class ScreenshotCaptureService {
         DupeClient.LOGGER.info("Screenshot capture enabled. Output: {}", outputDir);
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (!ScreenshotCaptureMode.isActive() || client == null || targets == null) {
             return;
         }
         switch (phase) {
             case WAIT_WORLD -> {
-                if (client.player == null || client.world == null) {
+                if (client.player == null || client.level == null) {
                     worldWait++;
                     if (!worldBootstrapRequested && worldWait >= 40) {
                         worldBootstrapRequested = true;
@@ -146,7 +145,7 @@ public final class ScreenshotCaptureService {
                     CaptureTarget target = targets.get(index);
                     pendingCaptureId = target.id();
                     pendingCapture = new CompletableFuture<>();
-                    ScreenshotRecorder.takeScreenshot(client.getFramebuffer(), pendingCapture::complete);
+                    Screenshot.takeScreenshot(client.getMainRenderTarget(), pendingCapture::complete);
                     captureWaitTicks = 0;
                     return;
                 }
@@ -177,7 +176,7 @@ public final class ScreenshotCaptureService {
                 finished = true;
                 writeManifest();
                 DupeClient.LOGGER.info("Screenshot capture complete ({} images).", manifest.size());
-                client.scheduleStop();
+                client.stop();
             }
         }
     }
@@ -191,7 +190,7 @@ public final class ScreenshotCaptureService {
             NativeImage image = pendingCapture.getNow(null);
             if (image != null) {
                 Path file = outputDir.resolve(pendingCaptureId + ".png");
-                image.writeTo(file);
+                image.writeToFile(file);
                 image.close();
                 manifest.put(pendingCaptureId, pendingCaptureId + ".png");
                 DupeClient.LOGGER.info("Captured {}", file);
@@ -249,20 +248,20 @@ public final class ScreenshotCaptureService {
         ClientGuiLayoutStorage.saveClientGuiLayout(idx, new double[count]);
     }
 
-    private static void equipSampleItem(MinecraftClient client) {
+    private static void equipSampleItem(Minecraft client) {
         if (client.player == null) {
             return;
         }
         ItemStack sample = new ItemStack(Items.DIAMOND_SWORD);
         client.player.getInventory().setSelectedSlot(0);
-        client.player.getInventory().setStack(0, sample);
+        client.player.getInventory().setItem(0, sample);
     }
 
     private static List<CaptureTarget> buildTargets() {
         List<CaptureTarget> out = new ArrayList<>();
         out.add(new CaptureTarget("hub", c -> {
             hideAllOverlays();
-            c.setScreen(new ClientGuiScreen(c.currentScreen));
+            c.setScreen(new ClientGuiScreen(c.screen));
         }));
 
         List<Panel> panels = DupeClient.getGuiManager().getPanels();
@@ -272,7 +271,7 @@ public final class ScreenshotCaptureService {
             int idx = i;
             out.add(new CaptureTarget(id, c -> {
                 openHub(idx);
-                c.setScreen(new ClientGuiScreen(c.currentScreen));
+                c.setScreen(new ClientGuiScreen(c.screen));
             }));
         }
 
@@ -330,11 +329,11 @@ public final class ScreenshotCaptureService {
 
         out.add(new CaptureTarget("screen-social", c -> {
             hideAllOverlays();
-            c.setScreen(new SocialScreen(c.currentScreen));
+            c.setScreen(new SocialScreen(c.screen));
         }));
         out.add(new CaptureTarget("screen-waypoints", c -> {
             hideAllOverlays();
-            c.setScreen(new WaypointsScreen(c.currentScreen));
+            c.setScreen(new WaypointsScreen(c.screen));
         }));
         out.add(new CaptureTarget("screen-macro-studio", c -> {
             hideAllOverlays();
@@ -342,26 +341,26 @@ public final class ScreenshotCaptureService {
         }));
         out.add(new CaptureTarget("screen-hud-editor", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
-            c.setScreen(new HudEditorScreen(c.currentScreen));
+            c.setScreen(new HudEditorScreen(c.screen));
         }));
         out.add(new CaptureTarget("screen-vault", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
-            c.setScreen(new ServerPasswordScreen(c.currentScreen));
+            c.setScreen(new ServerPasswordScreen(c.screen));
         }));
         out.add(new CaptureTarget("screen-nbt-edit", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
             equipSampleItem(c);
             if (c.player != null) {
-                c.setScreen(new NbtEditScreen(c.currentScreen, c.player.getMainHandStack().copy()));
+                c.setScreen(new NbtEditScreen(c.screen, c.player.getMainHandItem().copy()));
             }
         }));
         out.add(new CaptureTarget("screen-server-search", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
-            c.setScreen(new ServerScannerScreen(c.currentScreen, new ApiClient(new AddonAuth())));
+            c.setScreen(new ServerScannerScreen(c.screen, new ApiClient(new AddonAuth())));
         }));
         out.add(new CaptureTarget("screen-server-search-auth", c -> {
             hideAllOverlays();
-            c.setScreen(new ServerSearchAuthScreen(c.currentScreen));
+            c.setScreen(new ServerSearchAuthScreen(c.screen));
         }));
         return out;
     }

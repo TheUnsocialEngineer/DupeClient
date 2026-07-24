@@ -2,19 +2,18 @@ package com.dupeclient.client.gui.panel;
 
 import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.modern.UiTokens;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
-
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 public class Panel {
     protected static final int HEADER_HEIGHT = 24;
 
     protected final String id;
-    protected final Text title;
+    protected final Component title;
     protected int x;
     protected int y;
     protected int width;
@@ -36,7 +35,7 @@ public class Panel {
     /** Toggle knob position in [0,1] for smooth animation (Midnight UI). */
     private final Map<String, Float> toggleKnobSmooth = new HashMap<>();
 
-    public Panel(String id, Text title, int x, int y, int width, int height) {
+    public Panel(String id, Component title, int x, int y, int width, int height) {
         this.id = id;
         this.title = title;
         this.x = x;
@@ -45,7 +44,7 @@ public class Panel {
         this.height = height;
     }
 
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!visible) {
             return;
         }
@@ -67,15 +66,15 @@ public class Panel {
         context.fill(hx, hy + hh - 1, hx + hw, hy + hh, UiTokens.argb(0x88, UiTokens.MINT_500));
         UiDraw.ring(context, x, y, width, renderHeight, UiTokens.argb(0x66, UiTokens.SLATE_600));
 
-        context.drawTextWithShadow(
-                MinecraftClient.getInstance().textRenderer,
+        context.drawString(
+                Minecraft.getInstance().font,
                 title, x + UiTokens.SP_3, y + 8, UiTokens.TEXT
         );
 
         String marker = collapsed ? "›" : "⌄";
-        context.drawTextWithShadow(
-                MinecraftClient.getInstance().textRenderer,
-                Text.literal(marker), x + width - UiTokens.SP_4, y + 8, UiTokens.MINT_300
+        context.drawString(
+                Minecraft.getInstance().font,
+                Component.literal(marker), x + width - UiTokens.SP_4, y + 8, UiTokens.MINT_300
         );
     }
 
@@ -147,7 +146,7 @@ public class Panel {
         return id;
     }
 
-    public Text getTitle() {
+    public Component getTitle() {
         return title;
     }
 
@@ -238,18 +237,18 @@ public class Panel {
         if (!allowDrag) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc == null) {
             return;
         }
-        int sw = mc.getWindow().getScaledWidth();
-        int sh = mc.getWindow().getScaledHeight();
+        int sw = mc.getWindow().getGuiScaledWidth();
+        int sh = mc.getWindow().getGuiScaledHeight();
         int edge = 8;
-        this.x = MathHelper.clamp(x, -width + 48, sw - edge);
+        this.x = Mth.clamp(x, -width + 48, sw - edge);
         int h = getRenderHeight();
         int minY = Math.min(edge, sh - h - edge);
         int maxY = Math.max(edge, sh - h - edge);
-        this.y = MathHelper.clamp(y, minY, maxY);
+        this.y = Mth.clamp(y, minY, maxY);
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {

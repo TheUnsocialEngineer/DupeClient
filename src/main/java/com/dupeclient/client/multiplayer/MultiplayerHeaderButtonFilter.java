@@ -1,9 +1,8 @@
 package com.dupeclient.client.multiplayer;
 
-import net.minecraft.client.gui.widget.ClickableWidget;
-
 import java.util.Locale;
 import java.util.regex.Pattern;
+import net.minecraft.client.gui.components.AbstractWidget;
 
 public final class MultiplayerHeaderButtonFilter {
     private static final Pattern FORMATTING = Pattern.compile("§.");
@@ -12,11 +11,11 @@ public final class MultiplayerHeaderButtonFilter {
     }
 
     public static boolean isForeignHeaderButton(
-            ClickableWidget widget,
-            ClickableWidget ownedVault,
-            ClickableWidget ownedSearch,
-            ClickableWidget ownedProxies,
-            ClickableWidget ownedAccounts
+            AbstractWidget widget,
+            AbstractWidget ownedVault,
+            AbstractWidget ownedSearch,
+            AbstractWidget ownedProxies,
+            AbstractWidget ownedAccounts
     ) {
         if (widget == null) {
             return false;

@@ -1,18 +1,17 @@
 package com.dupeclient.client.gui.render;
 
 import com.dupeclient.client.DupeClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-
+import com.mojang.blaze3d.platform.NativeImage;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 
 /**
  * GPU-backed UI shapes. Textures use cleared pixels + premultiplied alpha to avoid colored corner halos.
@@ -22,7 +21,7 @@ public final class UiNativeRenderer {
     private static final int AA_SAMPLES = 2;
     /** Below this alpha, use CPU fills (texture filtering breaks on translucent UI). */
     private static final int TEXTURE_ALPHA_MIN = 0xF0;
-    private static final Identifier BASE_ID = Identifier.of(DupeClient.MOD_ID, "ui_native");
+    private static final Identifier BASE_ID = Identifier.fromNamespaceAndPath(DupeClient.MOD_ID, "ui_native");
 
     private enum Corner {
         TOP_LEFT,
@@ -33,10 +32,10 @@ public final class UiNativeRenderer {
 
     private static final class CachedShape {
         final Identifier id;
-        final NativeImageBackedTexture texture;
+        final DynamicTexture texture;
         final int size;
 
-        CachedShape(Identifier id, NativeImageBackedTexture texture, int size) {
+        CachedShape(Identifier id, DynamicTexture texture, int size) {
             this.id = id;
             this.texture = texture;
             this.size = size;
@@ -61,14 +60,14 @@ public final class UiNativeRenderer {
     }
 
     public static void ensureReady() {
-        if (ready && MinecraftClient.getInstance() != null) {
+        if (ready && Minecraft.getInstance() != null) {
             return;
         }
-        ready = MinecraftClient.getInstance() != null;
+        ready = Minecraft.getInstance() != null;
     }
 
     public static void clearCache() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         for (CachedShape shape : CACHE.values()) {
             evict(client, shape);
         }
@@ -78,20 +77,20 @@ public final class UiNativeRenderer {
     }
 
     private static void evict(CachedShape shape) {
-        evict(MinecraftClient.getInstance(), shape);
+        evict(Minecraft.getInstance(), shape);
     }
 
-    private static void evict(MinecraftClient client, CachedShape shape) {
+    private static void evict(Minecraft client, CachedShape shape) {
         if (shape == null) {
             return;
         }
         if (client != null) {
-            client.getTextureManager().destroyTexture(shape.id);
+            client.getTextureManager().release(shape.id);
         }
         shape.texture.close();
     }
 
-    public static void fillRoundedRect(DrawContext context, int x, int y, int w, int h, int rad, int argb) {
+    public static void fillRoundedRect(GuiGraphics context, int x, int y, int w, int h, int rad, int argb) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -109,7 +108,7 @@ public final class UiNativeRenderer {
         }
     }
 
-    public static void fillDisk(DrawContext context, int cx, int cy, int r, int argb) {
+    public static void fillDisk(GuiGraphics context, int cx, int cy, int r, int argb) {
         if (r <= 0) {
             return;
         }
@@ -126,7 +125,7 @@ public final class UiNativeRenderer {
         blitShape(context, shape, cx - r, cy - r, d, d);
     }
 
-    private static boolean ensureDraw(DrawContext context, int x, int y, int w, int h, int rr, int argb) {
+    private static boolean ensureDraw(GuiGraphics context, int x, int y, int w, int h, int rr, int argb) {
         ensureReady();
         if (!ready) {
             return false;
@@ -142,7 +141,7 @@ public final class UiNativeRenderer {
         return true;
     }
 
-    private static void drawCorner(DrawContext context, int x, int y, int r, int argb, Corner corner) {
+    private static void drawCorner(GuiGraphics context, int x, int y, int r, int argb, Corner corner) {
         CachedShape shape = getCorner(r, argb, corner);
         if (shape == null) {
             return;
@@ -150,13 +149,13 @@ public final class UiNativeRenderer {
         blitShape(context, shape, x, y, r, r);
     }
 
-    private static void blitShape(DrawContext context, CachedShape shape, int x, int y, int w, int h) {
+    private static void blitShape(GuiGraphics context, CachedShape shape, int x, int y, int w, int h) {
         int s = shape.size;
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, shape.id, x, y, 0.0f, 0.0f, w, h, s, s);
+        context.blit(RenderPipelines.GUI_TEXTURED, shape.id, x, y, 0.0f, 0.0f, w, h, s, s);
     }
 
     /** Software path — no texture filtering (safe for translucent sidebar pills). */
-    private static void fillRoundedRectSoftware(DrawContext c, int x, int y, int w, int h, int rr, int argb) {
+    private static void fillRoundedRectSoftware(GuiGraphics c, int x, int y, int w, int h, int rr, int argb) {
         c.fill(x + rr, y, x + w - rr, y + h, argb);
         c.fill(x, y + rr, x + rr, y + h - rr, argb);
         c.fill(x + w - rr, y + rr, x + w, y + h - rr, argb);
@@ -166,7 +165,7 @@ public final class UiNativeRenderer {
         fillQuarterSoftware(c, x + w - rr, y + h - rr, rr, argb, Corner.BOTTOM_RIGHT);
     }
 
-    private static void fillQuarterSoftware(DrawContext c, int left, int top, int rr, int argb, Corner corner) {
+    private static void fillQuarterSoftware(GuiGraphics c, int left, int top, int rr, int argb, Corner corner) {
         int r2 = rr * rr;
         double cx;
         double cy;
@@ -230,7 +229,7 @@ public final class UiNativeRenderer {
         if (hit != null) {
             return hit;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return null;
         }
@@ -246,9 +245,9 @@ public final class UiNativeRenderer {
         }
         int size = image.getWidth();
         String label = "dupeclient-ui-" + (cacheSeq++);
-        NativeImageBackedTexture texture = new NativeImageBackedTexture(() -> label, image);
-        Identifier id = BASE_ID.withSuffixedPath(label);
-        client.getTextureManager().registerTexture(id, texture);
+        DynamicTexture texture = new DynamicTexture(() -> label, image);
+        Identifier id = BASE_ID.withSuffix(label);
+        client.getTextureManager().register(id, texture);
         CachedShape cached = new CachedShape(id, texture, size);
         CACHE.put(key, cached);
         return cached;
@@ -259,7 +258,7 @@ public final class UiNativeRenderer {
         int h = img.getHeight();
         for (int py = 0; py < h; py++) {
             for (int px = 0; px < w; px++) {
-                img.setColorArgb(px, py, 0);
+                img.setPixel(px, py, 0);
             }
         }
     }
@@ -280,7 +279,7 @@ public final class UiNativeRenderer {
                 }
                 cov /= n;
                 if (cov > 0f) {
-                    img.setColorArgb(px, py, premultipliedArgb(argb, cov));
+                    img.setPixel(px, py, premultipliedArgb(argb, cov));
                 }
             }
         }
@@ -314,7 +313,7 @@ public final class UiNativeRenderer {
         double dx = px - cx;
         double dy = py - cy;
         double dist = Math.sqrt(dx * dx + dy * dy);
-        return MathHelper.clamp((float) (r - dist + 0.65f), 0f, 1f);
+        return Mth.clamp((float) (r - dist + 0.65f), 0f, 1f);
     }
 
     private static NativeImage bakeDisk(int r, int argb) {
@@ -335,13 +334,13 @@ public final class UiNativeRenderer {
                         float dx = sxp - center;
                         float dy = syp - center;
                         float dist = (float) Math.sqrt(dx * dx + dy * dy);
-                        cov += MathHelper.clamp(radius - dist + 0.65f, 0f, 1f);
+                        cov += Mth.clamp(radius - dist + 0.65f, 0f, 1f);
                         n++;
                     }
                 }
                 cov /= n;
                 if (cov > 0f) {
-                    img.setColorArgb(px, py, premultipliedArgb(argb, cov));
+                    img.setPixel(px, py, premultipliedArgb(argb, cov));
                 }
             }
         }

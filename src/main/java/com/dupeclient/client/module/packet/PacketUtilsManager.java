@@ -7,18 +7,17 @@ import com.dupeclient.client.module.packet.fabricator.FabricatorSendScheduler;
 import com.dupeclient.client.module.packet.fabricator.PacketFabricatorOverlay;
 import com.ui_utils.SharedVariables;
 import io.netty.channel.ChannelFutureListener;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.listener.PacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.Connection;
+import net.minecraft.network.PacketListener;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.Packet;
 
 public class PacketUtilsManager {
     public static final PacketUtilsManager INSTANCE = new PacketUtilsManager();
@@ -82,7 +81,7 @@ public class PacketUtilsManager {
         BYPASS_INCOMING_HOOK.set(bypassed);
     }
 
-    public boolean onIncomingPacket(ClientConnection connection, Packet<?> packet) {
+    public boolean onIncomingPacket(Connection connection, Packet<?> packet) {
         if (Boolean.TRUE.equals(BYPASS_INCOMING_HOOK.get())) {
             return false;
         }
@@ -99,7 +98,7 @@ public class PacketUtilsManager {
         return true;
     }
 
-    public boolean onOutgoingPacket(ClientConnection connection, Packet<?> packet, ChannelFutureListener callbacks, boolean flush) {
+    public boolean onOutgoingPacket(Connection connection, Packet<?> packet, ChannelFutureListener callbacks, boolean flush) {
         if (Boolean.TRUE.equals(BYPASS_HOOK.get())) {
             return false;
         }
@@ -136,7 +135,7 @@ public class PacketUtilsManager {
         return false;
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         handleFeatureHotkeys(client);
         processQueue();
         tickSpam(client);
@@ -210,12 +209,12 @@ public class PacketUtilsManager {
         }
         int incomingReleased = incomingBatch.size();
         if (!incomingBatch.isEmpty()) {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             Runnable replay = () -> {
                 BYPASS_INCOMING_HOOK.set(true);
                 try {
                     for (QueuedIncoming qi : incomingBatch) {
-                        if (qi.connection == null || !qi.connection.isOpen()) {
+                        if (qi.connection == null || !qi.connection.isConnected()) {
                             continue;
                         }
                         PacketListener listener = qi.connection.getPacketListener();
@@ -310,7 +309,7 @@ public class PacketUtilsManager {
         }
     }
 
-    private void handleFeatureHotkeys(MinecraftClient client) {
+    private void handleFeatureHotkeys(Minecraft client) {
         handleOverlayToggleHotkeys(client);
         if (textInputFocused) {
             return;
@@ -375,7 +374,7 @@ public class PacketUtilsManager {
         }
     }
 
-    private void handleOverlayToggleHotkeys(MinecraftClient client) {
+    private void handleOverlayToggleHotkeys(Minecraft client) {
         if (InputFocusGuards.shouldBlockOverlayToggleHotkeys(client)) {
             return;
         }
@@ -427,21 +426,21 @@ public class PacketUtilsManager {
         uiUtilsFlushQueuedAtMs = System.currentTimeMillis() + delayMs;
     }
 
-    public void flushUiUtilsQueueNow(MinecraftClient client) {
-        if (client == null || client.getNetworkHandler() == null || SharedVariables.delayedUIPackets.isEmpty()) {
+    public void flushUiUtilsQueueNow(Minecraft client) {
+        if (client == null || client.getConnection() == null || SharedVariables.delayedUIPackets.isEmpty()) {
             uiUtilsFlushQueuedAtMs = -1L;
             return;
         }
         int n = SharedVariables.delayedUIPackets.size();
         for (Packet<?> packet : SharedVariables.delayedUIPackets) {
-            client.getNetworkHandler().sendPacket(packet);
+            client.getConnection().send(packet);
         }
         SharedVariables.delayedUIPackets.clear();
         uiUtilsFlushQueuedAtMs = -1L;
         moduleFeedback("UI Utils: sent " + n + " queued packet(s).");
     }
 
-    private void tickUiUtilsDelayedFlush(MinecraftClient client) {
+    private void tickUiUtilsDelayedFlush(Minecraft client) {
         if (uiUtilsFlushQueuedAtMs < 0L) {
             return;
         }
@@ -451,11 +450,11 @@ public class PacketUtilsManager {
         flushUiUtilsQueueNow(client);
     }
 
-    private void tickSpam(MinecraftClient client) {
+    private void tickSpam(Minecraft client) {
         if (!settings.spamEnabled) {
             return;
         }
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+        if (client == null || client.player == null || client.getConnection() == null) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -466,7 +465,7 @@ public class PacketUtilsManager {
 
         String text = settings.spamMessage == null ? "" : settings.spamMessage.trim();
         if (!text.isEmpty()) {
-            client.player.networkHandler.sendChatMessage(text.startsWith("/") ? text.substring(1) : text);
+            client.player.connection.sendChat(text.startsWith("/") ? text.substring(1) : text);
         }
     }
 
@@ -490,7 +489,7 @@ public class PacketUtilsManager {
     }
 
     private void sendDirect(QueuedPacket queued) {
-        if (queued.connection == null || !queued.connection.isOpen()) {
+        if (queued.connection == null || !queued.connection.isConnected()) {
             return;
         }
         BYPASS_HOOK.set(true);
@@ -502,12 +501,12 @@ public class PacketUtilsManager {
     }
 
     /** Sends a packet without delay/desync hooks (used by packet fabricator). */
-    public void sendBypass(MinecraftClient client, Packet<?> packet) {
-        if (client == null || client.getNetworkHandler() == null || packet == null) {
+    public void sendBypass(Minecraft client, Packet<?> packet) {
+        if (client == null || client.getConnection() == null || packet == null) {
             return;
         }
-        ClientConnection connection = client.getNetworkHandler().getConnection();
-        if (connection == null || !connection.isOpen()) {
+        Connection connection = client.getConnection().getConnection();
+        if (connection == null || !connection.isConnected()) {
             return;
         }
         BYPASS_HOOK.set(true);
@@ -519,13 +518,13 @@ public class PacketUtilsManager {
     }
 
     private static final class QueuedPacket {
-        private final ClientConnection connection;
+        private final Connection connection;
         private final Packet<?> packet;
         private final ChannelFutureListener callbacks;
         private final boolean flush;
         private long dueAtMs;
 
-        private QueuedPacket(ClientConnection connection, Packet<?> packet, ChannelFutureListener callbacks, boolean flush, long dueAtMs) {
+        private QueuedPacket(Connection connection, Packet<?> packet, ChannelFutureListener callbacks, boolean flush, long dueAtMs) {
             this.connection = connection;
             this.packet = packet;
             this.callbacks = callbacks;
@@ -535,10 +534,10 @@ public class PacketUtilsManager {
     }
 
     private static final class QueuedIncoming {
-        private final ClientConnection connection;
+        private final Connection connection;
         private final Packet<?> packet;
 
-        private QueuedIncoming(ClientConnection connection, Packet<?> packet) {
+        private QueuedIncoming(Connection connection, Packet<?> packet) {
             this.connection = connection;
             this.packet = packet;
         }
@@ -592,16 +591,16 @@ public class PacketUtilsManager {
         if (!settings.packetDelayBlockedChatNotify || !settings.moduleChatFeedback) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
         String name = PacketUtils.getPacketTypeName(packet);
         String line = incoming ? "Blocked inbound: " + name : "Blocked outbound: " + name;
-        Text msg = Text.literal(line).formatted(Formatting.GRAY);
+        Component msg = Component.literal(line).withStyle(ChatFormatting.GRAY);
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(msg, false);
+                client.player.displayClientMessage(msg, false);
             }
         });
     }
@@ -615,26 +614,26 @@ public class PacketUtilsManager {
         if (!settings.moduleChatFeedback) {
             return;
         }
-        sendPacketUtilsHud(packetUtilsPrefix().copy().append(Text.literal(message).formatted(Formatting.GRAY)));
+        sendPacketUtilsHud(packetUtilsPrefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 
     /** Shown even when chat feedback is off (e.g. toggling the feedback option itself). */
     public void moduleFeedbackConfigToggle(String message) {
-        sendPacketUtilsHud(packetUtilsPrefix().copy().append(Text.literal(message).formatted(Formatting.GRAY)));
+        sendPacketUtilsHud(packetUtilsPrefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 
-    private static MutableText packetUtilsPrefix() {
-        return Text.literal("[Packet Utils] ").formatted(Formatting.GOLD, Formatting.BOLD);
+    private static MutableComponent packetUtilsPrefix() {
+        return Component.literal("[Packet Utils] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
     }
 
-    private void sendPacketUtilsHud(Text line) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private void sendPacketUtilsHud(Component line) {
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }

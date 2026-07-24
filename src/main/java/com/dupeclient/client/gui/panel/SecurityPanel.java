@@ -7,15 +7,15 @@ import com.dupeclient.client.gui.widget.InlineTextField;
 import com.dupeclient.client.core.session.HubModuleRules;
 import com.dupeclient.client.core.session.PresenceRosterSync;
 import com.dupeclient.client.module.serverpassword.ServerPasswordScreen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import com.dupeclient.client.module.security.SecurityManager;
 import com.dupeclient.client.module.security.SecurityProfileStore;
 import com.dupeclient.client.module.security.SecurityStaffTimeline;
 import com.dupeclient.client.module.security.SecuritySettings;
 import com.dupeclient.client.module.security.nochatrestrictions.NoChatRestrictionsRuntime;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 
 public final class SecurityPanel extends Panel {
     private static final int ROW = UiTokens.ROW_STEP;
@@ -40,7 +40,7 @@ public final class SecurityPanel extends Panel {
     private int opsecGithubY;
 
     public SecurityPanel(int x, int y) {
-        super("security", Text.literal("Security"), x, y, 320, 420);
+        super("security", Component.literal("Security"), x, y, 320, 420);
         this.opsecWhitelistField.setPlaceholder("voicechat,xaero,minimap");
         this.nameChangerField.setPlaceholder("Display name");
     }
@@ -64,13 +64,13 @@ public final class SecurityPanel extends Panel {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (this.collapsed) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        TextRenderer tr = mc.textRenderer;
+        Minecraft mc = Minecraft.getInstance();
+        Font tr = mc.font;
         SecuritySettings s = this.manager.getSettings();
         int tx = this.x + 16;
         int ty = this.y + this.bodyTopOffset() + 8;
@@ -86,8 +86,8 @@ public final class SecurityPanel extends Panel {
 
         if (HubModuleRules.viewerRestricted() || PresenceRosterSync.isRosterPending()) {
             int color = HubModuleRules.viewerRestricted() ? 0xFFFF9A6A : UiTokens.ACCENT;
-            context.drawTextWithShadow(tr, Text.literal("Staff roster: " + PresenceRosterSync.statusLine()), rx, row, color);
-            context.drawTextWithShadow(tr, Text.literal(HubModuleRules.blockReason()), rx, row + 11, UiTokens.TEXT_DIM);
+            context.drawString(tr, Component.literal("Staff roster: " + PresenceRosterSync.statusLine()), rx, row, color);
+            context.drawString(tr, Component.literal(HubModuleRules.blockReason()), rx, row + 11, UiTokens.TEXT_DIM);
             row += 24;
         }
 
@@ -159,7 +159,7 @@ public final class SecurityPanel extends Panel {
             if (shown >= 3) {
                 break;
             }
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(entry.line(), rowInner)), rx, timelineY + shown * 10, UiTokens.TEXT_DIM);
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(entry.line(), rowInner)), rx, timelineY + shown * 10, UiTokens.TEXT_DIM);
             shown++;
         }
         row = timelineY + Math.max(1, shown) * 10 + 4;
@@ -355,9 +355,9 @@ public final class SecurityPanel extends Panel {
         }
         row += ROW + 4 + 12;
         if (this.vaultRowY >= 0 && SecurityPanel.rect(mouseX, mouseY, rx, this.vaultRowY, rowInner, 18)) {
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Minecraft mc = Minecraft.getInstance();
             if (mc != null) {
-                mc.setScreen(new ServerPasswordScreen(mc.currentScreen));
+                mc.setScreen(new ServerPasswordScreen(mc.screen));
             }
             return true;
         }
@@ -368,7 +368,7 @@ public final class SecurityPanel extends Panel {
             return true;
         }
         if (this.saveProfileRowY >= 0 && SecurityPanel.rect(mouseX, mouseY, rx, this.saveProfileRowY, rowInner, 18)) {
-            this.manager.saveProfileForCurrentServer(MinecraftClient.getInstance());
+            this.manager.saveProfileForCurrentServer(Minecraft.getInstance());
             return true;
         }
         this.opsecWhitelistField.blur();

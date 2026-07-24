@@ -1,18 +1,17 @@
 package com.dupeclient.client.module.dupedb;
 
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 
 /**
  * Minimal MiniMessage-style parser for interactive DupeClient chat (click/hover/color tags).
@@ -23,14 +22,14 @@ public final class DupeMiniMessage {
     private DupeMiniMessage() {
     }
 
-    public static Text parse(String input) {
+    public static Component parse(String input) {
         if (input == null || input.isEmpty()) {
-            return Text.empty();
+            return Component.empty();
         }
         return parseNodes(input, 0, input.length(), Style.EMPTY).text();
     }
 
-    public static Text markConfirmPrompt(String server, int scorePercent, String verificationHint) {
+    public static Component markConfirmPrompt(String server, int scorePercent, String verificationHint) {
         String scorePart = scorePercent >= 0 ? " <gray>(score " + scorePercent + "%)</gray>" : "";
         String hintPart = verificationHint == null || verificationHint.isBlank()
                 ? ""
@@ -41,7 +40,7 @@ public final class DupeMiniMessage {
                 + "<red><click:run_command='/p2w abort'><bold>[Abort]</bold></click></red>");
     }
 
-    public static Text unmarkConfirmPrompt(String server, String verificationHint) {
+    public static Component unmarkConfirmPrompt(String server, String verificationHint) {
         String hintPart = verificationHint == null || verificationHint.isBlank()
                 ? ""
                 : " <dark_gray>" + escape(verificationHint) + "</dark_gray>";
@@ -51,13 +50,13 @@ public final class DupeMiniMessage {
                 + "<red><click:run_command='/p2w abort'><bold>[Abort]</bold></click></red>");
     }
 
-    public static Text scoreWithMarkAction(int percent, String summary) {
+    public static Component scoreWithMarkAction(int percent, String summary) {
         return parse("<green>" + escape(summary) + "</green> "
                 + "<aqua><click:run_command='/p2w mark'><hover:show_text='Submit this server as P2W to the community list'>[Mark as P2W]</hover></click></aqua>");
     }
 
     /** Colored exploit line; plugin name in brackets opens the DupeDB page. */
-    public static Text exploitMatchLine(String exploitName, String pluginName, String url) {
+    public static Component exploitMatchLine(String exploitName, String pluginName, String url) {
         String safeName = escape(exploitName);
         String safePlugin = escape(pluginName);
         String safeUrl = escapeAttr(url);
@@ -76,7 +75,7 @@ public final class DupeMiniMessage {
     }
 
     private static ParseResult parseNodes(String input, int start, int end, Style baseStyle) {
-        MutableText out = Text.empty();
+        MutableComponent out = Component.empty();
         int i = start;
         List<StyleFrame> stack = new ArrayList<>();
         stack.add(new StyleFrame(baseStyle, null, null));
@@ -123,7 +122,7 @@ public final class DupeMiniMessage {
             return;
         }
         if ("hover:show_text".equals(lower) && attr != null) {
-            stack.add(new StyleFrame(parent, null, new HoverEvent.ShowText(Text.literal(attr))));
+            stack.add(new StyleFrame(parent, null, new HoverEvent.ShowText(Component.literal(attr))));
             return;
         }
         if (lower.startsWith("click:")) {
@@ -144,11 +143,11 @@ public final class DupeMiniMessage {
         if (lower.startsWith("hover:")) {
             String action = lower.substring("hover:".length());
             if (action.equals("show_text") && attr != null) {
-                stack.add(new StyleFrame(parent, null, new HoverEvent.ShowText(Text.literal(attr))));
+                stack.add(new StyleFrame(parent, null, new HoverEvent.ShowText(Component.literal(attr))));
                 return;
             }
         }
-        Formatting color = colorForTag(lower);
+        ChatFormatting color = colorForTag(lower);
         Style next = parent;
         if (color != null) {
             next = next.withColor(color);
@@ -158,7 +157,7 @@ public final class DupeMiniMessage {
         } else if ("italic".equals(lower)) {
             next = next.withItalic(true);
         } else if ("underlined".equals(lower)) {
-            next = next.withUnderline(true);
+            next = next.withUnderlined(true);
         }
         stack.add(new StyleFrame(next, null, null));
     }
@@ -185,31 +184,31 @@ public final class DupeMiniMessage {
         if (tag.startsWith("hover") && frame.hover != null) {
             return true;
         }
-        Formatting color = colorForTag(tag);
+        ChatFormatting color = colorForTag(tag);
         if (color != null && frame.style.getColor() != null && frame.style.getColor().equals(color)) {
             return true;
         }
         return "bold".equals(tag) || "italic".equals(tag) || "underlined".equals(tag);
     }
 
-    private static Formatting colorForTag(String tag) {
+    private static ChatFormatting colorForTag(String tag) {
         return switch (tag) {
-            case "black" -> Formatting.BLACK;
-            case "dark_blue" -> Formatting.DARK_BLUE;
-            case "dark_green" -> Formatting.DARK_GREEN;
-            case "dark_aqua" -> Formatting.DARK_AQUA;
-            case "dark_red" -> Formatting.DARK_RED;
-            case "dark_purple" -> Formatting.DARK_PURPLE;
-            case "gold" -> Formatting.GOLD;
-            case "gray", "grey" -> Formatting.GRAY;
-            case "dark_gray", "dark_grey" -> Formatting.DARK_GRAY;
-            case "blue" -> Formatting.BLUE;
-            case "green" -> Formatting.GREEN;
-            case "aqua" -> Formatting.AQUA;
-            case "red" -> Formatting.RED;
-            case "light_purple" -> Formatting.LIGHT_PURPLE;
-            case "yellow" -> Formatting.YELLOW;
-            case "white" -> Formatting.WHITE;
+            case "black" -> ChatFormatting.BLACK;
+            case "dark_blue" -> ChatFormatting.DARK_BLUE;
+            case "dark_green" -> ChatFormatting.DARK_GREEN;
+            case "dark_aqua" -> ChatFormatting.DARK_AQUA;
+            case "dark_red" -> ChatFormatting.DARK_RED;
+            case "dark_purple" -> ChatFormatting.DARK_PURPLE;
+            case "gold" -> ChatFormatting.GOLD;
+            case "gray", "grey" -> ChatFormatting.GRAY;
+            case "dark_gray", "dark_grey" -> ChatFormatting.DARK_GRAY;
+            case "blue" -> ChatFormatting.BLUE;
+            case "green" -> ChatFormatting.GREEN;
+            case "aqua" -> ChatFormatting.AQUA;
+            case "red" -> ChatFormatting.RED;
+            case "light_purple" -> ChatFormatting.LIGHT_PURPLE;
+            case "yellow" -> ChatFormatting.YELLOW;
+            case "white" -> ChatFormatting.WHITE;
             default -> null;
         };
     }
@@ -226,14 +225,14 @@ public final class DupeMiniMessage {
         return style;
     }
 
-    private static void appendLiteral(MutableText out, String literal, Style style) {
+    private static void appendLiteral(MutableComponent out, String literal, Style style) {
         if (literal.isEmpty()) {
             return;
         }
-        out.append(Text.literal(literal).setStyle(style));
+        out.append(Component.literal(literal).setStyle(style));
     }
 
-    private record ParseResult(Text text) {
+    private record ParseResult(Component text) {
     }
 
     private record StyleFrame(Style style, ClickEvent click, HoverEvent hover) {

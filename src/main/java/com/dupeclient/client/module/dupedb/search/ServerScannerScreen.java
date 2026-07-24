@@ -8,6 +8,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.blaze3d.platform.NativeImage;
 import com.dupeclient.client.module.dupedb.search.api.ApiClient;
 import com.dupeclient.client.module.dupedb.search.api.ApiException;
 import com.dupeclient.client.mixin.MultiplayerScreenAccessor;
@@ -26,25 +27,24 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.gui.Click;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.ServerList;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.ClickableWidget;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
-import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.client.option.ServerList;
-import net.minecraft.client.network.ServerInfo;
 
 public class ServerScannerScreen extends Screen {
    private static final String API_SERVERS_URL = "https://minecraftserversearch.com/api/addon/v1/servers";
@@ -77,7 +77,7 @@ public class ServerScannerScreen extends Screen {
    private final ApiClient apiClient;
    private final List<ServerScannerScreen.ServerEntry> servers = new ArrayList<>();
    private final Map<String, Identifier> faviconIds = new HashMap<>();
-   private final Map<String, NativeImageBackedTexture> faviconTextures = new HashMap<>();
+   private final Map<String, DynamicTexture> faviconTextures = new HashMap<>();
    private final Set<String> faviconLoadFailed = new HashSet<>();
    private StylishTextFieldWidget serverTypeField;
    private StylishTextFieldWidget versionField;
@@ -91,20 +91,20 @@ public class ServerScannerScreen extends Screen {
    private StylishTextFieldWidget minPlayersField;
    private StylishTextFieldWidget maxPlayersField;
    private StylishTextFieldWidget pageField;
-   private ButtonWidget crackedToggleButton;
-   private ButtonWidget hasPlayersToggleButton;
-   private ButtonWidget moddedToggleButton;
-   private ButtonWidget isFullToggleButton;
-   private ButtonWidget hasFaviconToggleButton;
-   private ButtonWidget searchButton;
-   private ButtonWidget clearButton;
-   private ButtonWidget prevPageButton;
-   private ButtonWidget nextPageButton;
-   private ButtonWidget dashboardTabButton;
-   private ButtonWidget liveTabButton;
-   private ButtonWidget signOutButton;
-   private ButtonWidget addAllButton;
-   private ButtonWidget addBulkButton;
+   private Button crackedToggleButton;
+   private Button hasPlayersToggleButton;
+   private Button moddedToggleButton;
+   private Button isFullToggleButton;
+   private Button hasFaviconToggleButton;
+   private Button searchButton;
+   private Button clearButton;
+   private Button prevPageButton;
+   private Button nextPageButton;
+   private Button dashboardTabButton;
+   private Button liveTabButton;
+   private Button signOutButton;
+   private Button addAllButton;
+   private Button addBulkButton;
    private StylishTextFieldWidget bulkAddCountField;
    private final List<SuggestionDropdown> dropdowns = new ArrayList<>();
    private SuggestionDropdown typeDrop;
@@ -126,7 +126,7 @@ public class ServerScannerScreen extends Screen {
    private final List<ServerScannerScreen.ChipRegion> chipRegions = new ArrayList<>();
    private final List<ServerScannerScreen.FieldLabel> fieldLabels = new ArrayList<>();
    private final Set<StylishTextFieldWidget> suppressedFields = new HashSet<>();
-   private final Set<ButtonWidget> suppressedToggles = new HashSet<>();
+   private final Set<Button> suppressedToggles = new HashSet<>();
    private int controlsBottomY = 150;
    private int listTopY = 168;
    private int chipBandY = -1;
@@ -192,18 +192,18 @@ public class ServerScannerScreen extends Screen {
    private ServerScannerScreen.Tab activeTab = ServerScannerScreen.Tab.DASHBOARD;
 
    public ServerScannerScreen(Screen parent, ApiClient apiClient) {
-      super(Text.literal("Minecraft Server Scanner"));
+      super(Component.literal("Minecraft Server Scanner"));
       this.parent = parent;
       this.apiClient = apiClient;
    }
 
    private void goBack() {
-      MultiplayerScreen mp = this.findUnderlyingMultiplayerScreen();
-      MultiplayerScreens.returnToMultiplayer(this.client, mp != null ? mp : this.parent);
+      JoinMultiplayerScreen mp = this.findUnderlyingMultiplayerScreen();
+      MultiplayerScreens.returnToMultiplayer(this.minecraft, mp != null ? mp : this.parent);
    }
 
    @Override
-   public void close() {
+   public void onClose() {
       this.goBack();
    }
 
@@ -215,15 +215,15 @@ public class ServerScannerScreen extends Screen {
       this.liveJoinButtons.clear();
       this.liveAddButtons.clear();
       this.liveCopyButtons.clear();
-      this.clearChildren();
-      this.dashboardTabButton = (ButtonWidget)this.addDrawableChild(
-         ButtonWidget.builder(Text.literal("Dashboard"), b -> this.setActiveTab(ServerScannerScreen.Tab.DASHBOARD))
-            .dimensions(10, 4, 92, 20)
+      this.clearWidgets();
+      this.dashboardTabButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("Dashboard"), b -> this.setActiveTab(ServerScannerScreen.Tab.DASHBOARD))
+            .bounds(10, 4, 92, 20)
             .build()
       );
-      this.liveTabButton = (ButtonWidget)this.addDrawableChild(
-         ButtonWidget.builder(Text.literal("Live"), b -> this.setActiveTab(ServerScannerScreen.Tab.LIVE))
-            .dimensions(106, 4, 64, 20)
+      this.liveTabButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("Live"), b -> this.setActiveTab(ServerScannerScreen.Tab.LIVE))
+            .bounds(106, 4, 64, 20)
             .build()
       );
       this.serverTypeField = this.addField(110, "Server Type", "Java");
@@ -251,53 +251,53 @@ public class ServerScannerScreen extends Screen {
       this.fieldLabels.add(new ServerScannerScreen.FieldLabel(this.minPlayersField, "Min players"));
       this.fieldLabels.add(new ServerScannerScreen.FieldLabel(this.maxPlayersField, "Max players"));
       this.fieldLabels.add(new ServerScannerScreen.FieldLabel(this.pageField, "Page"));
-      this.crackedToggleButton = (ButtonWidget)this.addDrawableChild(ButtonWidget.builder(buttonLabel("Cracked", this.crackedFilter), b -> {
+      this.crackedToggleButton = (Button)this.addRenderableWidget(Button.builder(buttonLabel("Cracked", this.crackedFilter), b -> {
          this.crackedFilter = this.crackedFilter.next();
          b.setMessage(buttonLabel("Cracked", this.crackedFilter));
-      }).dimensions(0, 0, 108, 20).build());
-      this.hasPlayersToggleButton = (ButtonWidget)this.addDrawableChild(ButtonWidget.builder(buttonLabel("Has Players", this.hasPlayersFilter), b -> {
+      }).bounds(0, 0, 108, 20).build());
+      this.hasPlayersToggleButton = (Button)this.addRenderableWidget(Button.builder(buttonLabel("Has Players", this.hasPlayersFilter), b -> {
          this.hasPlayersFilter = this.hasPlayersFilter.next();
          b.setMessage(buttonLabel("Has Players", this.hasPlayersFilter));
-      }).dimensions(0, 0, 124, 20).build());
-      this.moddedToggleButton = (ButtonWidget)this.addDrawableChild(ButtonWidget.builder(buttonLabel("Modded", this.moddedFilter), b -> {
+      }).bounds(0, 0, 124, 20).build());
+      this.moddedToggleButton = (Button)this.addRenderableWidget(Button.builder(buttonLabel("Modded", this.moddedFilter), b -> {
          this.moddedFilter = this.moddedFilter.next();
          b.setMessage(buttonLabel("Modded", this.moddedFilter));
-      }).dimensions(0, 0, 100, 20).build());
-      this.isFullToggleButton = (ButtonWidget)this.addDrawableChild(ButtonWidget.builder(buttonLabel("Is Full", this.isFullFilter), b -> {
+      }).bounds(0, 0, 100, 20).build());
+      this.isFullToggleButton = (Button)this.addRenderableWidget(Button.builder(buttonLabel("Is Full", this.isFullFilter), b -> {
          this.isFullFilter = this.isFullFilter.next();
          b.setMessage(buttonLabel("Is Full", this.isFullFilter));
-      }).dimensions(0, 0, 95, 20).build());
-      this.hasFaviconToggleButton = (ButtonWidget)this.addDrawableChild(ButtonWidget.builder(buttonLabel("Has Icon", this.hasFaviconFilter), b -> {
+      }).bounds(0, 0, 95, 20).build());
+      this.hasFaviconToggleButton = (Button)this.addRenderableWidget(Button.builder(buttonLabel("Has Icon", this.hasFaviconFilter), b -> {
          this.hasFaviconFilter = this.hasFaviconFilter.next();
          b.setMessage(buttonLabel("Has Icon", this.hasFaviconFilter));
-      }).dimensions(0, 0, 105, 20).build());
-      this.prevPageButton = (ButtonWidget)this.addDrawableChild(ButtonWidget.builder(Text.literal("< Prev"), b -> {
-         this.currentPage = Math.max(1, parseIntOrDefault(this.pageField.getText(), this.currentPage) - 1);
-         this.pageField.setText(Integer.toString(this.currentPage));
+      }).bounds(0, 0, 105, 20).build());
+      this.prevPageButton = (Button)this.addRenderableWidget(Button.builder(Component.literal("< Prev"), b -> {
+         this.currentPage = Math.max(1, parseIntOrDefault(this.pageField.getValue(), this.currentPage) - 1);
+         this.pageField.setValue(Integer.toString(this.currentPage));
          this.startSearch();
-      }).dimensions(0, 0, 56, 20).build());
-      this.nextPageButton = (ButtonWidget)this.addDrawableChild(ButtonWidget.builder(Text.literal("Next >"), b -> {
-         this.currentPage = parseIntOrDefault(this.pageField.getText(), this.currentPage) + 1;
-         this.pageField.setText(Integer.toString(this.currentPage));
+      }).bounds(0, 0, 56, 20).build());
+      this.nextPageButton = (Button)this.addRenderableWidget(Button.builder(Component.literal("Next >"), b -> {
+         this.currentPage = parseIntOrDefault(this.pageField.getValue(), this.currentPage) + 1;
+         this.pageField.setValue(Integer.toString(this.currentPage));
          this.startSearch();
-      }).dimensions(0, 0, 56, 20).build());
-      this.searchButton = (ButtonWidget)this.addDrawableChild(
-         ButtonWidget.builder(Text.literal("Search"), b -> this.startSearch()).dimensions(0, 0, 70, 20).build()
+      }).bounds(0, 0, 56, 20).build());
+      this.searchButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("Search"), b -> this.startSearch()).bounds(0, 0, 70, 20).build()
       );
-      this.clearButton = (ButtonWidget)this.addDrawableChild(
-         ButtonWidget.builder(Text.literal("Clear"), b -> this.clearFilters()).dimensions(0, 0, 60, 20).build()
+      this.clearButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("Clear"), b -> this.clearFilters()).bounds(0, 0, 60, 20).build()
       );
       this.bulkAddCountField = this.addField(36, "Add count", "10");
-      this.addAllButton = (ButtonWidget)this.addDrawableChild(
-         ButtonWidget.builder(Text.literal("Add all"), b -> this.addAllVisible()).dimensions(0, 0, 56, 20).build()
+      this.addAllButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("Add all"), b -> this.addAllVisible()).bounds(0, 0, 56, 20).build()
       );
-      this.addBulkButton = (ButtonWidget)this.addDrawableChild(
-         ButtonWidget.builder(Text.literal("Add #"), b -> this.addBulkVisible()).dimensions(0, 0, 48, 20).build()
+      this.addBulkButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("Add #"), b -> this.addBulkVisible()).bounds(0, 0, 48, 20).build()
       );
-      this.signOutButton = (ButtonWidget)this.addDrawableChild(
-         ButtonWidget.builder(Text.literal("Sign out"), b -> this.signOut()).dimensions(this.width - 164, 4, 80, 20).build()
+      this.signOutButton = (Button)this.addRenderableWidget(
+         Button.builder(Component.literal("Sign out"), b -> this.signOut()).bounds(this.width - 164, 4, 80, 20).build()
       );
-      this.addDrawableChild(ButtonWidget.builder(ScreenTexts.BACK, b -> this.goBack()).dimensions(this.width - 80, 4, 70, 20).build());
+      this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> this.goBack()).bounds(this.width - 80, 4, 70, 20).build());
       this.layoutDashboard();
       int listTop = this.getListTop();
       int listBottom = this.height - 26;
@@ -311,12 +311,12 @@ public class ServerScannerScreen extends Screen {
          int joinX = this.actionJoinButtonX();
          this.joinButtons
             .add(
-               (ScannerActionButton)this.addDrawableChild(new ScannerActionButton(joinX, rowY, 56, 18, Text.literal("Join"), () -> this.joinVisible(localIndex)))
+               (ScannerActionButton)this.addRenderableWidget(new ScannerActionButton(joinX, rowY, 56, 18, Component.literal("Join"), () -> this.joinVisible(localIndex)))
             );
          this.copyButtons
-            .add((ScannerActionButton)this.addDrawableChild(new ScannerActionButton(copyX, rowY, 40, 18, Text.literal("Copy"), () -> this.copyVisible(localIndex))));
+            .add((ScannerActionButton)this.addRenderableWidget(new ScannerActionButton(copyX, rowY, 40, 18, Component.literal("Copy"), () -> this.copyVisible(localIndex))));
          this.addButtons
-            .add((ScannerActionButton)this.addDrawableChild(new ScannerActionButton(addX, rowY, 56, 18, Text.literal("Add"), () -> this.addVisible(localIndex))));
+            .add((ScannerActionButton)this.addRenderableWidget(new ScannerActionButton(addX, rowY, 56, 18, Component.literal("Add"), () -> this.addVisible(localIndex))));
       }
 
       int liveCardsTop = this.getLiveCardsTop();
@@ -331,20 +331,20 @@ public class ServerScannerScreen extends Screen {
          int joinX = this.actionJoinButtonX();
          this.liveJoinButtons
             .add(
-               (ScannerActionButton)this.addDrawableChild(
-                  new ScannerActionButton(joinX, rowY, 56, 18, Text.literal("Join"), () -> this.joinLive(localIndex))
+               (ScannerActionButton)this.addRenderableWidget(
+                  new ScannerActionButton(joinX, rowY, 56, 18, Component.literal("Join"), () -> this.joinLive(localIndex))
                )
             );
          this.liveCopyButtons
             .add(
-               (ScannerActionButton)this.addDrawableChild(
-                  new ScannerActionButton(copyX, rowY, 40, 18, Text.literal("Copy"), () -> this.copyLive(localIndex))
+               (ScannerActionButton)this.addRenderableWidget(
+                  new ScannerActionButton(copyX, rowY, 40, 18, Component.literal("Copy"), () -> this.copyLive(localIndex))
                )
             );
          this.liveAddButtons
             .add(
-               (ScannerActionButton)this.addDrawableChild(
-                  new ScannerActionButton(addX, rowY, 56, 18, Text.literal("Add"), () -> this.addLive(localIndex))
+               (ScannerActionButton)this.addRenderableWidget(
+                  new ScannerActionButton(addX, rowY, 56, 18, Component.literal("Add"), () -> this.addLive(localIndex))
                )
             );
       }
@@ -363,12 +363,12 @@ public class ServerScannerScreen extends Screen {
 
    private void setupDropdowns() {
       this.dropdowns.clear();
-      this.typeDrop = new SuggestionDropdown(this.serverTypeField, this.textRenderer, () -> this.optTypes);
-      this.versionDrop = new SuggestionDropdown(this.versionField, this.textRenderer, () -> this.optVersions);
-      this.softwareDrop = new SuggestionDropdown(this.softwareField, this.textRenderer, this::softwareItemsForVersion);
-      this.countryDrop = new SuggestionDropdown(this.countryField, this.textRenderer, () -> this.optCountries);
-      this.modDrop = new SuggestionDropdown(this.modNameField, this.textRenderer, () -> this.optMods);
-      this.pluginDrop = new SuggestionDropdown(this.pluginNameField, this.textRenderer, () -> this.optPlugins);
+      this.typeDrop = new SuggestionDropdown(this.serverTypeField, this.font, () -> this.optTypes);
+      this.versionDrop = new SuggestionDropdown(this.versionField, this.font, () -> this.optVersions);
+      this.softwareDrop = new SuggestionDropdown(this.softwareField, this.font, this::softwareItemsForVersion);
+      this.countryDrop = new SuggestionDropdown(this.countryField, this.font, () -> this.optCountries);
+      this.modDrop = new SuggestionDropdown(this.modNameField, this.font, () -> this.optMods);
+      this.pluginDrop = new SuggestionDropdown(this.pluginNameField, this.font, () -> this.optPlugins);
       this.dropdowns.add(this.typeDrop);
       this.dropdowns.add(this.versionDrop);
       this.dropdowns.add(this.softwareDrop);
@@ -378,7 +378,7 @@ public class ServerScannerScreen extends Screen {
    }
 
    private List<SuggestionDropdown.Item> softwareItemsForVersion() {
-      String version = this.versionField != null ? this.versionField.getText().trim() : "";
+      String version = this.versionField != null ? this.versionField.getValue().trim() : "";
       if (version.isEmpty()) {
          return this.optSoftware;
       } else {
@@ -425,14 +425,14 @@ public class ServerScannerScreen extends Screen {
    }
 
    private StylishTextFieldWidget addField(int w, String label, String placeholder) {
-      StylishTextFieldWidget field = (StylishTextFieldWidget)this.addDrawableChild(
-              StylishTextFieldWidget.create(this.textRenderer, 0, 0, w, Text.literal(label)));
+      StylishTextFieldWidget field = (StylishTextFieldWidget)this.addRenderableWidget(
+              StylishTextFieldWidget.create(this.font, 0, 0, w, Component.literal(label)));
       field.setPlaceholder(placeholder);
       return field;
    }
 
-   private static Text buttonLabel(String name, ServerScannerScreen.TriState value) {
-      return Text.literal(name + ": " + value.display);
+   private static Component buttonLabel(String name, ServerScannerScreen.TriState value) {
+      return Component.literal(name + ": " + value.display);
    }
 
    private boolean isCompact() {
@@ -470,7 +470,7 @@ public class ServerScannerScreen extends Screen {
          }
       }
 
-      List<ButtonWidget> toggleOrder = List.of(
+      List<Button> toggleOrder = List.of(
          this.crackedToggleButton, this.hasPlayersToggleButton, this.moddedToggleButton, this.isFullToggleButton, this.hasFaviconToggleButton
       );
       if (compact) {
@@ -483,7 +483,7 @@ public class ServerScannerScreen extends Screen {
 
       this.pageField.visible = true;
 
-      for (ButtonWidget b : toggleOrder) {
+      for (Button b : toggleOrder) {
          b.visible = !this.suppressedToggles.contains(b);
       }
 
@@ -492,7 +492,7 @@ public class ServerScannerScreen extends Screen {
       this.searchButton.visible = true;
       this.clearButton.visible = true;
       int y = 32;
-      List<ClickableWidget> flowFields = new ArrayList<>();
+      List<AbstractWidget> flowFields = new ArrayList<>();
 
       for (StylishTextFieldWidget fx : fieldOrder) {
          if (fx.visible) {
@@ -501,9 +501,9 @@ public class ServerScannerScreen extends Screen {
       }
 
       y = this.flow(flowFields, y, 35, 9);
-      List<ClickableWidget> flowToggles = new ArrayList<>();
+      List<AbstractWidget> flowToggles = new ArrayList<>();
 
-      for (ButtonWidget b : toggleOrder) {
+      for (Button b : toggleOrder) {
          if (b.visible) {
             flowToggles.add(b);
          }
@@ -513,7 +513,7 @@ public class ServerScannerScreen extends Screen {
          y = this.flow(flowToggles, y, 26, 0);
       }
 
-      List<ClickableWidget> actionRow = List.of(
+      List<AbstractWidget> actionRow = List.of(
          this.pageField,
          this.prevPageButton,
          this.nextPageButton,
@@ -534,7 +534,7 @@ public class ServerScannerScreen extends Screen {
       this.listTopY = this.controlsBottomY + 22;
    }
 
-   private int flow(List<? extends ClickableWidget> widgets, int startY, int rowStride, int widgetYOffset) {
+   private int flow(List<? extends AbstractWidget> widgets, int startY, int rowStride, int widgetYOffset) {
       int margin = 8;
       int gap = 6;
       int maxX = this.width - margin;
@@ -542,7 +542,7 @@ public class ServerScannerScreen extends Screen {
       int y = startY;
       boolean placedAny = false;
 
-      for (ClickableWidget w : widgets) {
+      for (AbstractWidget w : widgets) {
          if (w != null && w.visible) {
             int ww = Math.min(w.getWidth(), Math.max(40, maxX - margin));
             w.setWidth(ww);
@@ -630,8 +630,8 @@ public class ServerScannerScreen extends Screen {
       this.apiClient.auth().clear();
       invalidateSearchCache();
       invalidateLiveCache();
-      if (this.client != null) {
-         this.client.setScreen(new ServerSearchAuthScreen(this.parent));
+      if (this.minecraft != null) {
+         this.minecraft.setScreen(new ServerSearchAuthScreen(this.parent));
       }
    }
 
@@ -651,16 +651,16 @@ public class ServerScannerScreen extends Screen {
                   String userId = getString(o, "user_id", "");
                   boolean isAdmin = getBoolean(o, "is_admin", false);
                   String name = !username.isEmpty() ? username : userId;
-                  if (this.client != null) {
-                     this.client.execute(() -> {
+                  if (this.minecraft != null) {
+                     this.minecraft.execute(() -> {
                         this.sessionValidated = true;
                         this.sessionValidateInFlight = false;
                         this.accountStatus = name.isEmpty() ? "Linked" : "Linked as " + name + (isAdmin ? " (admin)" : "");
                      });
                   }
                } catch (ApiException var6) {
-                  if (this.client != null) {
-                     this.client.execute(() -> {
+                  if (this.minecraft != null) {
+                     this.minecraft.execute(() -> {
                         this.sessionValidateInFlight = false;
                         if (var6.isAuthFailure()) {
                            this.apiClient.auth().clear();
@@ -673,8 +673,8 @@ public class ServerScannerScreen extends Screen {
                      this.sessionValidateInFlight = false;
                   }
                } catch (Exception var7) {
-                  if (this.client != null) {
-                     this.client.execute(() -> {
+                  if (this.minecraft != null) {
+                     this.minecraft.execute(() -> {
                         this.sessionValidateInFlight = false;
                         this.accountStatus = "Could not verify session, retrying…";
                      });
@@ -696,18 +696,18 @@ public class ServerScannerScreen extends Screen {
    }
 
    private void clearFilters() {
-      this.serverTypeField.setText("");
-      this.versionField.setText("");
-      this.softwareField.setText("");
-      this.countryField.setText("US");
-      this.addressField.setText("");
-      this.searchField.setText("");
-      this.modNameField.setText("");
-      this.pluginNameField.setText("");
-      this.playerNameField.setText("");
-      this.minPlayersField.setText("");
-      this.maxPlayersField.setText("");
-      this.pageField.setText("1");
+      this.serverTypeField.setValue("");
+      this.versionField.setValue("");
+      this.softwareField.setValue("");
+      this.countryField.setValue("US");
+      this.addressField.setValue("");
+      this.searchField.setValue("");
+      this.modNameField.setValue("");
+      this.pluginNameField.setValue("");
+      this.playerNameField.setValue("");
+      this.minPlayersField.setValue("");
+      this.maxPlayersField.setValue("");
+      this.pageField.setValue("1");
       this.crackedFilter = ServerScannerScreen.TriState.ANY;
       this.hasPlayersFilter = ServerScannerScreen.TriState.ANY;
       this.moddedFilter = ServerScannerScreen.TriState.ANY;
@@ -724,8 +724,8 @@ public class ServerScannerScreen extends Screen {
    }
 
    private void startSearch() {
-      this.currentPage = parseIntOrDefault(this.pageField.getText(), 1);
-      this.pageField.setText(Integer.toString(this.currentPage));
+      this.currentPage = parseIntOrDefault(this.pageField.getValue(), 1);
+      this.pageField.setValue(Integer.toString(this.currentPage));
       this.loading = true;
       this.statusText = "Loading...";
       this.searchButton.active = false;
@@ -749,8 +749,8 @@ public class ServerScannerScreen extends Screen {
                int online = getInt(o, "online_servers", -1);
                int totalServers = getInt(o, "total_servers", -1);
                int totalCountries = getInt(o, "total_countries", -1);
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.statsOnlineServers = online;
                      this.statsTotalServers = totalServers;
                      this.statsTotalCountries = totalCountries;
@@ -758,8 +758,8 @@ public class ServerScannerScreen extends Screen {
                   });
                }
             } catch (ApiException var6) {
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.statsFetchInFlight = false;
                      if (var6.isAuthFailure()) {
                         this.returnToLogin(var6.getMessage());
@@ -767,8 +767,8 @@ public class ServerScannerScreen extends Screen {
                   });
                }
             } catch (Exception var7) {
-               if (this.client != null) {
-                  this.client.execute(() -> this.statsFetchInFlight = false);
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> this.statsFetchInFlight = false);
                } else {
                   this.statsFetchInFlight = false;
                }
@@ -880,8 +880,8 @@ public class ServerScannerScreen extends Screen {
                   }
                }
 
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.optTypes = types;
                      this.optVersions = versions;
                      this.optSoftware = software;
@@ -896,8 +896,8 @@ public class ServerScannerScreen extends Screen {
                   this.filterOptionsFetchInFlight = false;
                }
             } catch (ApiException var17) {
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.filterOptionsFetchInFlight = false;
                      this.filterOptionsStatus = "Filter suggestions unavailable";
                      if (var17.isAuthFailure()) {
@@ -908,8 +908,8 @@ public class ServerScannerScreen extends Screen {
                   this.filterOptionsFetchInFlight = false;
                }
             } catch (Exception var18) {
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.filterOptionsFetchInFlight = false;
                      this.filterOptionsStatus = "Filter suggestions unavailable";
                   });
@@ -945,18 +945,18 @@ public class ServerScannerScreen extends Screen {
    }
 
    private void applyUiState() {
-      this.serverTypeField.setText(LAST_UI_STATE.serverType);
-      this.versionField.setText(LAST_UI_STATE.version);
-      this.softwareField.setText(LAST_UI_STATE.software);
-      this.countryField.setText(LAST_UI_STATE.country);
-      this.addressField.setText(LAST_UI_STATE.address);
-      this.searchField.setText(LAST_UI_STATE.search);
-      this.modNameField.setText(LAST_UI_STATE.modName);
-      this.pluginNameField.setText(LAST_UI_STATE.pluginName);
-      this.playerNameField.setText(LAST_UI_STATE.playerName);
-      this.minPlayersField.setText(LAST_UI_STATE.minPlayers);
-      this.maxPlayersField.setText(LAST_UI_STATE.maxPlayers);
-      this.pageField.setText(Integer.toString(Math.max(1, LAST_UI_STATE.currentPage)));
+      this.serverTypeField.setValue(LAST_UI_STATE.serverType);
+      this.versionField.setValue(LAST_UI_STATE.version);
+      this.softwareField.setValue(LAST_UI_STATE.software);
+      this.countryField.setValue(LAST_UI_STATE.country);
+      this.addressField.setValue(LAST_UI_STATE.address);
+      this.searchField.setValue(LAST_UI_STATE.search);
+      this.modNameField.setValue(LAST_UI_STATE.modName);
+      this.pluginNameField.setValue(LAST_UI_STATE.pluginName);
+      this.playerNameField.setValue(LAST_UI_STATE.playerName);
+      this.minPlayersField.setValue(LAST_UI_STATE.minPlayers);
+      this.maxPlayersField.setValue(LAST_UI_STATE.maxPlayers);
+      this.pageField.setValue(Integer.toString(Math.max(1, LAST_UI_STATE.currentPage)));
       this.currentPage = Math.max(1, LAST_UI_STATE.currentPage);
       this.crackedFilter = LAST_UI_STATE.crackedFilter;
       this.hasPlayersFilter = LAST_UI_STATE.hasPlayersFilter;
@@ -1037,51 +1037,51 @@ public class ServerScannerScreen extends Screen {
 
    private void saveUiState() {
       if (this.serverTypeField != null) {
-         LAST_UI_STATE.serverType = this.serverTypeField.getText();
+         LAST_UI_STATE.serverType = this.serverTypeField.getValue();
       }
 
       if (this.versionField != null) {
-         LAST_UI_STATE.version = this.versionField.getText();
+         LAST_UI_STATE.version = this.versionField.getValue();
       }
 
       if (this.softwareField != null) {
-         LAST_UI_STATE.software = this.softwareField.getText();
+         LAST_UI_STATE.software = this.softwareField.getValue();
       }
 
       if (this.countryField != null) {
-         LAST_UI_STATE.country = this.countryField.getText();
+         LAST_UI_STATE.country = this.countryField.getValue();
       }
 
       if (this.addressField != null) {
-         LAST_UI_STATE.address = this.addressField.getText();
+         LAST_UI_STATE.address = this.addressField.getValue();
       }
 
       if (this.searchField != null) {
-         LAST_UI_STATE.search = this.searchField.getText();
+         LAST_UI_STATE.search = this.searchField.getValue();
       }
 
       if (this.modNameField != null) {
-         LAST_UI_STATE.modName = this.modNameField.getText();
+         LAST_UI_STATE.modName = this.modNameField.getValue();
       }
 
       if (this.pluginNameField != null) {
-         LAST_UI_STATE.pluginName = this.pluginNameField.getText();
+         LAST_UI_STATE.pluginName = this.pluginNameField.getValue();
       }
 
       if (this.playerNameField != null) {
-         LAST_UI_STATE.playerName = this.playerNameField.getText();
+         LAST_UI_STATE.playerName = this.playerNameField.getValue();
       }
 
       if (this.minPlayersField != null) {
-         LAST_UI_STATE.minPlayers = this.minPlayersField.getText();
+         LAST_UI_STATE.minPlayers = this.minPlayersField.getValue();
       }
 
       if (this.maxPlayersField != null) {
-         LAST_UI_STATE.maxPlayers = this.maxPlayersField.getText();
+         LAST_UI_STATE.maxPlayers = this.maxPlayersField.getValue();
       }
 
       LAST_UI_STATE.currentPage = parseIntOrDefault(
-         this.pageField != null ? this.pageField.getText() : Integer.toString(this.currentPage), this.currentPage
+         this.pageField != null ? this.pageField.getValue() : Integer.toString(this.currentPage), this.currentPage
       );
       LAST_UI_STATE.crackedFilter = this.crackedFilter;
       LAST_UI_STATE.hasPlayersFilter = this.hasPlayersFilter;
@@ -1147,8 +1147,8 @@ public class ServerScannerScreen extends Screen {
             try {
                body = this.apiClient.getAuthed("https://minecraftserversearch.com/api/addon/v1/live");
             } catch (ApiException var7) {
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.liveLoading = false;
                      this.liveStatusText = var7.isAuthFailure() ? "Session ended — please sign in again" : "Live fetch failed: " + var7.getMessage();
                      if (var7.isAuthFailure()) {
@@ -1189,8 +1189,8 @@ public class ServerScannerScreen extends Screen {
                   }
                }
 
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.liveEntries.clear();
                      this.liveEntries.addAll(parsed);
                      this.liveScrollOffset = 0;
@@ -1201,8 +1201,8 @@ public class ServerScannerScreen extends Screen {
                   });
                }
             } catch (Exception var8) {
-               if (this.client != null) {
-                  this.client.execute(() -> {
+               if (this.minecraft != null) {
+                  this.minecraft.execute(() -> {
                      this.liveLoading = false;
                      this.liveStatusText = "Live fetch failed: " + var8.getMessage();
                   });
@@ -1215,17 +1215,17 @@ public class ServerScannerScreen extends Screen {
    private String buildSearchUrl() {
       Map<String, String> params = new LinkedHashMap<>();
       params.put("page", Integer.toString(this.currentPage));
-      putIfPresent(params, "server_type", this.serverTypeField.getText());
-      putIfPresent(params, "version", this.versionField.getText());
-      putIfPresent(params, "software", this.softwareField.getText());
-      putIfPresent(params, "search", this.searchField.getText());
-      putIfPresent(params, "address", this.addressField.getText());
-      putIfPresent(params, "country", this.countryField.getText().toUpperCase());
-      putIfPresent(params, "mod_name", this.modNameField.getText());
-      putIfPresent(params, "plugin_name", this.pluginNameField.getText());
-      putIfPresent(params, "player_name", this.playerNameField.getText());
-      Integer minPlayers = parseOptionalInt(this.minPlayersField.getText());
-      Integer maxPlayers = parseOptionalInt(this.maxPlayersField.getText());
+      putIfPresent(params, "server_type", this.serverTypeField.getValue());
+      putIfPresent(params, "version", this.versionField.getValue());
+      putIfPresent(params, "software", this.softwareField.getValue());
+      putIfPresent(params, "search", this.searchField.getValue());
+      putIfPresent(params, "address", this.addressField.getValue());
+      putIfPresent(params, "country", this.countryField.getValue().toUpperCase());
+      putIfPresent(params, "mod_name", this.modNameField.getValue());
+      putIfPresent(params, "plugin_name", this.pluginNameField.getValue());
+      putIfPresent(params, "player_name", this.playerNameField.getValue());
+      Integer minPlayers = parseOptionalInt(this.minPlayersField.getValue());
+      Integer maxPlayers = parseOptionalInt(this.maxPlayersField.getValue());
       if (minPlayers != null) {
          params.put("min_players", Integer.toString(minPlayers));
       }
@@ -1276,8 +1276,8 @@ public class ServerScannerScreen extends Screen {
          body = this.apiClient.getAuthed(url);
       } catch (ApiException var10) {
          if (var10.isAuthFailure()) {
-            if (this.client != null) {
-               this.client.execute(() -> {
+            if (this.minecraft != null) {
+               this.minecraft.execute(() -> {
                   this.loading = false;
                   this.statusText = "Session ended — please sign in again";
                   this.returnToLogin(var10.getMessage());
@@ -1315,8 +1315,8 @@ public class ServerScannerScreen extends Screen {
             }
          }
 
-         if (this.client != null) {
-            this.client.execute(() -> {
+         if (this.minecraft != null) {
+            this.minecraft.execute(() -> {
                if (generation == this.searchGeneration) {
                   this.servers.clear();
                   this.servers.addAll(parsed);
@@ -1337,8 +1337,8 @@ public class ServerScannerScreen extends Screen {
    }
 
    private void setError(int generation, String msg) {
-      if (this.client != null) {
-         this.client.execute(() -> {
+      if (this.minecraft != null) {
+         this.minecraft.execute(() -> {
             if (generation == this.searchGeneration) {
                this.loading = false;
                this.statusText = msg;
@@ -1353,32 +1353,32 @@ public class ServerScannerScreen extends Screen {
    }
 
    private void returnToLogin(String reason) {
-      if (this.client != null) {
+      if (this.minecraft != null) {
          if (reason != null && !reason.isEmpty()) {
             DupeClient.LOGGER.info("Returning to login screen: {}", reason);
          }
 
-         this.client.setScreen(new ServerSearchAuthScreen(this.parent));
+         this.minecraft.setScreen(new ServerSearchAuthScreen(this.parent));
       }
    }
 
    private void joinVisible(int localIndex) {
       int idx = this.scrollOffset + localIndex;
-      if (idx >= 0 && idx < this.servers.size() && this.client != null) {
+      if (idx >= 0 && idx < this.servers.size() && this.minecraft != null) {
          ServerScannerScreen.ServerEntry s = this.servers.get(idx);
          String address = s.ip + ":" + s.port;
-         ServerAddress parsed = ServerAddress.parse(address);
-         ServerInfo info = new ServerInfo(s.ip, address, ServerInfo.ServerType.OTHER);
-         ConnectScreen.connect(this, this.client, parsed, info, false, null);
+         ServerAddress parsed = ServerAddress.parseString(address);
+         ServerData info = new ServerData(s.ip, address, ServerData.Type.OTHER);
+         ConnectScreen.startConnecting(this, this.minecraft, parsed, info, false, null);
       }
    }
 
    private void addVisible(int localIndex) {
       int idx = this.scrollOffset + localIndex;
-      if (idx >= 0 && idx < this.servers.size() && this.client != null) {
+      if (idx >= 0 && idx < this.servers.size() && this.minecraft != null) {
          ServerScannerScreen.ServerEntry s = this.servers.get(idx);
          String address = s.ip + ":" + s.port;
-         ServerInfo info = new ServerInfo(s.ip, address, ServerInfo.ServerType.OTHER);
+         ServerData info = new ServerData(s.ip, address, ServerData.Type.OTHER);
          if (this.addToSavedServerList(info)) {
             this.statusText = "Added " + address + " to server list";
             DupeClientToasts.show("Server list", "Added " + address);
@@ -1390,14 +1390,14 @@ public class ServerScannerScreen extends Screen {
 
    private void copyVisible(int localIndex) {
       int idx = this.scrollOffset + localIndex;
-      if (idx >= 0 && idx < this.servers.size() && this.client != null) {
+      if (idx >= 0 && idx < this.servers.size() && this.minecraft != null) {
          ServerScannerScreen.ServerEntry s = this.servers.get(idx);
          this.copyServerAddress(s.ip + ":" + s.port);
       }
    }
 
    private void addAllVisible() {
-      if (this.client == null || this.servers.isEmpty()) {
+      if (this.minecraft == null || this.servers.isEmpty()) {
          this.statusText = "No servers to add";
          return;
       }
@@ -1405,7 +1405,7 @@ public class ServerScannerScreen extends Screen {
       int skipped = 0;
       for (ServerScannerScreen.ServerEntry s : this.servers) {
          String address = s.ip + ":" + s.port;
-         ServerInfo info = new ServerInfo(s.ip, address, ServerInfo.ServerType.OTHER);
+         ServerData info = new ServerData(s.ip, address, ServerData.Type.OTHER);
          if (this.addToSavedServerList(info)) {
             added++;
          } else {
@@ -1417,18 +1417,18 @@ public class ServerScannerScreen extends Screen {
    }
 
    private void addBulkVisible() {
-      if (this.client == null || this.servers.isEmpty()) {
+      if (this.minecraft == null || this.servers.isEmpty()) {
          this.statusText = "No servers to add";
          return;
       }
-      int count = parseIntOrDefault(this.bulkAddCountField.getText(), 1);
+      int count = parseIntOrDefault(this.bulkAddCountField.getValue(), 1);
       count = Math.max(1, Math.min(this.servers.size(), count));
       int added = 0;
       int skipped = 0;
       for (int i = 0; i < count; i++) {
          ServerScannerScreen.ServerEntry s = this.servers.get(i);
          String address = s.ip + ":" + s.port;
-         ServerInfo info = new ServerInfo(s.ip, address, ServerInfo.ServerType.OTHER);
+         ServerData info = new ServerData(s.ip, address, ServerData.Type.OTHER);
          if (this.addToSavedServerList(info)) {
             added++;
          } else {
@@ -1441,8 +1441,8 @@ public class ServerScannerScreen extends Screen {
    }
 
    private void copyServerAddress(String address) {
-      if (this.client != null && this.client.keyboard != null && address != null && !address.isBlank()) {
-         this.client.keyboard.setClipboard(address);
+      if (this.minecraft != null && this.minecraft.keyboardHandler != null && address != null && !address.isBlank()) {
+         this.minecraft.keyboardHandler.setClipboard(address);
          this.statusText = "Copied " + address;
          DupeClientToasts.show("Copied", address);
       }
@@ -1450,23 +1450,23 @@ public class ServerScannerScreen extends Screen {
 
    private void joinLive(int localIndex) {
       int idx = this.liveScrollOffset + localIndex;
-      if (idx >= 0 && idx < this.liveEntries.size() && this.client != null) {
+      if (idx >= 0 && idx < this.liveEntries.size() && this.minecraft != null) {
          ServerScannerScreen.LiveEntry e = this.liveEntries.get(idx);
          String host = this.normalizeServerIp(e.serverIp);
          String address = host + ":" + e.serverPort;
-         ServerAddress parsed = ServerAddress.parse(address);
-         ServerInfo info = new ServerInfo(host, address, ServerInfo.ServerType.OTHER);
-         ConnectScreen.connect(this, this.client, parsed, info, false, null);
+         ServerAddress parsed = ServerAddress.parseString(address);
+         ServerData info = new ServerData(host, address, ServerData.Type.OTHER);
+         ConnectScreen.startConnecting(this, this.minecraft, parsed, info, false, null);
       }
    }
 
    private void addLive(int localIndex) {
       int idx = this.liveScrollOffset + localIndex;
-      if (idx >= 0 && idx < this.liveEntries.size() && this.client != null) {
+      if (idx >= 0 && idx < this.liveEntries.size() && this.minecraft != null) {
          ServerScannerScreen.LiveEntry e = this.liveEntries.get(idx);
          String host = this.normalizeServerIp(e.serverIp);
          String address = host + ":" + e.serverPort;
-         ServerInfo info = new ServerInfo(host, address, ServerInfo.ServerType.OTHER);
+         ServerData info = new ServerData(host, address, ServerData.Type.OTHER);
          if (this.addToSavedServerList(info)) {
             this.liveStatusText = "Added " + address + " to server list";
             DupeClientToasts.show("Server list", "Added " + address);
@@ -1478,44 +1478,44 @@ public class ServerScannerScreen extends Screen {
 
    private void copyLive(int localIndex) {
       int idx = this.liveScrollOffset + localIndex;
-      if (idx >= 0 && idx < this.liveEntries.size() && this.client != null) {
+      if (idx >= 0 && idx < this.liveEntries.size() && this.minecraft != null) {
          ServerScannerScreen.LiveEntry e = this.liveEntries.get(idx);
          String host = this.normalizeServerIp(e.serverIp);
          this.copyServerAddress(host + ":" + e.serverPort);
       }
    }
 
-   private boolean addToSavedServerList(ServerInfo info) {
-      if (this.client == null) {
+   private boolean addToSavedServerList(ServerData info) {
+      if (this.minecraft == null) {
          return false;
       }
       ServerList list;
-      MultiplayerScreen mp = this.findUnderlyingMultiplayerScreen();
+      JoinMultiplayerScreen mp = this.findUnderlyingMultiplayerScreen();
       if (mp != null) {
-         list = mp.getServerList();
+         list = mp.getServers();
       } else {
-         list = new ServerList(this.client);
+         list = new ServerList(this.minecraft);
       }
-      list.loadFile();
+      list.load();
       for (int i = 0; i < list.size(); i++) {
-         ServerInfo existing = list.get(i);
-         if (existing != null && info.address.equals(existing.address)) {
+         ServerData existing = list.get(i);
+         if (existing != null && info.ip.equals(existing.ip)) {
             return false;
          }
       }
       list.add(info, false);
-      list.saveFile();
+      list.save();
       if (mp != null) {
-         ((MultiplayerScreenAccessor)mp).getServerListWidget().setServers(list);
+         ((MultiplayerScreenAccessor)mp).getServerListWidget().updateOnlineServers(list);
       }
       return true;
    }
 
-   private MultiplayerScreen findUnderlyingMultiplayerScreen() {
-      if (this.parent instanceof MultiplayerScreen mp) {
+   private JoinMultiplayerScreen findUnderlyingMultiplayerScreen() {
+      if (this.parent instanceof JoinMultiplayerScreen mp) {
          return mp;
       } else {
-         return this.parent instanceof ServerSearchAuthScreen auth && auth.getNavigationParent() instanceof MultiplayerScreen mp ? mp : null;
+         return this.parent instanceof ServerSearchAuthScreen auth && auth.getNavigationParent() instanceof JoinMultiplayerScreen mp ? mp : null;
       }
    }
 
@@ -1587,8 +1587,8 @@ public class ServerScannerScreen extends Screen {
       try {
          body = this.apiClient.getAuthed(url);
       } catch (ApiException var11) {
-         if (this.client != null) {
-            this.client.execute(() -> {
+         if (this.minecraft != null) {
+            this.minecraft.execute(() -> {
                this.detailsLoading = false;
                this.detailsStatus = var11.isAuthFailure() ? "Session ended — please sign in again" : "Failed to load details: " + var11.getMessage();
                if (var11.isAuthFailure()) {
@@ -1645,16 +1645,16 @@ public class ServerScannerScreen extends Screen {
             recentPlayers,
             plugins
          );
-         if (this.client != null) {
-            this.client.execute(() -> {
+         if (this.minecraft != null) {
+            this.minecraft.execute(() -> {
                this.detailsLoading = false;
                this.detailsStatus = "";
                this.detailsData = parsed;
             });
          }
       } catch (Exception var12) {
-         if (this.client != null) {
-            this.client.execute(() -> {
+         if (this.minecraft != null) {
+            this.minecraft.execute(() -> {
                this.detailsLoading = false;
                this.detailsStatus = "Details request failed: " + var12.getMessage();
             });
@@ -1662,7 +1662,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   public boolean keyPressed(KeyInput input) {
+   public boolean keyPressed(KeyEvent input) {
       if (!this.detailsModalOpen && this.activeTab == ServerScannerScreen.Tab.DASHBOARD) {
          SuggestionDropdown d = this.activeDropdown();
          if (d != null) {
@@ -1742,7 +1742,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   public boolean mouseClicked(Click click, boolean doubled) {
+   public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
       double mouseX = click.x();
       double mouseY = click.y();
       if (this.detailsModalOpen) {
@@ -1790,7 +1790,7 @@ public class ServerScannerScreen extends Screen {
             if (this.activeTab == ServerScannerScreen.Tab.DASHBOARD) {
                for (ServerScannerScreen.ChipRegion c : this.chipRegions) {
                   if (this.isInRect(mouseX, mouseY, c.x(), c.y(), c.w(), c.h())) {
-                     c.field().setText("");
+                     c.field().setValue("");
                      this.startSearch();
                      return true;
                   }
@@ -1800,7 +1800,7 @@ public class ServerScannerScreen extends Screen {
             if (this.activeTab == ServerScannerScreen.Tab.LIVE) {
                for (ServerScannerScreen.LiveLinkRegion link : this.liveLinkRegions) {
                   if (this.isInRect(mouseX, mouseY, link.x, link.y, link.w, link.h)) {
-                     Util.getOperatingSystem().open(link.url);
+                     Util.getPlatform().openUri(link.url);
                      return true;
                   }
                }
@@ -1824,7 +1824,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+   public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
       if (this.activeTab == ServerScannerScreen.Tab.LIVE) {
          this.renderTopStats(context);
          this.renderLivePanelBackgrounds(context);
@@ -1833,7 +1833,7 @@ public class ServerScannerScreen extends Screen {
          super.render(context, mouseX, mouseY, deltaTicks);
          this.renderLivePanelForeground(context);
          int liveColor = this.liveLoading ? -1261205 : (this.liveStatusText.startsWith("Live fetch failed") ? -32640 : -7937906);
-         context.drawTextWithShadow(this.textRenderer, Text.literal(this.liveStatusText), 10, this.height - 14, liveColor);
+         context.drawString(this.font, Component.literal(this.liveStatusText), 10, this.height - 14, liveColor);
          this.renderAccountLabel(context);
          if (this.detailsModalOpen) {
             this.renderDetailsModal(context);
@@ -1858,19 +1858,19 @@ public class ServerScannerScreen extends Screen {
          context.fill(8, listTop - 18, this.width - 8, listTop - 2, -2011157958);
          context.fill(8, listTop - 2, this.width - 8, listBottom, 1712066586);
          int headerY = listTop - 15;
-         context.drawTextWithShadow(this.textRenderer, Text.literal("IP / MOTD"), cols.ipX() + 20, headerY, -5257217);
-         context.drawTextWithShadow(this.textRenderer, Text.literal("Version"), cols.versionX(), headerY, -5257217);
+         context.drawString(this.font, Component.literal("IP / MOTD"), cols.ipX() + 20, headerY, -5257217);
+         context.drawString(this.font, Component.literal("Version"), cols.versionX(), headerY, -5257217);
          if (cols.showSoftware()) {
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Software"), cols.softwareX(), headerY, -5257217);
+            context.drawString(this.font, Component.literal("Software"), cols.softwareX(), headerY, -5257217);
          }
 
-         context.drawTextWithShadow(this.textRenderer, Text.literal("Players"), cols.playersX(), headerY, -5257217);
-         context.drawTextWithShadow(this.textRenderer, Text.literal("Cty"), cols.countryX(), headerY, -5257217);
+         context.drawString(this.font, Component.literal("Players"), cols.playersX(), headerY, -5257217);
+         context.drawString(this.font, Component.literal("Cty"), cols.countryX(), headerY, -5257217);
          if (cols.showLastSeen()) {
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Last Seen"), cols.lastSeenX(), headerY, -5257217);
+            context.drawString(this.font, Component.literal("Last Seen"), cols.lastSeenX(), headerY, -5257217);
          }
 
-         context.drawTextWithShadow(this.textRenderer, Text.literal("Actions"), cols.actionsX() + 2, headerY, -5257217);
+         context.drawString(this.font, Component.literal("Actions"), cols.actionsX() + 2, headerY, -5257217);
 
          this.positionDashboardActionButtons();
          this.refreshActionButtons();
@@ -1902,37 +1902,37 @@ public class ServerScannerScreen extends Screen {
             int iconY = y + 2;
             Identifier favicon = this.getOrLoadFavicon(s);
             if (favicon != null) {
-               context.drawTexture(RenderPipelines.GUI_TEXTURED, favicon, iconX, iconY, 0.0F, 0.0F, 16, 16, 16, 16);
+               context.blit(RenderPipelines.GUI_TEXTURED, favicon, iconX, iconY, 0.0F, 0.0F, 16, 16, 16, 16);
             } else {
                context.fill(iconX, iconY, iconX + 16, iconY + 16, 1714698822);
             }
 
             int textX = cols.ipX() + 20;
             int ipTextW = Math.max(0, cols.ipW() - 22);
-            context.drawText(this.textRenderer, this.truncateToWidth(ipPort, ipTextW), textX, y + 5, -1, false);
+            context.drawString(this.font, this.truncateToWidth(ipPort, ipTextW), textX, y + 5, -1, false);
             String desc = this.truncateToWidth(this.sanitizeMotd(s.description), cols.ipW());
-            context.drawText(this.textRenderer, desc, cols.ipX(), y + 19, -8355712, false);
-            context.drawText(this.textRenderer, this.truncateToWidth(s.version, cols.versionW()), cols.versionX(), y + 5, -4729345, false);
+            context.drawString(this.font, desc, cols.ipX(), y + 19, -8355712, false);
+            context.drawString(this.font, this.truncateToWidth(s.version, cols.versionW()), cols.versionX(), y + 5, -4729345, false);
             if (cols.showSoftware()) {
-               context.drawText(this.textRenderer, this.truncateToWidth(s.software, cols.softwareW()), cols.softwareX(), y + 5, -8398721, false);
+               context.drawString(this.font, this.truncateToWidth(s.software, cols.softwareW()), cols.softwareX(), y + 5, -8398721, false);
             }
 
-            context.drawText(this.textRenderer, players, cols.playersX(), y + 5, -1261205, false);
-            context.drawText(this.textRenderer, s.country, cols.countryX(), y + 5, -3815995, false);
+            context.drawString(this.font, players, cols.playersX(), y + 5, -1261205, false);
+            context.drawString(this.font, s.country, cols.countryX(), y + 5, -3815995, false);
             if (cols.showLastSeen()) {
-               context.drawText(
-                  this.textRenderer, this.truncateToWidth(formatLastSeen(s.lastSeenIso), cols.lastSeenW()), cols.lastSeenX(), y + 5, -6250336, false
+               context.drawString(
+                  this.font, this.truncateToWidth(formatLastSeen(s.lastSeenIso), cols.lastSeenW()), cols.lastSeenX(), y + 5, -6250336, false
                );
             }
          }
 
          int from = this.servers.isEmpty() ? 0 : this.scrollOffset + 1;
          int to = Math.min(this.servers.size(), this.scrollOffset + this.visibleRows);
-         context.drawTextWithShadow(
-            this.textRenderer, Text.literal("Showing " + from + "-" + to + " of " + this.servers.size()), 10, this.height - 24, -7686913
+         context.drawString(
+            this.font, Component.literal("Showing " + from + "-" + to + " of " + this.servers.size()), 10, this.height - 24, -7686913
          );
          int statusColor = this.loading ? -1261205 : (!this.statusText.startsWith("Search failed") && !this.statusText.startsWith("HTTP ") ? -7937906 : -32640);
-         context.drawTextWithShadow(this.textRenderer, Text.literal(this.statusText), 10, this.height - 14, statusColor);
+         context.drawString(this.font, Component.literal(this.statusText), 10, this.height - 14, statusColor);
          this.renderAccountLabel(context);
          if (!this.detailsModalOpen) {
             SuggestionDropdown active = this.activeDropdown();
@@ -1947,7 +1947,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private void renderFilterChips(DrawContext context) {
+   private void renderFilterChips(GuiGraphics context) {
       this.chipRegions.clear();
       if (this.chipBandY >= 0) {
          int x = 12;
@@ -1960,28 +1960,28 @@ public class ServerScannerScreen extends Screen {
          x = this.drawFilterChip(context, x, y, maxX, "Mod", this.modNameField);
          this.drawFilterChip(context, x, y, maxX, "Plugin", this.pluginNameField);
          if (!this.filterOptionsStatus.isEmpty()) {
-            int w = this.textRenderer.getWidth(this.filterOptionsStatus);
-            context.drawText(this.textRenderer, this.filterOptionsStatus, maxX - w, y, -2054054, false);
+            int w = this.font.width(this.filterOptionsStatus);
+            context.drawString(this.font, this.filterOptionsStatus, maxX - w, y, -2054054, false);
          }
       }
    }
 
-   private int drawFilterChip(DrawContext context, int x, int y, int maxX, String label, StylishTextFieldWidget field) {
-      String value = field != null && field.getText() != null ? field.getText().trim() : "";
+   private int drawFilterChip(GuiGraphics context, int x, int y, int maxX, String label, StylishTextFieldWidget field) {
+      String value = field != null && field.getValue() != null ? field.getValue().trim() : "";
       if (value.isEmpty()) {
          return x;
       } else {
          String text = this.truncateToWidth(label + ": " + value, 150);
-         int textW = this.textRenderer.getWidth(text);
-         int xMarkW = this.textRenderer.getWidth("x");
+         int textW = this.font.width(text);
+         int xMarkW = this.font.width("x");
          int chipW = textW + 6 + xMarkW + 8;
          if (x + chipW > maxX) {
             return x;
          } else {
             context.fill(x, y - 1, x + chipW, y + 10, -2010035078);
-            context.drawText(this.textRenderer, text, x + 4, y + 1, -1642753, false);
+            context.drawString(this.font, text, x + 4, y + 1, -1642753, false);
             int xMarkX = x + 4 + textW + 4;
-            context.drawText(this.textRenderer, "x", xMarkX, y + 1, -28528, false);
+            context.drawString(this.font, "x", xMarkX, y + 1, -28528, false);
             this.chipRegions.add(new ServerScannerScreen.ChipRegion(xMarkX - 2, y - 2, xMarkW + 6, 13, field));
             return x + chipW + 5;
          }
@@ -2000,13 +2000,13 @@ public class ServerScannerScreen extends Screen {
       return this.actionCopyButtonX() - ACTION_BTN_GAP - ACTION_JOIN_BTN_W;
    }
 
-   private void renderLivePanelBackgrounds(DrawContext context) {
+   private void renderLivePanelBackgrounds(GuiGraphics context) {
       int titleY = this.getLiveSectionTitleY();
       int listTop = this.getLiveCardsTop();
       int listBottom = this.height - 26;
       int cardH = 58;
       context.fill(8, titleY - 2, this.width - 8, listBottom, 1712066586);
-      context.drawTextWithShadow(this.textRenderer, Text.literal("Live Streamer Sightings"), 12, titleY, -6360130);
+      context.drawString(this.font, Component.literal("Live Streamer Sightings"), 12, titleY, -6360130);
       int cardW = this.width - 20;
       int joinX = this.actionJoinButtonX();
 
@@ -2021,7 +2021,7 @@ public class ServerScannerScreen extends Screen {
          context.fill(10, y, 10 + cardW, y + cardH - 2, 1714437464);
          context.fill(10, y, 10 + cardW, y + 20, -2009050000);
          String badge = e.isLiveNow ? "LIVE" : "EARLIER";
-         int badgeW = this.textRenderer.getWidth(badge) + 8;
+         int badgeW = this.font.width(badge) + 8;
          int bx = joinX - badgeW - 36;
          context.fill(bx, y + 4, bx + badgeW, y + 16, e.isLiveNow ? -1441830342 : -1439350694);
       }
@@ -2055,7 +2055,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private void renderLivePanelForeground(DrawContext context) {
+   private void renderLivePanelForeground(GuiGraphics context) {
       this.liveLinkRegions.clear();
       int listTop = this.getLiveCardsTop();
       int cardH = 58;
@@ -2075,34 +2075,34 @@ public class ServerScannerScreen extends Screen {
          String username = this.truncateToWidth(displayName, Math.max(40, nameMaxW));
          int ux = 14;
          int uy = y + 6;
-         context.drawTextWithShadow(this.textRenderer, Text.literal(username), ux, uy, -11672441);
+         context.drawString(this.font, Component.literal(username), ux, uy, -11672441);
          String url = "https://www.twitch.tv/" + e.userLogin;
-         this.liveLinkRegions.add(new ServerScannerScreen.LiveLinkRegion(ux, uy, this.textRenderer.getWidth(username), 9, url));
+         this.liveLinkRegions.add(new ServerScannerScreen.LiveLinkRegion(ux, uy, this.font.width(username), 9, url));
          String badge = e.isLiveNow ? "LIVE" : "EARLIER";
-         int badgeW = this.textRenderer.getWidth(badge) + 8;
+         int badgeW = this.font.width(badge) + 8;
          int bx = joinX - badgeW - 36;
-         context.drawText(this.textRenderer, badge, bx + 4, y + 5, -1903873, false);
-         context.drawText(this.textRenderer, e.confidence + "%", bx + badgeW + 4, y + 5, -1261205, false);
+         context.drawString(this.font, badge, bx + 4, y + 5, -1903873, false);
+         context.drawString(this.font, e.confidence + "%", bx + badgeW + 4, y + 5, -1261205, false);
          int bodyY = y + 20 + 2;
-         context.drawText(this.textRenderer, this.truncateToWidth(this.sanitizeMotd(e.streamTitle), titleW), 14, bodyY, -1, false);
+         context.drawString(this.font, this.truncateToWidth(this.sanitizeMotd(e.streamTitle), titleW), 14, bodyY, -1, false);
          String srv = this.normalizeServerIp(e.serverIp) + ":" + e.serverPort;
-         context.drawText(this.textRenderer, this.truncateToWidth(srv, 140), 14, bodyY + 11, -4204289, false);
-         context.drawText(this.textRenderer, this.truncateToWidth(e.serverType, 72), 158, bodyY + 11, -4204289, false);
-         context.drawText(this.textRenderer, e.countryCode, 236, bodyY + 11, -4204289, false);
+         context.drawString(this.font, this.truncateToWidth(srv, 140), 14, bodyY + 11, -4204289, false);
+         context.drawString(this.font, this.truncateToWidth(e.serverType, 72), 158, bodyY + 11, -4204289, false);
+         context.drawString(this.font, e.countryCode, 236, bodyY + 11, -4204289, false);
          String chat = e.enforcesSecureChat == null ? "?" : (e.enforcesSecureChat ? "Secure" : "Off");
-         context.drawText(this.textRenderer, chat, 268, bodyY + 11, -7351391, false);
+         context.drawString(this.font, chat, 268, bodyY + 11, -7351391, false);
          String meta = e.sightingsToday + " today · " + formatLastSeen(e.lastSeenAt) + " · " + formatTimeAgo(e.streamStartedAt);
-         context.drawText(this.textRenderer, this.truncateToWidth(meta, titleW), 14, bodyY + 22, -7303024, false);
+         context.drawString(this.font, this.truncateToWidth(meta, titleW), 14, bodyY + 22, -7303024, false);
       }
 
       this.refreshLiveActionButtons();
    }
 
-   private void drawLabel(DrawContext context, String text, int x, int y) {
-      context.drawTextWithShadow(this.textRenderer, Text.literal(text), x, y, 2141233312);
+   private void drawLabel(GuiGraphics context, String text, int x, int y) {
+      context.drawString(this.font, Component.literal(text), x, y, 2141233312);
    }
 
-   private void renderTopStats(DrawContext context) {
+   private void renderTopStats(GuiGraphics context) {
       int limit = (this.signOutButton != null ? this.signOutButton.getX() : this.width - 84) - 8;
       int x = 190;
       x = this.drawStatChip(context, x, 6, limit, "Online " + this.formatStat(this.statsOnlineServers), -13787046, -16437990);
@@ -2110,23 +2110,23 @@ public class ServerScannerScreen extends Screen {
       this.drawStatChip(context, x + 6, 6, limit, "Countries " + this.formatStat(this.statsTotalCountries), -7706169, -14347457);
    }
 
-   private int drawStatChip(DrawContext context, int x, int y, int limit, String text, int borderColor, int fillColor) {
-      int w = this.textRenderer.getWidth(text) + 12;
+   private int drawStatChip(GuiGraphics context, int x, int y, int limit, String text, int borderColor, int fillColor) {
+      int w = this.font.width(text) + 12;
       if (x + w > limit) {
          return x;
       } else {
          context.fill(x, y, x + w, y + 14, borderColor);
          context.fill(x + 1, y + 1, x + w - 1, y + 13, fillColor);
-         context.drawText(this.textRenderer, text, x + 6, y + 3, -1, false);
+         context.drawString(this.font, text, x + 6, y + 3, -1, false);
          return x + w;
       }
    }
 
-   private void renderAccountLabel(DrawContext context) {
+   private void renderAccountLabel(GuiGraphics context) {
       String label = this.accountStatus;
-      int w = this.textRenderer.getWidth(label);
+      int w = this.font.width(label);
       int color = this.accountStatus.startsWith("Could not verify") ? -2054054 : -7364424;
-      context.drawTextWithShadow(this.textRenderer, Text.literal(label), this.width - 10 - w, this.height - 14, color);
+      context.drawString(this.font, Component.literal(label), this.width - 10 - w, this.height - 14, color);
    }
 
    private String formatStat(int value) {
@@ -2146,11 +2146,11 @@ public class ServerScannerScreen extends Screen {
    private String truncateToWidth(String value, int maxWidth) {
       if (value.isEmpty()) {
          return value;
-      } else if (this.textRenderer.getWidth(value) <= maxWidth) {
+      } else if (this.font.width(value) <= maxWidth) {
          return value;
       } else {
          String ellipsis = "...";
-         String trimmed = this.textRenderer.trimToWidth(value, Math.max(0, maxWidth - this.textRenderer.getWidth(ellipsis)));
+         String trimmed = this.font.plainSubstrByWidth(value, Math.max(0, maxWidth - this.font.width(ellipsis)));
          return trimmed + ellipsis;
       }
    }
@@ -2160,7 +2160,7 @@ public class ServerScannerScreen extends Screen {
    }
 
    private Identifier getOrLoadFavicon(String key, String data) {
-      if (this.client == null) {
+      if (this.minecraft == null) {
          return null;
       } else {
          Identifier existing = this.faviconIds.get(key);
@@ -2173,9 +2173,9 @@ public class ServerScannerScreen extends Screen {
                String b64 = data.substring(data.indexOf("base64,") + "base64,".length());
                byte[] bytes = Base64.getDecoder().decode(b64);
                NativeImage image = NativeImage.read(new ByteArrayInputStream(bytes));
-               NativeImageBackedTexture texture = new NativeImageBackedTexture(() -> "server-scanner-favicon-" + key, image);
-               Identifier id = Identifier.of("minecraft-server-scanner-addon", "favicon/" + Integer.toHexString(key.hashCode()));
-               this.client.getTextureManager().registerTexture(id, texture);
+               DynamicTexture texture = new DynamicTexture(() -> "server-scanner-favicon-" + key, image);
+               Identifier id = Identifier.fromNamespaceAndPath("minecraft-server-scanner-addon", "favicon/" + Integer.toHexString(key.hashCode()));
+               this.minecraft.getTextureManager().register(id, texture);
                this.faviconTextures.put(key, texture);
                this.faviconIds.put(key, id);
                return id;
@@ -2190,7 +2190,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private void renderDetailsModal(DrawContext context) {
+   private void renderDetailsModal(GuiGraphics context) {
       int modalW = 680;
       int modalH = this.getDetailsModalHeight();
       int x = (this.width - modalW) / 2;
@@ -2199,13 +2199,13 @@ public class ServerScannerScreen extends Screen {
       context.fill(x, y, x + modalW, y + modalH, -267381470);
       context.fill(x + 1, y + 1, x + modalW - 1, y + modalH - 1, -266788557);
       context.fill(x, y, x + modalW, y + 30, -14731944);
-      context.drawTextWithShadow(this.textRenderer, Text.literal("Server Details"), x + 8, y + 8, -1);
-      context.drawTextWithShadow(this.textRenderer, Text.literal("X"), x + modalW - 16, y + 9, -28528);
+      context.drawString(this.font, Component.literal("Server Details"), x + 8, y + 8, -1);
+      context.drawString(this.font, Component.literal("X"), x + modalW - 16, y + 9, -28528);
       if (this.detailsLoading) {
-         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(this.detailsStatus), x + modalW / 2, y + modalH / 2, -1261205);
+         context.drawCenteredString(this.font, Component.literal(this.detailsStatus), x + modalW / 2, y + modalH / 2, -1261205);
       } else if (this.detailsData == null) {
          String msg = this.detailsStatus.isBlank() ? "No details loaded." : this.detailsStatus;
-         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(msg), x + modalW / 2, y + modalH / 2, -32640);
+         context.drawCenteredString(this.font, Component.literal(msg), x + modalW / 2, y + modalH / 2, -32640);
       } else {
          int left = x + 14;
          int right = x + 250;
@@ -2217,7 +2217,7 @@ public class ServerScannerScreen extends Screen {
          context.fill(right - 8, lineY - 6, x + modalW - 14, y + modalH - 14, 1429225050);
          Identifier icon = this.getOrLoadFavicon("detail:" + this.detailsData.ip + ":" + this.detailsData.port, this.detailsData.faviconDataUrl);
          if (icon != null) {
-            context.drawTexture(RenderPipelines.GUI_TEXTURED, icon, left, lineY, 0.0F, 0.0F, 56, 56, 56, 56);
+            context.blit(RenderPipelines.GUI_TEXTURED, icon, left, lineY, 0.0F, 0.0F, 56, 56, 56, 56);
          } else {
             context.fill(left, lineY, left + 56, lineY + 56, 1714698822);
          }
@@ -2227,7 +2227,7 @@ public class ServerScannerScreen extends Screen {
          int summaryY = lineY + 6;
 
          for (String line : this.wrapText(this.detailsData.ip + ":" + this.detailsData.port, summaryTextW, 2)) {
-            context.drawTextWithShadow(this.textRenderer, Text.literal(line), summaryTextX, summaryY, -1);
+            context.drawString(this.font, Component.literal(line), summaryTextX, summaryY, -1);
             summaryY += 11;
          }
 
@@ -2237,15 +2237,15 @@ public class ServerScannerScreen extends Screen {
          this.detailsCopyIpX = summaryTextX + summaryTextW - this.detailsCopyIpW;
          this.detailsCopyIpY = lineY + 4;
          context.fill(this.detailsCopyIpX, this.detailsCopyIpY, this.detailsCopyIpX + this.detailsCopyIpW, this.detailsCopyIpY + this.detailsCopyIpH, -2010035078);
-         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Copy IP"), this.detailsCopyIpX + this.detailsCopyIpW / 2, this.detailsCopyIpY + 3, -6371585);
+         context.drawCenteredString(this.font, Component.literal("Copy IP"), this.detailsCopyIpX + this.detailsCopyIpW / 2, this.detailsCopyIpY + 3, -6371585);
 
          for (String line : this.wrapText(this.detailsData.versionName, summaryTextW, 2)) {
-            context.drawTextWithShadow(this.textRenderer, Text.literal(line), summaryTextX, summaryY, -4729345);
+            context.drawString(this.font, Component.literal(line), summaryTextX, summaryY, -4729345);
             summaryY += 11;
          }
 
-         context.drawTextWithShadow(
-            this.textRenderer, Text.literal(this.detailsData.playersOnline + "/" + this.detailsData.playersMax), summaryTextX, summaryY + 1, -1261205
+         context.drawString(
+            this.font, Component.literal(this.detailsData.playersOnline + "/" + this.detailsData.playersMax), summaryTextX, summaryY + 1, -1261205
          );
          int yInfo = y + 112;
          yInfo = this.drawInfoLine(context, "Type", this.detailsData.serverType, left, yInfo);
@@ -2261,52 +2261,52 @@ public class ServerScannerScreen extends Screen {
          List<String> descLines = this.wrapText(fullDescription, descContentWidth, this.detailsDescriptionExpanded ? 7 : 3);
          int descH = 24 + descLines.size() * 11;
          context.fill(right, y + 42, right + descW, y + 42 + descH, 1714438232);
-         context.drawTextWithShadow(this.textRenderer, Text.literal("Description"), right + 8, y + 47, -7686913);
+         context.drawString(this.font, Component.literal("Description"), right + 8, y + 47, -7686913);
          int dy = y + 61;
 
          for (String line : descLines) {
-            context.drawText(this.textRenderer, line, descX + 8, dy, -1, false);
+            context.drawString(this.font, line, descX + 8, dy, -1, false);
             dy += 11;
          }
 
          List<String> allDescLines = this.wrapText(fullDescription, descContentWidth, Integer.MAX_VALUE);
          if (allDescLines.size() > descLines.size()) {
             String toggle = this.detailsDescriptionExpanded ? "Show less" : "Show more";
-            int tw = this.textRenderer.getWidth(toggle);
+            int tw = this.font.width(toggle);
             this.descToggleX = descX + descW - tw - 10;
             this.descToggleY = y + 46;
             this.descToggleW = tw + 4;
             this.descToggleH = 10;
             this.descToggleVisible = true;
-            context.drawText(this.textRenderer, toggle, this.descToggleX + 2, this.descToggleY + 1, -6371585, false);
+            context.drawString(this.font, toggle, this.descToggleX + 2, this.descToggleY + 1, -6371585, false);
          }
 
          int sectionY = y + 50 + descH;
-         context.drawTextWithShadow(this.textRenderer, Text.literal("Recent Players"), descX, sectionY, -7686913);
+         context.drawString(this.font, Component.literal("Recent Players"), descX, sectionY, -7686913);
          if (this.detailsData.recentPlayers.size() > 18) {
             String t = this.detailsPlayersExpanded ? "Collapse" : "Expand";
-            int tw = this.textRenderer.getWidth(t);
+            int tw = this.font.width(t);
             this.playersToggleX = descX + descW - tw - 4;
             this.playersToggleY = sectionY;
             this.playersToggleW = tw + 4;
             this.playersToggleH = 10;
             this.playersToggleVisible = true;
-            context.drawText(this.textRenderer, t, this.playersToggleX + 2, this.playersToggleY + 1, -6371585, false);
+            context.drawString(this.font, t, this.playersToggleX + 2, this.playersToggleY + 1, -6371585, false);
          }
 
          sectionY += 16;
          sectionY = this.drawChips(context, this.detailsData.recentPlayers, "-", descX, sectionY, descW, this.detailsPlayersExpanded ? Integer.MAX_VALUE : 18);
          sectionY += 8;
-         context.drawTextWithShadow(this.textRenderer, Text.literal("Detected Plugins"), descX, sectionY, -7686913);
+         context.drawString(this.font, Component.literal("Detected Plugins"), descX, sectionY, -7686913);
          if (this.detailsData.detectedPlugins.size() > 24) {
             String t = this.detailsPluginsExpanded ? "Collapse" : "Expand";
-            int tw = this.textRenderer.getWidth(t);
+            int tw = this.font.width(t);
             this.pluginsToggleX = descX + descW - tw - 4;
             this.pluginsToggleY = sectionY;
             this.pluginsToggleW = tw + 4;
             this.pluginsToggleH = 10;
             this.pluginsToggleVisible = true;
-            context.drawText(this.textRenderer, t, this.pluginsToggleX + 2, this.pluginsToggleY + 1, -6371585, false);
+            context.drawString(this.font, t, this.pluginsToggleX + 2, this.pluginsToggleY + 1, -6371585, false);
          }
 
          sectionY += 16;
@@ -2314,13 +2314,13 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private int drawInfoLine(DrawContext context, String label, String value, int x, int y) {
-      context.drawText(this.textRenderer, label + ":", x, y, -7686913, false);
-      context.drawText(this.textRenderer, this.truncateToWidth(value == null ? "-" : value, 180), x + 62, y, -3811340, false);
+   private int drawInfoLine(GuiGraphics context, String label, String value, int x, int y) {
+      context.drawString(this.font, label + ":", x, y, -7686913, false);
+      context.drawString(this.font, this.truncateToWidth(value == null ? "-" : value, 180), x + 62, y, -3811340, false);
       return y + 14;
    }
 
-   private int drawChips(DrawContext context, List<String> values, String fallback, int x, int y, int width, int maxChips) {
+   private int drawChips(GuiGraphics context, List<String> values, String fallback, int x, int y, int width, int maxChips) {
       List<String> chips = values != null && !values.isEmpty() ? values : List.of(fallback);
       int cursorX = x;
       int maxX = x + width;
@@ -2333,28 +2333,28 @@ public class ServerScannerScreen extends Screen {
          }
 
          String chipText = this.truncateToWidth(raw, 140);
-         int chipW = this.textRenderer.getWidth(chipText) + 10;
+         int chipW = this.font.width(chipText) + 10;
          if (cursorX + chipW > maxX) {
             cursorX = x;
             rowY += 16;
          }
 
          context.fill(cursorX, rowY - 1, cursorX + chipW, rowY + 10, 2000703600);
-         context.drawText(this.textRenderer, chipText, cursorX + 5, rowY + 1, -1642753, false);
+         context.drawString(this.font, chipText, cursorX + 5, rowY + 1, -1642753, false);
          cursorX += chipW + 6;
          rendered++;
       }
 
       if (chips.size() > rendered) {
          String more = "+" + (chips.size() - rendered) + " more";
-         int chipW = this.textRenderer.getWidth(more) + 10;
+         int chipW = this.font.width(more) + 10;
          if (cursorX + chipW > maxX) {
             cursorX = x;
             rowY += 16;
          }
 
          context.fill(cursorX, rowY - 1, cursorX + chipW, rowY + 10, 1716546191);
-         context.drawText(this.textRenderer, more, cursorX + 5, rowY + 1, -3153153, false);
+         context.drawString(this.font, more, cursorX + 5, rowY + 1, -3153153, false);
       }
 
       return rowY + 14;
@@ -2396,7 +2396,7 @@ public class ServerScannerScreen extends Screen {
          }
 
          String chipText = this.truncateToWidth(raw, 140);
-         int chipW = this.textRenderer.getWidth(chipText) + 10;
+         int chipW = this.font.width(chipText) + 10;
          if (cursorX + chipW > maxX) {
             cursorX = 0;
             rowY += 16;
@@ -2408,7 +2408,7 @@ public class ServerScannerScreen extends Screen {
 
       if (chips.size() > rendered) {
          String more = "+" + (chips.size() - rendered) + " more";
-         int chipW = this.textRenderer.getWidth(more) + 10;
+         int chipW = this.font.width(more) + 10;
          if (cursorX + chipW > maxX) {
             rowY += 16;
          }
@@ -2427,7 +2427,7 @@ public class ServerScannerScreen extends Screen {
          String remaining = value.replace('\n', ' ').replace('\r', ' ').trim();
 
          while (!remaining.isBlank() && lines.size() < maxLines) {
-            String line = this.textRenderer.trimToWidth(remaining, maxWidth);
+            String line = this.font.plainSubstrByWidth(remaining, maxWidth);
             if (line.isEmpty()) {
                break;
             }
@@ -2446,7 +2446,7 @@ public class ServerScannerScreen extends Screen {
 
          if (!remaining.isBlank() && !lines.isEmpty()) {
             int last = lines.size() - 1;
-            lines.set(last, this.truncateToWidth(lines.get(last), Math.max(0, maxWidth - this.textRenderer.getWidth("..."))) + "...");
+            lines.set(last, this.truncateToWidth(lines.get(last), Math.max(0, maxWidth - this.font.width("..."))) + "...");
          }
 
          return lines;
@@ -2462,13 +2462,13 @@ public class ServerScannerScreen extends Screen {
          this.saveLiveCache();
       }
       super.removed();
-      if (this.client != null) {
+      if (this.minecraft != null) {
          for (Identifier id : this.faviconIds.values()) {
-            this.client.getTextureManager().destroyTexture(id);
+            this.minecraft.getTextureManager().release(id);
          }
       }
 
-      for (NativeImageBackedTexture texture : this.faviconTextures.values()) {
+      for (DynamicTexture texture : this.faviconTextures.values()) {
          texture.close();
       }
 

@@ -8,8 +8,8 @@ import com.dupeclient.client.gui.SocialScreen;
 import com.dupeclient.client.gui.WaypointsScreen;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlayScreen;
 import com.dupeclient.client.module.hud.HudEditorScreen;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 
 /**
  * Opens in-game DupeClient UIs as plain vanilla {@link Screen}s.
@@ -18,18 +18,18 @@ public final class IngameUiRouter {
     private IngameUiRouter() {
     }
 
-    public static void openClientGui(MinecraftClient client) {
+    public static void openClientGui(Minecraft client) {
         if (client == null) {
             return;
         }
-        client.setScreen(new ClientGuiScreen(client.currentScreen));
+        client.setScreen(new ClientGuiScreen(client.screen));
     }
 
     public static void openSocial(Screen from) {
         if (!HubModuleRules.socialFeaturesAllowed()) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             mc.setScreen(new SocialScreen(from));
         }
@@ -39,25 +39,25 @@ public final class IngameUiRouter {
         if (!HubModuleRules.socialFeaturesAllowed()) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             mc.setScreen(new WaypointsScreen(from));
         }
     }
 
     public static void openHudEditor(Screen from) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             mc.setScreen(new HudEditorScreen(from));
         }
     }
 
     /** Closes DupeClient screens when leaving a world or disconnecting from a server. */
-    public static void closeClientScreensOnLeave(MinecraftClient client) {
+    public static void closeClientScreensOnLeave(Minecraft client) {
         if (client == null) {
             return;
         }
-        Screen current = client.currentScreen;
+        Screen current = client.screen;
         if (current == null || !shouldCloseOnPlaySessionLeave(current)) {
             return;
         }

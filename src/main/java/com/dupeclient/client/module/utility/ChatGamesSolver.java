@@ -1,7 +1,5 @@
 package com.dupeclient.client.module.utility;
 
-import net.minecraft.util.StringHelper;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.util.StringUtil;
 
 /** Parses ChatGames-style puzzles from plain chat text. */
 final class ChatGamesSolver {
@@ -25,7 +24,7 @@ final class ChatGamesSolver {
     }
 
     static String stripPlain(String raw) {
-        return raw == null ? "" : StringHelper.stripTextFormat(raw);
+        return raw == null ? "" : StringUtil.stripColor(raw);
     }
 
     static boolean isOwnFeedback(String plain) {

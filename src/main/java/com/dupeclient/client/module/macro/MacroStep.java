@@ -66,7 +66,7 @@ public final class MacroStep {
 
     /** For {@link MacroStepType#CLICK_SLOT}: handler slot index (e.g. {@code -999} = outside cursor). */
     public int clickSlotId = 0;
-    /** For {@link MacroStepType#CLICK_SLOT}: {@link net.minecraft.screen.slot.SlotActionType} name. */
+    /** For {@link MacroStepType#CLICK_SLOT}: {@link net.minecraft.world.inventory.ClickType} name. */
     public String clickSlotAction = "QUICK_MOVE";
     /** For {@link MacroStepType#CLICK_SLOT}: mouse button ({@code 0} = left, {@code 1} = right). */
     public int clickSlotButton = 0;

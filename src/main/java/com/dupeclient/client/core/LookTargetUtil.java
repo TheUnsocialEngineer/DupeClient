@@ -1,19 +1,19 @@
 package com.dupeclient.client.core;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.ProjectileUtil;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 public final class LookTargetUtil {
@@ -21,32 +21,32 @@ public final class LookTargetUtil {
     }
 
     @Nullable
-    public static LookTarget pick(MinecraftClient client) {
-        ClientPlayerEntity player = client.player;
-        World world = client.world;
+    public static LookTarget pick(Minecraft client) {
+        LocalPlayer player = client.player;
+        Level world = client.level;
         if (player == null || world == null) {
             return null;
         }
 
-        Vec3d start = player.getEyePos();
-        Vec3d rot = player.getRotationVec(1.0f);
-        double blockReach = Math.max(0.0, player.getBlockInteractionRange());
-        double entityReach = Math.max(0.0, player.getEntityInteractionRange());
+        Vec3 start = player.getEyePosition();
+        Vec3 rot = player.getViewVector(1.0f);
+        double blockReach = Math.max(0.0, player.blockInteractionRange());
+        double entityReach = Math.max(0.0, player.entityInteractionRange());
 
-        Vec3d blockEnd = start.add(rot.multiply(blockReach));
-        BlockHitResult rayBlock = world.raycast(new RaycastContext(
+        Vec3 blockEnd = start.add(rot.scale(blockReach));
+        BlockHitResult rayBlock = world.clip(new ClipContext(
                 start,
                 blockEnd,
-                RaycastContext.ShapeType.OUTLINE,
-                RaycastContext.FluidHandling.NONE,
+                ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.NONE,
                 player));
         if (rayBlock.getType() != HitResult.Type.BLOCK) {
             rayBlock = null;
         }
 
-        Vec3d entityEnd = start.add(rot.multiply(entityReach));
-        Box searchBox = player.getBoundingBox().stretch(rot.multiply(entityReach)).expand(1.25, 1.25, 1.25);
-        EntityHitResult rayEntity = ProjectileUtil.getEntityCollision(
+        Vec3 entityEnd = start.add(rot.scale(entityReach));
+        AABB searchBox = player.getBoundingBox().expandTowards(rot.scale(entityReach)).inflate(1.25, 1.25, 1.25);
+        EntityHitResult rayEntity = ProjectileUtil.getEntityHitResult(
                 world,
                 player,
                 start,
@@ -56,7 +56,7 @@ public final class LookTargetUtil {
                 0.25f);
 
         // Prefer Minecraft's current crosshair target so automation matches what the player visibly targets.
-        HitResult vanillaTarget = client.crosshairTarget;
+        HitResult vanillaTarget = client.hitResult;
         if (vanillaTarget instanceof EntityHitResult ehr) {
             Entity e = ehr.getEntity();
             if (pickableTarget(e)) {
@@ -74,8 +74,8 @@ public final class LookTargetUtil {
         EntityHitResult entityCandidate = nearerEntity(start, rayEntity, vanillaEntity);
 
         if (blockCandidate != null && entityCandidate != null) {
-            double db = blockCandidate.getPos().squaredDistanceTo(start);
-            double de = entityCandidate.getPos().squaredDistanceTo(start);
+            double db = blockCandidate.getLocation().distanceToSqr(start);
+            double de = entityCandidate.getLocation().distanceToSqr(start);
             if (de <= db + 1.0e-7) {
                 return new LookTarget(null, entityCandidate);
             }
@@ -85,40 +85,40 @@ public final class LookTargetUtil {
     }
 
     private static boolean pickableTarget(Entity e) {
-        return e != null && e.isAlive() && e.canHit() && !e.isSpectator();
+        return e != null && e.isAlive() && e.isPickable() && !e.isSpectator();
     }
 
     @Nullable
-    private static BlockHitResult nearerBlock(Vec3d start, @Nullable BlockHitResult a, @Nullable BlockHitResult b) {
+    private static BlockHitResult nearerBlock(Vec3 start, @Nullable BlockHitResult a, @Nullable BlockHitResult b) {
         if (a == null) return b;
         if (b == null) return a;
-        return a.getPos().squaredDistanceTo(start) <= b.getPos().squaredDistanceTo(start) ? a : b;
+        return a.getLocation().distanceToSqr(start) <= b.getLocation().distanceToSqr(start) ? a : b;
     }
 
     @Nullable
-    private static EntityHitResult nearerEntity(Vec3d start, @Nullable EntityHitResult a, @Nullable EntityHitResult b) {
+    private static EntityHitResult nearerEntity(Vec3 start, @Nullable EntityHitResult a, @Nullable EntityHitResult b) {
         if (a == null) return b;
         if (b == null) return a;
-        return a.getPos().squaredDistanceTo(start) <= b.getPos().squaredDistanceTo(start) ? a : b;
+        return a.getLocation().distanceToSqr(start) <= b.getLocation().distanceToSqr(start) ? a : b;
     }
 
     @Nullable
-    public static String describe(MinecraftClient client) {
+    public static String describe(Minecraft client) {
         LookTarget t = pick(client);
         if (t == null) {
             return null;
         }
         if (t.entity() != null) {
             Entity e = t.entity().getEntity();
-            Identifier id = Registries.ENTITY_TYPE.getId(e.getType());
+            Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
             if (id == null) {
                 return "Looking: entity";
             }
             return "Looking: " + id;
         }
-        if (t.block() != null && client.world != null) {
-            BlockState st = client.world.getBlockState(t.block().getBlockPos());
-            Identifier id = Registries.BLOCK.getId(st.getBlock());
+        if (t.block() != null && client.level != null) {
+            BlockState st = client.level.getBlockState(t.block().getBlockPos());
+            Identifier id = BuiltInRegistries.BLOCK.getKey(st.getBlock());
             if (id == null) {
                 return "Looking: block";
             }

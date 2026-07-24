@@ -5,27 +5,27 @@ import com.dupeclient.client.config.VisualSettings;
 import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 public class DupeClientSettingsScreen extends Screen {
     private final Screen parent;
 
     public DupeClientSettingsScreen(Screen parent) {
-        super(Text.literal("DupeClient Settings"));
+        super(Component.literal("DupeClient Settings"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
-        this.clearChildren();
+        this.clearWidgets();
 
         int centerX = this.width / 2;
         int width = Math.min(280, this.width - 32);
         int left = centerX - width / 2;
-        int y = MathHelper.clamp(this.height / 2 - 72, 16, Math.max(16, this.height - 192));
+        int y = Mth.clamp(this.height / 2 - 72, 16, Math.max(16, this.height - 192));
 
         final StylishButtonWidget[] animatedRef = new StylishButtonWidget[1];
         animatedRef[0] = new StylishButtonWidget(left, y, width, 20, animatedLabel(), () -> {
@@ -35,7 +35,7 @@ public class DupeClientSettingsScreen extends Screen {
             DupeClient.saveVisualSettings();
             notifyParentVisualsChanged();
         });
-        addDrawableChild(animatedRef[0]);
+        addRenderableWidget(animatedRef[0]);
 
         final StylishButtonWidget[] particleRef = new StylishButtonWidget[1];
         particleRef[0] = new StylishButtonWidget(left, y + 24, width, 20, particleLabel(), () -> {
@@ -46,7 +46,7 @@ public class DupeClientSettingsScreen extends Screen {
             DupeClient.saveVisualSettings();
             notifyParentVisualsChanged();
         });
-        addDrawableChild(particleRef[0]);
+        addRenderableWidget(particleRef[0]);
 
         final StylishButtonWidget[] motionRef = new StylishButtonWidget[1];
         motionRef[0] = new StylishButtonWidget(left, y + 48, width, 20, motionLabel(), () -> {
@@ -57,7 +57,7 @@ public class DupeClientSettingsScreen extends Screen {
             DupeClient.saveVisualSettings();
             notifyParentVisualsChanged();
         });
-        addDrawableChild(motionRef[0]);
+        addRenderableWidget(motionRef[0]);
 
         final StylishButtonWidget[] twinkleRef = new StylishButtonWidget[1];
         twinkleRef[0] = new StylishButtonWidget(left, y + 72, width, 20, twinkleLabel(), () -> {
@@ -68,9 +68,9 @@ public class DupeClientSettingsScreen extends Screen {
             DupeClient.saveVisualSettings();
             notifyParentVisualsChanged();
         });
-        addDrawableChild(twinkleRef[0]);
+        addRenderableWidget(twinkleRef[0]);
 
-        addDrawableChild(new StylishButtonWidget(left, y + 96, width, 20, Text.literal("Reset to defaults"), () -> {
+        addRenderableWidget(new StylishButtonWidget(left, y + 96, width, 20, Component.literal("Reset to defaults"), () -> {
             VisualSettings settings = DupeClient.getVisualSettings();
             settings.animatedBackground = true;
             settings.particleCount = 180;
@@ -81,25 +81,25 @@ public class DupeClientSettingsScreen extends Screen {
             this.init();
         }));
 
-        addDrawableChild(new StylishButtonWidget(centerX - 100, y + 128, 200, 20, Text.literal("Back"), this::close));
+        addRenderableWidget(new StylishButtonWidget(centerX - 100, y + 128, 200, 20, Component.literal("Back"), this::onClose));
     }
 
-    private Text animatedLabel() {
-        return Text.literal("Animated Background: " + (DupeClient.getVisualSettings().animatedBackground ? "ON" : "OFF"));
+    private Component animatedLabel() {
+        return Component.literal("Animated Background: " + (DupeClient.getVisualSettings().animatedBackground ? "ON" : "OFF"));
     }
 
-    private Text particleLabel() {
-        return Text.literal("Particle Count: " + DupeClient.getVisualSettings().particleCount);
+    private Component particleLabel() {
+        return Component.literal("Particle Count: " + DupeClient.getVisualSettings().particleCount);
     }
 
-    private Text motionLabel() {
+    private Component motionLabel() {
         int percent = Math.round(DupeClient.getVisualSettings().motionIntensity * 100.0F);
-        return Text.literal("Motion Intensity: " + percent + "%");
+        return Component.literal("Motion Intensity: " + percent + "%");
     }
 
-    private Text twinkleLabel() {
+    private Component twinkleLabel() {
         int percent = Math.round(DupeClient.getVisualSettings().twinkleSpeed * 100.0F);
-        return Text.literal("Twinkle Speed: " + percent + "%");
+        return Component.literal("Twinkle Speed: " + percent + "%");
     }
 
     private int nextIntOption(int current, int[] options) {
@@ -127,20 +127,20 @@ public class DupeClientSettingsScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (parent instanceof DupeMainMenuScreen menu) {
             menu.renderBackground(context, mouseX, mouseY, delta);
         } else {
             UiDraw.fillMidnightBackground(context, this.width, this.height);
         }
         context.fill(0, 0, this.width, this.height, UiTokens.argb(0x66, UiTokens.SLATE_950));
-        int tY = MathHelper.clamp(this.height / 2 - 120, 8, 80);
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, tY, UiTokens.TEXT);
+        int tY = Mth.clamp(this.height / 2 - 120, 8, 80);
+        context.drawCenteredString(this.font, this.title, this.width / 2, tY, UiTokens.TEXT);
         super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
-    public void close() {
-        this.client.setScreen(parent);
+    public void onClose() {
+        this.minecraft.setScreen(parent);
     }
 }

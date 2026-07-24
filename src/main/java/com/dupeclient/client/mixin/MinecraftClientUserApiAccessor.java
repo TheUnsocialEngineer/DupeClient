@@ -1,13 +1,13 @@
 package com.dupeclient.client.mixin;
 
 import com.mojang.authlib.minecraft.UserApiService;
-import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.client.Minecraft;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public interface MinecraftClientUserApiAccessor {
     @Accessor("userApiService")
     UserApiService dupeClient$getUserApiService();

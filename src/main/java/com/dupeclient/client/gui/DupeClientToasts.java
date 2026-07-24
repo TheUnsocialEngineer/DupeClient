@@ -1,8 +1,8 @@
 package com.dupeclient.client.gui;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.toast.SystemToast;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.network.chat.Component;
 
 /** Short-lived HUD toasts for DupeClient actions. */
 public final class DupeClientToasts {
@@ -10,7 +10,7 @@ public final class DupeClientToasts {
     }
 
     public static void show(String title, String body) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
@@ -20,11 +20,11 @@ public final class DupeClientToasts {
             safeBody = safeBody.substring(0, 117) + "…";
         }
         String finalBody = safeBody;
-        client.execute(() -> client.getToastManager().add(
-                SystemToast.create(
+        client.execute(() -> client.getToastManager().addToast(
+                SystemToast.multiline(
                         client,
-                        SystemToast.Type.PERIODIC_NOTIFICATION,
-                        Text.literal(safeTitle),
-                        Text.literal(finalBody))));
+                        SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                        Component.literal(safeTitle),
+                        Component.literal(finalBody))));
     }
 }

@@ -5,12 +5,12 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 
 public final class LookNbtCommand {
     private static final int CHAT_CHUNK = 32000;
@@ -28,8 +28,8 @@ public final class LookNbtCommand {
     }
 
     private static int run(CommandContext<FabricClientCommandSource> ctx, boolean printToChat) {
-        MinecraftClient client = ctx.getSource().getClient();
-        if (client.player == null || client.world == null) {
+        Minecraft client = ctx.getSource().getClient();
+        if (client.player == null || client.level == null) {
             feedback(ctx, "Not in world.");
             return 0;
         }
@@ -40,29 +40,29 @@ public final class LookNbtCommand {
             return 0;
         }
 
-        client.keyboard.setClipboard(result.snbt());
+        client.keyboardHandler.setClipboard(result.snbt());
         feedback(ctx, "Copied " + result.kind() + " NBT (" + result.snbt().length() + " chars) — " + result.summary());
 
         if (printToChat) {
-            sendChunked(ctx, Text.literal(result.snbt()).formatted(Formatting.DARK_AQUA));
+            sendChunked(ctx, Component.literal(result.snbt()).withStyle(ChatFormatting.DARK_AQUA));
         } else {
-            MutableText preview = Text.literal("[Preview] ").formatted(Formatting.GRAY)
+            MutableComponent preview = Component.literal("[Preview] ").withStyle(ChatFormatting.GRAY)
                 .append(preview(result.snbt()));
             ctx.getSource().sendFeedback(preview);
         }
         return 1;
     }
 
-    private static MutableText preview(String snbt) {
+    private static MutableComponent preview(String snbt) {
         String shortText = snbt.length() <= 180 ? snbt : snbt.substring(0, 177) + "...";
-        return Text.literal(shortText)
-            .styled(style -> style
-                .withColor(Formatting.AQUA)
-                .withHoverEvent(new HoverEvent.ShowText(Text.literal("Click to copy full NBT again")))
+        return Component.literal(shortText)
+            .withStyle(style -> style
+                .withColor(ChatFormatting.AQUA)
+                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to copy full NBT again")))
                 .withClickEvent(new ClickEvent.CopyToClipboard(snbt)));
     }
 
-    private static void sendChunked(CommandContext<FabricClientCommandSource> ctx, Text text) {
+    private static void sendChunked(CommandContext<FabricClientCommandSource> ctx, Component text) {
         String raw = text.getString();
         if (raw.length() <= CHAT_CHUNK) {
             ctx.getSource().sendFeedback(text);
@@ -71,14 +71,14 @@ public final class LookNbtCommand {
         int part = 1;
         for (int i = 0; i < raw.length(); i += CHAT_CHUNK) {
             String slice = raw.substring(i, Math.min(raw.length(), i + CHAT_CHUNK));
-            ctx.getSource().sendFeedback(Text.literal("[NBT " + part + "] ").formatted(Formatting.GOLD)
-                .append(Text.literal(slice).formatted(Formatting.DARK_AQUA)));
+            ctx.getSource().sendFeedback(Component.literal("[NBT " + part + "] ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(slice).withStyle(ChatFormatting.DARK_AQUA)));
             part++;
         }
     }
 
     private static void feedback(CommandContext<FabricClientCommandSource> ctx, String message) {
-        ctx.getSource().sendFeedback(Text.literal("[LookNBT] ").formatted(Formatting.GOLD)
-            .append(Text.literal(message).formatted(Formatting.GRAY)));
+        ctx.getSource().sendFeedback(Component.literal("[LookNBT] ").withStyle(ChatFormatting.GOLD)
+            .append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 }

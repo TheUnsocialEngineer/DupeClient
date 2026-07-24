@@ -1,14 +1,13 @@
 package com.dupeclient.client.module.mcptools;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 /** Searchable block id list for MCPTools mine commands (maps display names → mineflayer ids). */
 public final class McpToolsBlockCatalog {
@@ -83,8 +82,8 @@ public final class McpToolsBlockCatalog {
                 return;
             }
             List<Entry> built = new ArrayList<>();
-            for (Block block : Registries.BLOCK) {
-                Identifier id = Registries.BLOCK.getId(block);
+            for (Block block : BuiltInRegistries.BLOCK) {
+                Identifier id = BuiltInRegistries.BLOCK.getKey(block);
                 if (id == null || block == Blocks.AIR) {
                     continue;
                 }

@@ -1,10 +1,9 @@
 package com.dupeclient.client.module.packet.sniffer;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.Packet;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.Packet;
 
 /** Replays queued packets over multiple ticks with optional delay. */
 public final class PacketReplayScheduler {
@@ -27,7 +26,7 @@ public final class PacketReplayScheduler {
         return pending.size();
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (!running || pending.isEmpty()) {
             if (running && pending.isEmpty()) {
                 finish();

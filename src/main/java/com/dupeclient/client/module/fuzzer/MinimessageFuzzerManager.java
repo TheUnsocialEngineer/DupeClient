@@ -2,14 +2,13 @@ package com.dupeclient.client.module.fuzzer;
 
 import com.dupeclient.client.module.fuzzer.economy.EconomyFuzzerManager;
 import com.dupeclient.client.module.fuzzer.economy.EconomyFuzzerSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 public final class MinimessageFuzzerManager {
     public static final MinimessageFuzzerManager INSTANCE = new MinimessageFuzzerManager();
@@ -97,7 +96,7 @@ public final class MinimessageFuzzerManager {
         logs.clear();
     }
 
-    public void start(MinecraftClient client) {
+    public void start(Minecraft client) {
         if (running) {
             return;
         }
@@ -135,7 +134,7 @@ public final class MinimessageFuzzerManager {
         feedback(paused ? "MiniMessage fuzz paused." : "MiniMessage fuzz resumed.");
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (!running || paused || client == null || client.player == null) {
             return;
         }
@@ -158,11 +157,11 @@ public final class MinimessageFuzzerManager {
         final String target = getTarget();
         final String payload = message;
         client.execute(() -> {
-            if (client.player != null && client.player.networkHandler != null) {
+            if (client.player != null && client.player.connection != null) {
                 if (msgMode) {
-                    client.player.networkHandler.sendChatCommand(cmd + " " + target + " " + payload);
+                    client.player.connection.sendCommand(cmd + " " + target + " " + payload);
                 } else {
-                    client.player.networkHandler.sendChatMessage(payload);
+                    client.player.connection.sendChat(payload);
                 }
             }
         });
@@ -205,15 +204,15 @@ public final class MinimessageFuzzerManager {
         if (!s.moduleChatFeedback) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
-        MutableText line = Text.literal("[MM Fuzzer] ").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY));
+        MutableComponent line = Component.literal("[MM Fuzzer] ").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }

@@ -4,10 +4,6 @@ import com.dupeclient.client.module.packet.sniffer.PacketFieldModel;
 import com.dupeclient.client.module.packet.sniffer.PacketRecordCodec;
 
 import com.dupeclient.client.module.packet.PacketUtils;
-import net.minecraft.network.message.LastSeenMessageList;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.RecordComponent;
@@ -18,9 +14,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import net.minecraft.network.chat.LastSeenMessages;
+import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundChatPacket;
 
 /**
- * Fabricates {@link ChatMessageC2SPacket} using the same shape as captured/resendable chat packets
+ * Fabricates {@link ServerboundChatPacket} using the same shape as captured/resendable chat packets
  * (unsigned signature + vanilla-style acknowledgment stub).
  */
 public final class PacketChatCodec {
@@ -34,11 +34,11 @@ public final class PacketChatCodec {
     }
 
     public static boolean isChatMessagePacket(Packet<?> packet) {
-        return packet instanceof ChatMessageC2SPacket;
+        return packet instanceof ServerboundChatPacket;
     }
 
     public static List<PacketFieldModel> describe(Packet<?> packet) {
-        if (!(packet instanceof ChatMessageC2SPacket chat)) {
+        if (!(packet instanceof ServerboundChatPacket chat)) {
             return List.of();
         }
         return describePacket(chat);
@@ -63,14 +63,14 @@ public final class PacketChatCodec {
         String message = fields.getOrDefault("chatMessage", "");
         Instant timestamp = parseTimestamp(fields.get("timestamp"));
         long salt = parseLong(fields.get("salt"), ThreadLocalRandom.current().nextLong());
-        MessageSignatureData signature = parseSignature(fields.get("signature"));
-        LastSeenMessageList.Acknowledgment acknowledgment = parseAcknowledgment(
+        MessageSignature signature = parseSignature(fields.get("signature"));
+        LastSeenMessages.Update acknowledgment = parseAcknowledgment(
                 fields.getOrDefault("acknowledgment", defaultAcknowledgmentText()));
-        return new ChatMessageC2SPacket(message, timestamp, salt, signature, acknowledgment);
+        return new ServerboundChatPacket(message, timestamp, salt, signature, acknowledgment);
     }
 
     public static String friendlyFieldName(RecordComponent component) {
-        return MappingLabelResolver.resolveFieldName(ChatMessageC2SPacket.class, component);
+        return MappingLabelResolver.resolveFieldName(ServerboundChatPacket.class, component);
     }
 
     public static boolean isChatField(String name) {
@@ -82,17 +82,17 @@ public final class PacketChatCodec {
     }
 
     public static String mapLegacyFieldName(String name) {
-        return MappingLabelResolver.resolveFieldName(ChatMessageC2SPacket.class, name);
+        return MappingLabelResolver.resolveFieldName(ServerboundChatPacket.class, name);
     }
 
-    private static List<PacketFieldModel> describePacket(ChatMessageC2SPacket chat) {
+    private static List<PacketFieldModel> describePacket(ServerboundChatPacket chat) {
         List<PacketFieldModel> rows = new ArrayList<>();
         rows.add(typeField());
-        rows.add(field("chatMessage", String.class, chat.chatMessage()));
-        rows.add(field("timestamp", Instant.class, PacketRecordCodec.encodeField(chat.timestamp())));
+        rows.add(field("chatMessage", String.class, chat.message()));
+        rows.add(field("timestamp", Instant.class, PacketRecordCodec.encodeField(chat.timeStamp())));
         rows.add(field("salt", long.class, Long.toString(chat.salt())));
-        rows.add(field("signature", MessageSignatureData.class, formatSignature(chat.signature())));
-        rows.add(field("acknowledgment", LastSeenMessageList.Acknowledgment.class, formatAcknowledgment(chat.acknowledgment())));
+        rows.add(field("signature", MessageSignature.class, formatSignature(chat.signature())));
+        rows.add(field("acknowledgment", LastSeenMessages.Update.class, formatAcknowledgment(chat.lastSeenMessages())));
         return rows;
     }
 
@@ -102,8 +102,8 @@ public final class PacketChatCodec {
         rows.add(field("chatMessage", String.class, ""));
         rows.add(field("timestamp", Instant.class, Long.toString(Instant.now().toEpochMilli())));
         rows.add(field("salt", long.class, Long.toString(ThreadLocalRandom.current().nextLong())));
-        rows.add(field("signature", MessageSignatureData.class, "null"));
-        rows.add(field("acknowledgment", LastSeenMessageList.Acknowledgment.class, defaultAcknowledgmentText()));
+        rows.add(field("signature", MessageSignature.class, "null"));
+        rows.add(field("acknowledgment", LastSeenMessages.Update.class, defaultAcknowledgmentText()));
         return rows;
     }
 
@@ -115,21 +115,21 @@ public final class PacketChatCodec {
         return new PacketFieldModel(name, PacketRecordCodec.typeLabel(type, null), value, true, type);
     }
 
-    static String formatSignature(@Nullable MessageSignatureData signature) {
+    static String formatSignature(@Nullable MessageSignature signature) {
         if (signature == null) {
             return "null";
         }
         return PacketRecordCodec.encodeField(signature);
     }
 
-    static @Nullable MessageSignatureData parseSignature(@Nullable String raw) throws PacketRecordCodec.PacketBuildException {
+    static @Nullable MessageSignature parseSignature(@Nullable String raw) throws PacketRecordCodec.PacketBuildException {
         if (raw == null || raw.isBlank() || "null".equalsIgnoreCase(raw.trim()) || "unsigned".equalsIgnoreCase(raw.trim())) {
             return null;
         }
-        return (MessageSignatureData) PacketRecordCodec.decodeField(MessageSignatureData.class, null, raw);
+        return (MessageSignature) PacketRecordCodec.decodeField(MessageSignature.class, null, raw);
     }
 
-    static String formatAcknowledgment(LastSeenMessageList.Acknowledgment acknowledgment) {
+    static String formatAcknowledgment(LastSeenMessages.Update acknowledgment) {
         if (acknowledgment == null) {
             return defaultAcknowledgmentText();
         }
@@ -144,20 +144,20 @@ public final class PacketChatCodec {
         return acknowledgment.offset() + ";" + bits + ";" + acknowledgment.checksum();
     }
 
-    static LastSeenMessageList.Acknowledgment parseAcknowledgment(String raw) throws PacketRecordCodec.PacketBuildException {
+    static LastSeenMessages.Update parseAcknowledgment(String raw) throws PacketRecordCodec.PacketBuildException {
         if (raw == null || raw.isBlank()) {
             return defaultAcknowledgment();
         }
-        return (LastSeenMessageList.Acknowledgment) PacketRecordCodec.decodeField(
-                LastSeenMessageList.Acknowledgment.class, null, raw);
+        return (LastSeenMessages.Update) PacketRecordCodec.decodeField(
+                LastSeenMessages.Update.class, null, raw);
     }
 
     static String defaultAcknowledgmentText() {
         return "0;;1";
     }
 
-    static LastSeenMessageList.Acknowledgment defaultAcknowledgment() {
-        return new LastSeenMessageList.Acknowledgment(0, new BitSet(), (byte) 1);
+    static LastSeenMessages.Update defaultAcknowledgment() {
+        return new LastSeenMessages.Update(0, new BitSet(), (byte) 1);
     }
 
     private static Instant parseTimestamp(@Nullable String raw) throws PacketRecordCodec.PacketBuildException {

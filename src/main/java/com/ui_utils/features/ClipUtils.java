@@ -2,11 +2,11 @@ package com.ui_utils.features;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import net.minecraft.entity.Entity;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.world.entity.Entity;
 
 public class ClipUtils {
     private static Boolean hasHorizontalCollisionParam = null;
@@ -15,7 +15,7 @@ public class ClipUtils {
     private static boolean hasHorizontalCollisionParam() {
         if (hasHorizontalCollisionParam == null) {
             try {
-                PlayerMoveC2SPacket.OnGroundOnly.class.getConstructor(Boolean.TYPE, Boolean.TYPE);
+                ServerboundMovePlayerPacket.StatusOnly.class.getConstructor(Boolean.TYPE, Boolean.TYPE);
                 hasHorizontalCollisionParam = true;
             }
             catch (NoSuchMethodException e) {
@@ -28,7 +28,7 @@ public class ClipUtils {
     private static boolean hasFromVehicleMethod() {
         if (hasFromVehicleMethod == null) {
             try {
-                VehicleMoveC2SPacket.class.getMethod("fromVehicle", Entity.class);
+                ServerboundMoveVehiclePacket.class.getMethod("fromVehicle", Entity.class);
                 hasFromVehicleMethod = true;
             }
             catch (NoSuchMethodException e) {
@@ -38,19 +38,19 @@ public class ClipUtils {
         return hasFromVehicleMethod;
     }
 
-    private static VehicleMoveC2SPacket createVehiclePacket(Entity vehicle) {
+    private static ServerboundMoveVehiclePacket createVehiclePacket(Entity vehicle) {
         try {
             if (ClipUtils.hasFromVehicleMethod()) {
-                Method method = VehicleMoveC2SPacket.class.getMethod("fromVehicle", Entity.class);
-                return (VehicleMoveC2SPacket)method.invoke(null, vehicle);
+                Method method = ServerboundMoveVehiclePacket.class.getMethod("fromVehicle", Entity.class);
+                return (ServerboundMoveVehiclePacket)method.invoke(null, vehicle);
             }
-            Constructor constructor = VehicleMoveC2SPacket.class.getConstructor(Entity.class);
-            return (VehicleMoveC2SPacket)constructor.newInstance(vehicle);
+            Constructor constructor = ServerboundMoveVehiclePacket.class.getConstructor(Entity.class);
+            return (ServerboundMoveVehiclePacket)constructor.newInstance(vehicle);
         }
         catch (Exception e) {
             try {
-                Constructor constructor = VehicleMoveC2SPacket.class.getConstructor(Double.TYPE, Double.TYPE, Double.TYPE, Float.TYPE, Float.TYPE);
-                return (VehicleMoveC2SPacket)constructor.newInstance(vehicle.getX(), vehicle.getY(), vehicle.getZ(), Float.valueOf(vehicle.getYaw()), Float.valueOf(vehicle.getPitch()));
+                Constructor constructor = ServerboundMoveVehiclePacket.class.getConstructor(Double.TYPE, Double.TYPE, Double.TYPE, Float.TYPE, Float.TYPE);
+                return (ServerboundMoveVehiclePacket)constructor.newInstance(vehicle.getX(), vehicle.getY(), vehicle.getZ(), Float.valueOf(vehicle.getYRot()), Float.valueOf(vehicle.getXRot()));
             }
             catch (Exception e2) {
                 e2.printStackTrace();
@@ -59,14 +59,14 @@ public class ClipUtils {
         }
     }
 
-    private static PlayerMoveC2SPacket createOnGroundPacket(boolean onGround, boolean horizontalCollision) {
+    private static ServerboundMovePlayerPacket createOnGroundPacket(boolean onGround, boolean horizontalCollision) {
         try {
             if (ClipUtils.hasHorizontalCollisionParam()) {
-                Constructor constructor = PlayerMoveC2SPacket.OnGroundOnly.class.getConstructor(Boolean.TYPE, Boolean.TYPE);
-                return (PlayerMoveC2SPacket)constructor.newInstance(onGround, horizontalCollision);
+                Constructor constructor = ServerboundMovePlayerPacket.StatusOnly.class.getConstructor(Boolean.TYPE, Boolean.TYPE);
+                return (ServerboundMovePlayerPacket)constructor.newInstance(onGround, horizontalCollision);
             }
-            Constructor constructor = PlayerMoveC2SPacket.OnGroundOnly.class.getConstructor(Boolean.TYPE);
-            return (PlayerMoveC2SPacket)constructor.newInstance(onGround);
+            Constructor constructor = ServerboundMovePlayerPacket.StatusOnly.class.getConstructor(Boolean.TYPE);
+            return (ServerboundMovePlayerPacket)constructor.newInstance(onGround);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -74,14 +74,14 @@ public class ClipUtils {
         }
     }
 
-    private static PlayerMoveC2SPacket createPositionPacket(double x, double y, double z, boolean onGround, boolean horizontalCollision) {
+    private static ServerboundMovePlayerPacket createPositionPacket(double x, double y, double z, boolean onGround, boolean horizontalCollision) {
         try {
             if (ClipUtils.hasHorizontalCollisionParam()) {
-                Constructor constructor = PlayerMoveC2SPacket.PositionAndOnGround.class.getConstructor(Double.TYPE, Double.TYPE, Double.TYPE, Boolean.TYPE, Boolean.TYPE);
-                return (PlayerMoveC2SPacket)constructor.newInstance(x, y, z, onGround, horizontalCollision);
+                Constructor constructor = ServerboundMovePlayerPacket.Pos.class.getConstructor(Double.TYPE, Double.TYPE, Double.TYPE, Boolean.TYPE, Boolean.TYPE);
+                return (ServerboundMovePlayerPacket)constructor.newInstance(x, y, z, onGround, horizontalCollision);
             }
-            Constructor constructor = PlayerMoveC2SPacket.PositionAndOnGround.class.getConstructor(Double.TYPE, Double.TYPE, Double.TYPE, Boolean.TYPE);
-            return (PlayerMoveC2SPacket)constructor.newInstance(x, y, z, onGround);
+            Constructor constructor = ServerboundMovePlayerPacket.Pos.class.getConstructor(Double.TYPE, Double.TYPE, Double.TYPE, Boolean.TYPE);
+            return (ServerboundMovePlayerPacket)constructor.newInstance(x, y, z, onGround);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -90,74 +90,74 @@ public class ClipUtils {
     }
 
     public static void vClip(double blocks) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.getNetworkHandler() == null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null) {
             return;
         }
         int packetsRequired = (int)Math.ceil(Math.abs(blocks / 10.0));
         if (packetsRequired > 20) {
             packetsRequired = 1;
         }
-        if (mc.player.hasVehicle()) {
+        if (mc.player.isPassenger()) {
             for (int i = 0; i < packetsRequired - 1; ++i) {
-                VehicleMoveC2SPacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
+                ServerboundMoveVehiclePacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
                 if (packet == null) continue;
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
-            mc.player.getVehicle().setPosition(mc.player.getVehicle().getX(), mc.player.getVehicle().getY() + blocks, mc.player.getVehicle().getZ());
-            VehicleMoveC2SPacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
+            mc.player.getVehicle().setPos(mc.player.getVehicle().getX(), mc.player.getVehicle().getY() + blocks, mc.player.getVehicle().getZ());
+            ServerboundMoveVehiclePacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
             if (packet != null) {
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
         } else {
             for (int i = 0; i < packetsRequired - 1; ++i) {
-                PlayerMoveC2SPacket packet = ClipUtils.createOnGroundPacket(true, mc.player.horizontalCollision);
+                ServerboundMovePlayerPacket packet = ClipUtils.createOnGroundPacket(true, mc.player.horizontalCollision);
                 if (packet == null) continue;
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
-            PlayerMoveC2SPacket packet = ClipUtils.createPositionPacket(mc.player.getX(), mc.player.getY() + blocks, mc.player.getZ(), true, mc.player.horizontalCollision);
+            ServerboundMovePlayerPacket packet = ClipUtils.createPositionPacket(mc.player.getX(), mc.player.getY() + blocks, mc.player.getZ(), true, mc.player.horizontalCollision);
             if (packet != null) {
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
-            mc.player.setPosition(mc.player.getX(), mc.player.getY() + blocks, mc.player.getZ());
+            mc.player.setPos(mc.player.getX(), mc.player.getY() + blocks, mc.player.getZ());
         }
     }
 
     public static void hClip(double blocks) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.getNetworkHandler() == null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null) {
             return;
         }
         int packetsRequired = (int)Math.ceil(Math.abs(blocks / 10.0));
         if (packetsRequired > 20) {
             packetsRequired = 1;
         }
-        float yaw = mc.player.getYaw();
+        float yaw = mc.player.getYRot();
         double radians = Math.toRadians(yaw);
         double deltaX = -Math.sin(radians) * blocks;
         double deltaZ = Math.cos(radians) * blocks;
-        if (mc.player.hasVehicle()) {
+        if (mc.player.isPassenger()) {
             for (int i = 0; i < packetsRequired - 1; ++i) {
-                VehicleMoveC2SPacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
+                ServerboundMoveVehiclePacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
                 if (packet == null) continue;
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
-            mc.player.getVehicle().setPosition(mc.player.getVehicle().getX() + deltaX, mc.player.getVehicle().getY(), mc.player.getVehicle().getZ() + deltaZ);
-            VehicleMoveC2SPacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
+            mc.player.getVehicle().setPos(mc.player.getVehicle().getX() + deltaX, mc.player.getVehicle().getY(), mc.player.getVehicle().getZ() + deltaZ);
+            ServerboundMoveVehiclePacket packet = ClipUtils.createVehiclePacket(mc.player.getVehicle());
             if (packet != null) {
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
         } else {
             for (int i = 0; i < packetsRequired - 1; ++i) {
-                PlayerMoveC2SPacket packet = ClipUtils.createOnGroundPacket(true, mc.player.horizontalCollision);
+                ServerboundMovePlayerPacket packet = ClipUtils.createOnGroundPacket(true, mc.player.horizontalCollision);
                 if (packet == null) continue;
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
-            PlayerMoveC2SPacket packet = ClipUtils.createPositionPacket(mc.player.getX() + deltaX, mc.player.getY(), mc.player.getZ() + deltaZ, true, mc.player.horizontalCollision);
+            ServerboundMovePlayerPacket packet = ClipUtils.createPositionPacket(mc.player.getX() + deltaX, mc.player.getY(), mc.player.getZ() + deltaZ, true, mc.player.horizontalCollision);
             if (packet != null) {
-                mc.getNetworkHandler().sendPacket((Packet)packet);
+                mc.getConnection().send((Packet)packet);
             }
-            mc.player.setPosition(mc.player.getX() + deltaX, mc.player.getY(), mc.player.getZ() + deltaZ);
+            mc.player.setPos(mc.player.getX() + deltaX, mc.player.getY(), mc.player.getZ() + deltaZ);
         }
     }
 }

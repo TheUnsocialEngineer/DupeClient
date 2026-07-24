@@ -1,8 +1,7 @@
 package com.dupeclient.client.module.hud;
 
-import net.minecraft.util.math.MathHelper;
-
 import java.util.Locale;
+import net.minecraft.util.Mth;
 
 final class HudDirectionFormat {
     private static final String[] OCTANTS = {"S", "SW", "W", "NW", "N", "NE", "E", "SE"};
@@ -32,10 +31,10 @@ final class HudDirectionFormat {
     }
 
     static String degrees(float yaw) {
-        return String.format(Locale.US, "%.0f°", MathHelper.wrapDegrees(yaw));
+        return String.format(Locale.US, "%.0f°", Mth.wrapDegrees(yaw));
     }
 
     private static int octantIndex(float yaw) {
-        return Math.floorMod(Math.round(MathHelper.wrapDegrees(yaw) / 45f), 8);
+        return Math.floorMod(Math.round(Mth.wrapDegrees(yaw) / 45f), 8);
     }
 }

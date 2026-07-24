@@ -2,10 +2,6 @@ package com.dupeclient.client.module.waypoint;
 
 import com.dupeclient.client.module.cape.DupeClientPresenceConfigManager;
 import com.dupeclient.client.module.social.DupeClientSocialFriendsManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.world.World;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +11,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 public final class DupeClientWaypointManager {
     public static final DupeClientWaypointManager INSTANCE = new DupeClientWaypointManager();
@@ -112,7 +111,7 @@ public final class DupeClientWaypointManager {
         persistLocal();
     }
 
-    public List<SharedDupeClientWaypoint> visibleWaypoints(MinecraftClient client) {
+    public List<SharedDupeClientWaypoint> visibleWaypoints(Minecraft client) {
         ArrayList<SharedDupeClientWaypoint> out = new ArrayList<>();
         UUID self = selfUuid(client);
         String dim = currentDimensionKey(client);
@@ -138,7 +137,7 @@ public final class DupeClientWaypointManager {
         return out;
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null || client.player == null) {
             return;
         }
@@ -169,23 +168,23 @@ public final class DupeClientWaypointManager {
         tickCounter = 200;
     }
 
-    public static String currentDimensionKey(MinecraftClient client) {
-        if (client == null || client.world == null) {
+    public static String currentDimensionKey(Minecraft client) {
+        if (client == null || client.level == null) {
             return "";
         }
-        RegistryKey<World> key = client.world.getRegistryKey();
-        return key.getValue().toString();
+        ResourceKey<Level> key = client.level.dimension();
+        return key.identifier().toString();
     }
 
-    public static UUID selfUuid(MinecraftClient client) {
+    public static UUID selfUuid(Minecraft client) {
         if (client == null) {
             return null;
         }
         if (client.player != null) {
-            return client.player.getUuid();
+            return client.player.getUUID();
         }
-        if (client.getSession() != null) {
-            return client.getSession().getUuidOrNull();
+        if (client.getUser() != null) {
+            return client.getUser().getProfileId();
         }
         return null;
     }
@@ -195,7 +194,7 @@ public final class DupeClientWaypointManager {
         syncDirty = true;
     }
 
-    private void scheduleSync(MinecraftClient client) {
+    private void scheduleSync(Minecraft client) {
         UUID self = selfUuid(client);
         if (self == null || !syncInFlight.compareAndSet(false, true)) {
             return;
@@ -215,7 +214,7 @@ public final class DupeClientWaypointManager {
         });
     }
 
-    private void scheduleFetch(MinecraftClient client) {
+    private void scheduleFetch(Minecraft client) {
         UUID self = selfUuid(client);
         if (self == null || !fetchInFlight.compareAndSet(false, true)) {
             return;
@@ -225,7 +224,7 @@ public final class DupeClientWaypointManager {
                 List<SharedDupeClientWaypoint> rows = DupeClientWaypointSync.fetchBlocking(self);
                 consecutiveFetchFailures = 0;
                 nextFetchAllowedMs = 0L;
-                MinecraftClient mc = MinecraftClient.getInstance();
+                Minecraft mc = Minecraft.getInstance();
                 Runnable apply = () -> {
                     sharedWaypoints.clear();
                     sharedWaypoints.addAll(rows);

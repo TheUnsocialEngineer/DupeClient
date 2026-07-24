@@ -72,13 +72,12 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.brigadier.CommandDispatcher;
 
 public final class DupeClient implements ClientModInitializer {
@@ -140,9 +139,9 @@ public final class DupeClient implements ClientModInitializer {
                 if (SlashCommandGate.blockExploit(ctx.getSource())) {
                     return 0;
                 }
-                MinecraftClient c = MinecraftClient.getInstance();
+                Minecraft c = Minecraft.getInstance();
                 if (c != null) {
-                    c.setScreen(new ServerSearchAuthScreen(c.currentScreen));
+                    c.setScreen(new ServerSearchAuthScreen(c.screen));
                 }
                 return 1;
             }));
@@ -197,7 +196,7 @@ public final class DupeClient implements ClientModInitializer {
                 handlePanelHotkeys(client);
                 if (HubModuleRules.exploitFeaturesAllowed() && macroEditorKeyPressedThisTick(client)) {
                     MacroEditorScreen.open(client, null);
-                } else if (KeybindManager.OPEN_GUI_KEY.wasPressed() || consumeRightCtrlPress(client)) {
+                } else if (KeybindManager.OPEN_GUI_KEY.consumeClick() || consumeRightCtrlPress(client)) {
                     openClientGui(client);
                 }
             } else {
@@ -206,7 +205,7 @@ public final class DupeClient implements ClientModInitializer {
                 waypointsScreenKeyEdgeLatch = false;
                 macroEditorKeyEdgeLatch = false;
                 rightCtrlWasDown = client != null && client.getWindow() != null
-                        && InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL);
+                        && InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL);
             }
         });
 
@@ -256,7 +255,7 @@ public final class DupeClient implements ClientModInitializer {
                                 })))
                 .then(ClientCommandManager.literal("developer").executes(ctx -> {
                     DupedbManager.INSTANCE.openDeveloperSettingsPage();
-                    ctx.getSource().sendFeedback(net.minecraft.text.Text.literal("[DupeDB] Opening developer settings"));
+                    ctx.getSource().sendFeedback(net.minecraft.network.chat.Component.literal("[DupeDB] Opening developer settings"));
                     return 1;
                 }))
                 .then(ClientCommandManager.literal("plugins").executes(ctx -> {
@@ -269,9 +268,9 @@ public final class DupeClient implements ClientModInitializer {
                 }))
                 .then(ClientCommandManager.literal("status").executes(ctx -> {
                     if (DupedbManager.INSTANCE.isAuthenticated()) {
-                        ctx.getSource().sendFeedback(net.minecraft.text.Text.literal("[DupeDB] Authenticated"));
+                        ctx.getSource().sendFeedback(net.minecraft.network.chat.Component.literal("[DupeDB] Authenticated"));
                     } else {
-                        ctx.getSource().sendFeedback(net.minecraft.text.Text.literal(
+                        ctx.getSource().sendFeedback(net.minecraft.network.chat.Component.literal(
                                 "[DupeDB] Not authenticated. Use /dupedb login or /dupedb token dupe_pat_..."));
                     }
                     return 1;
@@ -279,7 +278,7 @@ public final class DupeClient implements ClientModInitializer {
                 .then(ClientCommandManager.literal("revoke").executes(ctx -> {
                     DupedbManager.INSTANCE.clearToken();
                     DupedbManager.INSTANCE.openSettingsPage();
-                    ctx.getSource().sendFeedback(net.minecraft.text.Text.literal("[DupeDB] Token cleared"));
+                    ctx.getSource().sendFeedback(net.minecraft.network.chat.Component.literal("[DupeDB] Token cleared"));
                     return 1;
                 }))
                 .then(ClientCommandManager.literal("mode")
@@ -323,7 +322,7 @@ public final class DupeClient implements ClientModInitializer {
         });
     }
 
-    private static void handlePanelHotkeys(MinecraftClient client) {
+    private static void handlePanelHotkeys(Minecraft client) {
         if (client == null || client.getWindow() == null) {
             hudEditorKeyEdgeLatch = false;
             socialScreenKeyEdgeLatch = false;
@@ -332,20 +331,20 @@ public final class DupeClient implements ClientModInitializer {
         }
         HudSettings hudSettings = HudManager.INSTANCE.settings();
         if (consumeGlfwKeyPress(client, hudSettings.editorOpenKey, true, false)) {
-            IngameUiRouter.openHudEditor(client.currentScreen);
+            IngameUiRouter.openHudEditor(client.screen);
         }
         DupeClientPresenceSettings presenceSettings = DupeClientPresenceConfigManager.get();
         if (consumeGlfwKeyPress(client, presenceSettings.openSocialKey, false, true)
                 && HubModuleRules.socialFeaturesAllowed()) {
-            IngameUiRouter.openSocial(client.currentScreen);
+            IngameUiRouter.openSocial(client.screen);
         }
         if (consumeGlfwKeyPress(client, presenceSettings.openWaypointsKey, false, false)
                 && HubModuleRules.socialFeaturesAllowed()) {
-            IngameUiRouter.openWaypoints(client.currentScreen);
+            IngameUiRouter.openWaypoints(client.screen);
         }
     }
 
-    private static boolean consumeGlfwKeyPress(MinecraftClient client, int keyCode, boolean hudEditor, boolean socialKey) {
+    private static boolean consumeGlfwKeyPress(Minecraft client, int keyCode, boolean hudEditor, boolean socialKey) {
         if (keyCode < 0 || keyCode == GLFW.GLFW_KEY_UNKNOWN) {
             if (hudEditor) {
                 hudEditorKeyEdgeLatch = false;
@@ -356,7 +355,7 @@ public final class DupeClient implements ClientModInitializer {
             }
             return false;
         }
-        boolean down = InputUtil.isKeyPressed(client.getWindow(), keyCode);
+        boolean down = InputConstants.isKeyDown(client.getWindow(), keyCode);
         boolean last = hudEditor ? hudEditorKeyEdgeLatch : (socialKey ? socialScreenKeyEdgeLatch : waypointsScreenKeyEdgeLatch);
         boolean pressed = down && !last;
         if (hudEditor) {
@@ -369,27 +368,27 @@ public final class DupeClient implements ClientModInitializer {
         return pressed;
     }
 
-    private static boolean macroEditorKeyPressedThisTick(MinecraftClient client) {
-        if (KeybindManager.OPEN_MACRO_EDITOR_KEY.wasPressed()) {
+    private static boolean macroEditorKeyPressedThisTick(Minecraft client) {
+        if (KeybindManager.OPEN_MACRO_EDITOR_KEY.consumeClick()) {
             return true;
         }
         if (client == null || client.getWindow() == null) {
             macroEditorKeyEdgeLatch = false;
             return false;
         }
-        int code = KeybindManager.OPEN_MACRO_EDITOR_KEY.getDefaultKey().getCode();
-        boolean down = InputUtil.isKeyPressed(client.getWindow(), code);
+        int code = KeybindManager.OPEN_MACRO_EDITOR_KEY.getDefaultKey().getValue();
+        boolean down = InputConstants.isKeyDown(client.getWindow(), code);
         boolean pressed = down && !macroEditorKeyEdgeLatch;
         macroEditorKeyEdgeLatch = down;
         return pressed;
     }
 
-    private static boolean consumeRightCtrlPress(MinecraftClient client) {
+    private static boolean consumeRightCtrlPress(Minecraft client) {
         if (client == null || client.getWindow() == null) {
             rightCtrlWasDown = false;
             return false;
         }
-        boolean down = InputUtil.isKeyPressed(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL);
+        boolean down = InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_RIGHT_CONTROL);
         boolean pressed = down && !rightCtrlWasDown;
         rightCtrlWasDown = down;
         return pressed;
@@ -419,11 +418,11 @@ public final class DupeClient implements ClientModInitializer {
         return visualSettingsRevision;
     }
 
-    public static void openClientGui(MinecraftClient client) {
+    public static void openClientGui(Minecraft client) {
         if (client == null) {
             return;
         }
-        if (client.currentScreen instanceof ClientGuiScreen hub) {
+        if (client.screen instanceof ClientGuiScreen hub) {
             hub.close();
             return;
         }
@@ -432,7 +431,7 @@ public final class DupeClient implements ClientModInitializer {
         IngameUiRouter.openClientGui(client);
     }
 
-    public static void openModsGui(MinecraftClient client, Screen parent) {
+    public static void openModsGui(Minecraft client, Screen parent) {
         try {
             Class<?> clazz = Class.forName("com.terraformersmc.modmenu.gui.ModsScreen");
             client.setScreen((Screen) clazz.getConstructor(Screen.class).newInstance(parent));

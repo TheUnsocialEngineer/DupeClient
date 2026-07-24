@@ -1,11 +1,10 @@
 package com.dupeclient.client.module.security;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 
 /**
  * OpSec-style "fake default keybinds": resolves keybind IDs to their vanilla default display values.
@@ -34,11 +33,11 @@ final class SecurityKeybindDefaults {
         }
         initialized = true;
         try {
-            MinecraftClient c = MinecraftClient.getInstance();
-            if (c == null || c.options == null || c.options.allKeys == null) {
+            Minecraft c = Minecraft.getInstance();
+            if (c == null || c.options == null || c.options.keyMappings == null) {
                 return;
             }
-            for (KeyBinding kb : c.options.allKeys) {
+            for (KeyMapping kb : c.options.keyMappings) {
                 if (kb == null) {
                     continue;
                 }
@@ -52,7 +51,7 @@ final class SecurityKeybindDefaults {
         }
     }
 
-    private static String resolveKeyId(KeyBinding kb) {
+    private static String resolveKeyId(KeyMapping kb) {
         String[] names = new String[] {
                 "getBoundKeyTranslationKey",
                 "getTranslationKey",
@@ -71,7 +70,7 @@ final class SecurityKeybindDefaults {
         return null;
     }
 
-    private static String resolveDefaultDisplay(KeyBinding kb) {
+    private static String resolveDefaultDisplay(KeyMapping kb) {
         try {
             Method mDefault = kb.getClass().getMethod("getDefaultKey");
             Object defaultKey = mDefault.invoke(kb);

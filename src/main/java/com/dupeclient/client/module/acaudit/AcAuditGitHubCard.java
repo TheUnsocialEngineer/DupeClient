@@ -1,10 +1,9 @@
 package com.dupeclient.client.module.acaudit;
 
 import com.dupeclient.client.gui.GitHubRepoCard;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-
 import java.net.URI;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 /** AC Audit upstream attribution — delegates to shared {@link GitHubRepoCard}. */
 public final class AcAuditGitHubCard {
@@ -21,7 +20,7 @@ public final class AcAuditGitHubCard {
         return GitHubRepoCard.height();
     }
 
-    public static void render(DrawContext context, TextRenderer tr, int x, int y, int mouseX, int mouseY) {
+    public static void render(GuiGraphics context, Font tr, int x, int y, int mouseX, int mouseY) {
         GitHubRepoCard.AC_AUDIT.render(context, tr, x, y, mouseX, mouseY);
     }
 

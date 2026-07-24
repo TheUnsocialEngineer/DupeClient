@@ -2,25 +2,25 @@ package com.dupeclient.client.gui.widget;
 
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.modern.theme.MidnightShapes;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 
 /**
  * Cycling string picker with the same mint/slate look as {@link StylishButtonWidget}.
  */
-public class StylishCyclingButtonWidget extends ClickableWidget {
+public class StylishCyclingButtonWidget extends AbstractWidget {
     private final List<String> values;
     private int index;
-    private final Text caption;
+    private final Component caption;
     @Nullable
     private final BiConsumer<StylishCyclingButtonWidget, String> onChange;
 
@@ -29,11 +29,11 @@ public class StylishCyclingButtonWidget extends ClickableWidget {
             int y,
             int w,
             int h,
-            Text caption,
+            Component caption,
             List<String> values,
             String initialValue,
             @Nullable BiConsumer<StylishCyclingButtonWidget, String> onChange) {
-        super(x, y, w, h, Text.empty());
+        super(x, y, w, h, Component.empty());
         this.caption = caption;
         this.values = new ArrayList<>(values);
         this.onChange = onChange;
@@ -58,11 +58,11 @@ public class StylishCyclingButtonWidget extends ClickableWidget {
     }
 
     private void refreshMessage() {
-        setMessage(Text.literal("").append(caption).append(Text.literal(": " + getValue())));
+        setMessage(Component.literal("").append(caption).append(Component.literal(": " + getValue())));
     }
 
     @Override
-    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
         boolean hoveredNow = this.isHovered() && this.active;
         int x1 = getX();
         int y1 = getY();
@@ -74,8 +74,8 @@ public class StylishCyclingButtonWidget extends ClickableWidget {
         MidnightShapes.fillRoundedFrame(context, x1, y1, w, h, rr, fill, border);
 
         int textColor = this.active ? UiTokens.TEXT : UiTokens.SLATE_500;
-        context.drawCenteredTextWithShadow(
-                MinecraftClient.getInstance().textRenderer,
+        context.drawCenteredString(
+                Minecraft.getInstance().font,
                 getMessage(),
                 x1 + w / 2,
                 y1 + (h - 8) / 2,
@@ -83,7 +83,7 @@ public class StylishCyclingButtonWidget extends ClickableWidget {
     }
 
     @Override
-    public void onClick(Click click, boolean doubleClick) {
+    public void onClick(MouseButtonEvent click, boolean doubleClick) {
         if (!this.active) {
             return;
         }
@@ -95,7 +95,7 @@ public class StylishCyclingButtonWidget extends ClickableWidget {
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        appendDefaultNarrations(builder);
+    protected void updateWidgetNarration(NarrationElementOutput builder) {
+        defaultButtonNarrationText(builder);
     }
 }

@@ -2,20 +2,6 @@ package com.dupeclient.client.module.security;
 
 import com.dupeclient.client.DupeClient;
 import com.dupeclient.client.module.security.nochatrestrictions.NoChatRestrictionsGate;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.effect.StatusEffects;
-
-import net.minecraft.client.toast.SystemToast;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.common.ResourcePackSendS2CPacket;
-import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.URI;
@@ -30,6 +16,18 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 
 public final class SecurityManager {
     public static final SecurityManager INSTANCE = new SecurityManager();
@@ -57,9 +55,9 @@ public final class SecurityManager {
         return a.equals(b);
     }
 
-    private static String currentServerAddress(MinecraftClient client) {
-        if (client.getCurrentServerEntry() != null && client.getCurrentServerEntry().address != null) {
-            return client.getCurrentServerEntry().address;
+    private static String currentServerAddress(Minecraft client) {
+        if (client.getCurrentServer() != null && client.getCurrentServer().ip != null) {
+            return client.getCurrentServer().ip;
         }
         return "unknown";
     }
@@ -82,7 +80,7 @@ public final class SecurityManager {
         refreshDerivedFlags();
     }
 
-    public void onPlaySessionJoin(MinecraftClient client) {
+    public void onPlaySessionJoin(Minecraft client) {
         if (client == null || !settings.profileAutoSwitchPerServer) {
             return;
         }
@@ -98,7 +96,7 @@ public final class SecurityManager {
         }
     }
 
-    public void saveProfileForCurrentServer(MinecraftClient client) {
+    public void saveProfileForCurrentServer(Minecraft client) {
         if (client == null) {
             return;
         }
@@ -120,9 +118,9 @@ public final class SecurityManager {
     }
 
     public void refreshNameChangerUsername() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.getSession() != null) {
-            nameChangerSourceUsername = client.getSession().getUsername();
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.getUser() != null) {
+            nameChangerSourceUsername = client.getUser().getName();
         }
     }
 
@@ -137,7 +135,7 @@ public final class SecurityManager {
             return text;
         }
         if (settings.nameChangerOnlyInGame) {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             if (client == null || client.player == null) {
                 return text;
             }
@@ -182,12 +180,12 @@ public final class SecurityManager {
     }
 
     public void onNoTextureRotationsChanged(boolean enabled) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
-        if (client.worldRenderer != null) {
-            client.worldRenderer.reload();
+        if (client.levelRenderer != null) {
+            client.levelRenderer.allChanged();
         }
     }
 
@@ -196,12 +194,12 @@ public final class SecurityManager {
             return;
         }
         if (settings.moduleChatFeedback) {
-            sendHud(prefix().copy().append(Text.literal(message).formatted(Formatting.GRAY)));
+            sendHud(prefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
         }
     }
 
     /** Whether staff detection has classified this username as staff (known list or live tab rank). */
-    public boolean isStaffUsername(MinecraftClient client, String username) {
+    public boolean isStaffUsername(Minecraft client, String username) {
         if (!settings.staffDetectionEnabled || username == null || username.isBlank()) {
             return false;
         }
@@ -210,40 +208,40 @@ public final class SecurityManager {
                 return true;
             }
         }
-        if (client == null || client.getNetworkHandler() == null) {
+        if (client == null || client.getConnection() == null) {
             return false;
         }
-        for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+        for (PlayerInfo entry : client.getConnection().getOnlinePlayers()) {
             if (entry == null || entry.getProfile() == null || entry.getProfile().name() == null) {
                 continue;
             }
             if (!entry.getProfile().name().equalsIgnoreCase(username)) {
                 continue;
             }
-            String display = entry.getDisplayName() == null ? "" : entry.getDisplayName().getString();
+            String display = entry.getTabListDisplayName() == null ? "" : entry.getTabListDisplayName().getString();
             return rankFromPlayerText(display + " " + username) != null;
         }
         return false;
     }
 
-    public boolean isStaffPlayer(MinecraftClient client, PlayerEntity player) {
+    public boolean isStaffPlayer(Minecraft client, Player player) {
         if (!settings.staffDetectionEnabled || player == null) {
             return false;
         }
         return staffRankForEntity(client, player) != null;
     }
 
-    public int countOnlineStaff(MinecraftClient client) {
-        if (!settings.staffDetectionEnabled || client == null || client.getNetworkHandler() == null) {
+    public int countOnlineStaff(Minecraft client) {
+        if (!settings.staffDetectionEnabled || client == null || client.getConnection() == null) {
             return 0;
         }
         int count = 0;
-        for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+        for (PlayerInfo entry : client.getConnection().getOnlinePlayers()) {
             if (entry == null || entry.getProfile() == null || entry.getProfile().name() == null) {
                 continue;
             }
             String username = entry.getProfile().name();
-            String display = entry.getDisplayName() == null ? "" : entry.getDisplayName().getString();
+            String display = entry.getTabListDisplayName() == null ? "" : entry.getTabListDisplayName().getString();
             if (rankFromPlayerText(display + " " + username) != null) {
                 count++;
             }
@@ -251,8 +249,8 @@ public final class SecurityManager {
         return count;
     }
 
-    public void tick(MinecraftClient client) {
-        if (client == null || client.getNetworkHandler() == null || client.player == null) {
+    public void tick(Minecraft client) {
+        if (client == null || client.getConnection() == null || client.player == null) {
             onlineStaff.clear();
             detectedThisSession.clear();
             staffProximityAlerted.clear();
@@ -272,13 +270,13 @@ public final class SecurityManager {
         Set<UUID> newlyDetectedThisTick = new HashSet<>();
         boolean dirty = false;
         String server = currentServerAddress(client);
-        for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+        for (PlayerInfo entry : client.getConnection().getOnlinePlayers()) {
             if (entry == null || entry.getProfile() == null || entry.getProfile().id() == null) {
                 continue;
             }
             UUID uuid = entry.getProfile().id();
             String username = entry.getProfile().name() == null ? "" : entry.getProfile().name();
-            String display = entry.getDisplayName() == null ? "" : entry.getDisplayName().getString();
+            String display = entry.getTabListDisplayName() == null ? "" : entry.getTabListDisplayName().getString();
             String rank = rankFromPlayerText(display + " " + username);
             if (rank == null) {
                 continue;
@@ -346,9 +344,9 @@ public final class SecurityManager {
         }
     }
 
-    private void tickStaffProximity(MinecraftClient client) {
+    private void tickStaffProximity(Minecraft client) {
         if (!settings.staffDetectionEnabled || !settings.staffProximityAlerts
-                || client.world == null || client.player == null) {
+                || client.level == null || client.player == null) {
             staffProximityAlerted.clear();
             return;
         }
@@ -356,38 +354,38 @@ public final class SecurityManager {
         double radiusSq = (double) radius * radius;
         Set<UUID> inRange = new HashSet<>();
 
-        for (PlayerEntity player : client.world.getPlayers()) {
+        for (Player player : client.level.players()) {
             if (player == null || player == client.player) {
                 continue;
             }
-            if (client.player.squaredDistanceTo(player) > radiusSq) {
+            if (client.player.distanceToSqr(player) > radiusSq) {
                 continue;
             }
-            UUID uuid = player.getUuid();
+            UUID uuid = player.getUUID();
             inRange.add(uuid);
             String rank = staffRankForEntity(client, player);
             if (rank == null) {
                 continue;
             }
             if (staffProximityAlerted.add(uuid)) {
-                int dist = (int) Math.round(Math.sqrt(client.player.squaredDistanceTo(player)));
+                int dist = (int) Math.round(Math.sqrt(client.player.distanceToSqr(player)));
                 detection("Staff nearby: " + player.getName().getString() + " [" + rank + "] (" + dist + "m)");
             }
         }
         staffProximityAlerted.retainAll(inRange);
     }
 
-    private String staffRankForEntity(MinecraftClient client, PlayerEntity player) {
+    private String staffRankForEntity(Minecraft client, Player player) {
         if (player == null) {
             return null;
         }
         String username = player.getName().getString();
-        UUID uuid = player.getUuid();
-        PlayerListEntry entry = client.getNetworkHandler() == null
+        UUID uuid = player.getUUID();
+        PlayerInfo entry = client.getConnection() == null
                 ? null
-                : client.getNetworkHandler().getPlayerListEntry(uuid);
+                : client.getConnection().getPlayerInfo(uuid);
         if (entry != null) {
-            String display = entry.getDisplayName() == null ? "" : entry.getDisplayName().getString();
+            String display = entry.getTabListDisplayName() == null ? "" : entry.getTabListDisplayName().getString();
             String rank = rankFromPlayerText(display + " " + username);
             if (rank != null) {
                 return rank;
@@ -401,19 +399,19 @@ public final class SecurityManager {
         return null;
     }
 
-    private void tickAntiInvisible(MinecraftClient client) {
-        if (!settings.antiInvisibleEntities || client.world == null) {
+    private void tickAntiInvisible(Minecraft client) {
+        if (!settings.antiInvisibleEntities || client.level == null) {
             invisibleEntityAlerted.clear();
             return;
         }
         Set<Integer> seen = new HashSet<>();
-        for (Entity entity : client.world.getEntities()) {
-            if (!(entity instanceof PlayerEntity player) || player == client.player) {
+        for (Entity entity : client.level.entitiesForRendering()) {
+            if (!(entity instanceof Player player) || player == client.player) {
                 continue;
             }
             seen.add(player.getId());
             boolean invisible = player.isInvisible()
-                    || (player.getStatusEffects() != null && player.hasStatusEffect(StatusEffects.INVISIBILITY));
+                    || (player.getActiveEffects() != null && player.hasEffect(MobEffects.INVISIBILITY));
             if (invisible && invisibleEntityAlerted.add(player.getId())) {
                 detection("Invisible player entity: " + player.getName().getString());
             }
@@ -437,14 +435,14 @@ public final class SecurityManager {
         if (packet == null) {
             return false;
         }
-        if (settings.blockLocalPackUrls && packet instanceof ResourcePackSendS2CPacket) {
+        if (settings.blockLocalPackUrls && packet instanceof ClientboundResourcePackPushPacket) {
             String url = extractStringProperty(packet, "url", "getUrl", "URL", "getURL");
             if (!url.isBlank() && isLocalUrl(url)) {
                 detection("Blocked local/private resource pack URL: " + url);
                 return true;
             }
         }
-        if (settings.keyProbeAlerts && packet instanceof GameMessageS2CPacket) {
+        if (settings.keyProbeAlerts && packet instanceof ClientboundSystemChatPacket) {
             String text = extractGameMessageText(packet);
             if (looksLikeKeyProbe(text)) {
                 detection("Possible keybind probe in server message: " + shorten(text, 90));
@@ -491,7 +489,7 @@ public final class SecurityManager {
             DupeClient.LOGGER.warn("[Security] {}", message);
         }
         if (settings.moduleChatFeedback) {
-            sendHud(prefix().copy().append(Text.literal(message).formatted(Formatting.YELLOW)));
+            sendHud(prefix().copy().append(Component.literal(message).withStyle(ChatFormatting.YELLOW)));
         }
         if (settings.showToasts) {
             showToast("Sign key probe", message);
@@ -504,7 +502,7 @@ public final class SecurityManager {
             DupeClient.LOGGER.warn("[Security] {}", message);
         }
         if (settings.moduleChatFeedback) {
-            sendHud(prefix().copy().append(Text.literal(message).formatted(Formatting.YELLOW)));
+            sendHud(prefix().copy().append(Component.literal(message).withStyle(ChatFormatting.YELLOW)));
         }
         if (settings.showToasts) {
             showToast("Security", message);
@@ -681,29 +679,29 @@ public final class SecurityManager {
         return s.substring(0, max - 3) + "...";
     }
 
-    private static MutableText prefix() {
-        return Text.literal("[Security] ").formatted(Formatting.GOLD, Formatting.BOLD);
+    private static MutableComponent prefix() {
+        return Component.literal("[Security] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
     }
 
-    private static void sendHud(Text text) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private static void sendHud(Component text) {
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(text, false);
+                client.player.displayClientMessage(text, false);
             }
         });
     }
 
     private static void showToast(String title, String body) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
-        client.execute(() -> client.getToastManager().add(
-                SystemToast.create(client, SystemToast.Type.PERIODIC_NOTIFICATION, Text.literal(title), Text.literal(shorten(body, 120)))
+        client.execute(() -> client.getToastManager().addToast(
+                SystemToast.multiline(client, SystemToast.SystemToastId.PERIODIC_NOTIFICATION, Component.literal(title), Component.literal(shorten(body, 120)))
         ));
     }
 }

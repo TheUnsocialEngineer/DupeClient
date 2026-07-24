@@ -9,13 +9,13 @@ import com.dupeclient.client.module.dupedb.search.auth.AddonAuth;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import net.minecraft.text.Text;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.screen.ScreenTexts;
 
 public final class ServerSearchAuthScreen extends Screen {
    private static final long MIN_POLL_INTERVAL_MS = 2000L;
@@ -30,12 +30,12 @@ public final class ServerSearchAuthScreen extends Screen {
    private String detailText = "";
    private String hintText = "";
    private String noticeText = "";
-   private ButtonWidget primaryButton;
-   private ButtonWidget secondaryButton;
-   private ButtonWidget backButton;
+   private Button primaryButton;
+   private Button secondaryButton;
+   private Button backButton;
 
    public ServerSearchAuthScreen(Screen parent) {
-      super(Text.literal("Minecraft Server Search — Sign in"));
+      super(Component.literal("Minecraft Server Search — Sign in"));
       this.parent = parent;
    }
 
@@ -58,24 +58,24 @@ public final class ServerSearchAuthScreen extends Screen {
       }
 
       if (this.phase == ServerSearchAuthScreen.Phase.AUTHED) {
-         MinecraftClient mc = MinecraftClient.getInstance();
+         Minecraft mc = Minecraft.getInstance();
          if (mc != null) {
             mc.execute(this::openScanner);
          }
       } else {
          int cx = this.width / 2;
          int cy = this.height / 2;
-         this.primaryButton = ButtonWidget.builder(Text.literal("Sign in with Discord"), b -> this.onPrimary())
-            .dimensions(cx - 110, cy + 8, 220, 20)
+         this.primaryButton = Button.builder(Component.literal("Sign in with Discord"), b -> this.onPrimary())
+            .bounds(cx - 110, cy + 8, 220, 20)
             .build();
-         this.addDrawableChild(this.primaryButton);
-         this.secondaryButton = ButtonWidget.builder(Text.literal("Copy code"), b -> this.onSecondary())
-            .dimensions(cx - 110, cy + 32, 220, 20)
+         this.addRenderableWidget(this.primaryButton);
+         this.secondaryButton = Button.builder(Component.literal("Copy code"), b -> this.onSecondary())
+            .bounds(cx - 110, cy + 32, 220, 20)
             .build();
          this.secondaryButton.visible = false;
-         this.addDrawableChild(this.secondaryButton);
-         this.backButton = ButtonWidget.builder(ScreenTexts.BACK, b -> this.onBack()).dimensions(cx - 110, cy + 60, 220, 20).build();
-         this.addDrawableChild(this.backButton);
+         this.addRenderableWidget(this.secondaryButton);
+         this.backButton = Button.builder(CommonComponents.GUI_BACK, b -> this.onBack()).bounds(cx - 110, cy + 60, 220, 20).build();
+         this.addRenderableWidget(this.backButton);
          this.applyPhase();
       }
    }
@@ -95,7 +95,7 @@ public final class ServerSearchAuthScreen extends Screen {
                this.headlineText = hasNotice ? "You were signed out" : "Sign in to use the Minecraft Server Scanner";
                this.detailText = hasNotice ? this.noticeText : "This addon requires an active subscription or VIP role.";
                this.hintText = hasNotice ? "Only one Minecraft install can be active per account. Sign in again to use it here." : "";
-               this.primaryButton.setMessage(Text.literal("Sign in with Discord"));
+               this.primaryButton.setMessage(Component.literal("Sign in with Discord"));
                this.primaryButton.active = true;
                this.primaryButton.visible = true;
                this.secondaryButton.visible = false;
@@ -112,21 +112,21 @@ public final class ServerSearchAuthScreen extends Screen {
                this.headlineText = "Open the browser link, then approve this code";
                this.detailText = this.pendingDevice != null ? this.pendingDevice.userCode() : "";
                this.hintText = "Already logged in on the website? You should be signed in here within a few seconds.";
-               this.primaryButton.setMessage(Text.literal("Open link in browser"));
+               this.primaryButton.setMessage(Component.literal("Open link in browser"));
                this.primaryButton.active = true;
                this.primaryButton.visible = true;
-               this.secondaryButton.setMessage(Text.literal("Copy code"));
+               this.secondaryButton.setMessage(Component.literal("Copy code"));
                this.secondaryButton.active = true;
                this.secondaryButton.visible = true;
                break;
             case FAILED:
-               this.primaryButton.setMessage(Text.literal("Try again"));
+               this.primaryButton.setMessage(Component.literal("Try again"));
                this.primaryButton.active = true;
                this.primaryButton.visible = true;
                this.secondaryButton.visible = false;
                break;
             case NO_ACCESS:
-               this.primaryButton.setMessage(Text.literal("Try again"));
+               this.primaryButton.setMessage(Component.literal("Try again"));
                this.primaryButton.active = true;
                this.primaryButton.visible = true;
                this.secondaryButton.visible = false;
@@ -160,13 +160,13 @@ public final class ServerSearchAuthScreen extends Screen {
    }
 
    private void onBack() {
-      MultiplayerScreens.returnToMultiplayer(MinecraftClient.getInstance(), this.parent);
+      MultiplayerScreens.returnToMultiplayer(Minecraft.getInstance(), this.parent);
    }
 
    private void openVerificationUrl() {
       if (this.pendingDevice != null) {
          try {
-            Util.getOperatingSystem().open(this.pendingDevice.openableUrl());
+            Util.getPlatform().openUri(this.pendingDevice.openableUrl());
          } catch (Exception var2) {
             DupeClient.LOGGER.warn("Could not open verification URL: {}", var2.toString());
          }
@@ -251,33 +251,33 @@ public final class ServerSearchAuthScreen extends Screen {
    }
 
    private void openScanner() {
-      MinecraftClient mc = MinecraftClient.getInstance();
+      Minecraft mc = Minecraft.getInstance();
       if (mc != null) {
          mc.setScreen(new ServerScannerScreen(this.parent, this.apiClient));
       }
    }
 
-   public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+   public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
       super.render(context, mouseX, mouseY, deltaTicks);
       int cx = this.width / 2;
       int cy = this.height / 2;
-      context.drawCenteredTextWithShadow(this.textRenderer, this.headlineText, cx, cy - 50, -1);
+      context.drawCenteredString(this.font, this.headlineText, cx, cy - 50, -1);
       if (this.phase == ServerSearchAuthScreen.Phase.AWAITING && this.pendingDevice != null) {
-         context.drawCenteredTextWithShadow(this.textRenderer, this.pendingDevice.userCode(), cx, cy - 26, -11144);
+         context.drawCenteredString(this.font, this.pendingDevice.userCode(), cx, cy - 26, -11144);
          long secsLeft = Math.max(0L, (this.codeExpiresAtEpochMs - System.currentTimeMillis()) / 1000L);
-         context.drawCenteredTextWithShadow(this.textRenderer, "Code valid for " + secsLeft + "s", cx, cy - 12, -6250336);
+         context.drawCenteredString(this.font, "Code valid for " + secsLeft + "s", cx, cy - 12, -6250336);
       } else if (!this.detailText.isEmpty()) {
          int color = this.phase != ServerSearchAuthScreen.Phase.NO_ACCESS && this.phase != ServerSearchAuthScreen.Phase.FAILED ? -6250336 : -32640;
-         context.drawCenteredTextWithShadow(this.textRenderer, this.detailText, cx, cy - 26, color);
+         context.drawCenteredString(this.font, this.detailText, cx, cy - 26, color);
       }
 
       if (!this.hintText.isEmpty()) {
-         context.drawCenteredTextWithShadow(this.textRenderer, this.hintText, cx, cy + 84, -8748396);
+         context.drawCenteredString(this.font, this.hintText, cx, cy + 84, -8748396);
       }
    }
 
    private void runOnClient(Runnable r) {
-      MinecraftClient mc = MinecraftClient.getInstance();
+      Minecraft mc = Minecraft.getInstance();
       if (mc != null) {
          mc.execute(r);
       }

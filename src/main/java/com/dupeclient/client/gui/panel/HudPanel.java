@@ -5,13 +5,13 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.IngameUiRouter;
 import com.dupeclient.client.module.hud.HudManager;
 import com.dupeclient.client.module.hud.HudSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 /**
  * HUD controls inside the modules GUI (no commands needed).
@@ -25,17 +25,17 @@ public final class HudPanel extends Panel {
     private CaptureMode captureMode = CaptureMode.NONE;
 
     public HudPanel(int x, int y) {
-        super("hud", Text.literal("HUD"), x, y, 340, 168);
+        super("hud", Component.literal("HUD"), x, y, 340, 168);
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        TextRenderer tr = mc.textRenderer;
+        Minecraft mc = Minecraft.getInstance();
+        Font tr = mc.font;
         HudSettings settings = HudManager.INSTANCE.settings();
 
         int cardX = x + 8;
@@ -49,8 +49,8 @@ public final class HudPanel extends Panel {
 
         boolean active = HudManager.INSTANCE.isActive();
         int stateColor = active ? UiTokens.ACCENT : 0xFFFF9A7A;
-        context.drawTextWithShadow(tr, Text.literal("Overlay"), cx, cy, UiTokens.TEXT_DIM);
-        context.drawTextWithShadow(tr, Text.literal(active ? "Enabled" : "Disabled"), cx + 52, cy, stateColor);
+        context.drawString(tr, Component.literal("Overlay"), cx, cy, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal(active ? "Enabled" : "Disabled"), cx + 52, cy, stateColor);
         cy += 16;
 
         UiComponents.drawPillActionButton(tr, context, cx, cy, cw, BTN_H, "Open HUD Editor", UiComponents.PillActionStyle.PRIMARY_BLUE);
@@ -72,8 +72,8 @@ public final class HudPanel extends Panel {
 
         height = bodyTopOffset() + 8 + CARD_H + 10;
         if (captureMode != CaptureMode.NONE) {
-            context.drawTextWithShadow(tr,
-                    Text.literal("Press a key (ESC clears bind)"),
+            context.drawString(tr,
+                    Component.literal("Press a key (ESC clears bind)"),
                     cx, y + height - 10, UiTokens.ACCENT);
             height += 10;
         }
@@ -95,7 +95,7 @@ public final class HudPanel extends Panel {
         int cw = cardW - 20;
 
         if (rect(mouseX, mouseY, cx, cy, cw, BTN_H)) {
-            IngameUiRouter.openHudEditor(MinecraftClient.getInstance().currentScreen);
+            IngameUiRouter.openHudEditor(Minecraft.getInstance().screen);
             return true;
         }
         cy += BTN_H + GAP;

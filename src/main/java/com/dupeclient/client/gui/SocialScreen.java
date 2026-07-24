@@ -22,20 +22,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.entity.player.SkinTextures;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.PlayerSkin;
 
 public final class SocialScreen
 extends Screen {
@@ -65,31 +64,31 @@ extends Screen {
     private final GuiContextMenu contextMenu = new GuiContextMenu();
 
     public SocialScreen(Screen parent) {
-        super(Text.literal("DupeClient Social"));
+        super(Component.literal("DupeClient Social"));
         this.parent = parent;
     }
 
     protected void init() {
         if (!SocialHubRules.socialUiAllowed()) {
-            if (this.client != null) {
-                this.client.setScreen(this.parent);
+            if (this.minecraft != null) {
+                this.minecraft.setScreen(this.parent);
             }
             return;
         }
         DupeClientPresenceConfigManager.reload();
         DupeClientSocialFriendsManager.reload();
         P2wServerPolicy.INSTANCE.refreshRegistryAsync();
-        this.clearChildren();
+        this.clearWidgets();
         int cx = this.width / 2;
-        this.addDrawableChild(new StylishButtonWidget(cx - 172, TOOLBAR_Y, 72, TOOLBAR_H, Text.literal("Refresh"), this::requestList));
-        this.addDrawableChild(new StylishButtonWidget(cx + 82, TOOLBAR_Y, 72, TOOLBAR_H, Text.literal("Waypoints"), () -> {
-            if (this.client != null) {
-                this.client.setScreen(new WaypointsScreen(this));
+        this.addRenderableWidget(new StylishButtonWidget(cx - 172, TOOLBAR_Y, 72, TOOLBAR_H, Component.literal("Refresh"), this::requestList));
+        this.addRenderableWidget(new StylishButtonWidget(cx + 82, TOOLBAR_Y, 72, TOOLBAR_H, Component.literal("Waypoints"), () -> {
+            if (this.minecraft != null) {
+                this.minecraft.setScreen(new WaypointsScreen(this));
             }
         }));
-        this.addDrawableChild(new StylishButtonWidget(cx + 158, TOOLBAR_Y, 72, TOOLBAR_H, Text.literal("Done"), () -> {
-            if (this.client != null) {
-                this.client.setScreen(this.parent);
+        this.addRenderableWidget(new StylishButtonWidget(cx + 158, TOOLBAR_Y, 72, TOOLBAR_H, Component.literal("Done"), () -> {
+            if (this.minecraft != null) {
+                this.minecraft.setScreen(this.parent);
             }
         }));
         this.requestList();
@@ -98,10 +97,10 @@ extends Screen {
     private void requestList() {
         this.loading = true;
         this.statusHint = null;
-        DupeClientSocialListFetcher.fetchAsync(this.client, (list, errorHint) -> {
+        DupeClientSocialListFetcher.fetchAsync(this.minecraft, (list, errorHint) -> {
             this.allRows.clear();
-            MinecraftClient mc = this.client;
-            UUID self = mc != null && mc.player != null ? mc.player.getUuid() : null;
+            Minecraft mc = this.minecraft;
+            UUID self = mc != null && mc.player != null ? mc.player.getUUID() : null;
             DupeClientPresenceSettings cfg = DupeClientPresenceConfigManager.get();
             boolean hideSelf = Boolean.TRUE.equals(cfg.hideSelfInSocial);
             boolean friendsOnlyView = Boolean.TRUE.equals(cfg.socialListFriendsOnlyView);
@@ -122,7 +121,7 @@ extends Screen {
 
     private void rebuildRows() {
         this.rows.clear();
-        String currentServer = SocialScreen.currentServerKey(this.client);
+        String currentServer = SocialScreen.currentServerKey(this.minecraft);
         for (OnlineDupeClientUser u : this.allRows) {
             String userServer;
             if (this.screenTab == ScreenTab.CURRENT_SERVER && (currentServer == null || (userServer = SocialScreen.normalizeServerKey(u.server())) == null || !userServer.equals(currentServer))) continue;
@@ -174,14 +173,14 @@ extends Screen {
         return UiTokens.SP_2 + this.rows.size() * (CARD_H + CARD_GAP);
     }
 
-    private void drawToolbarTabs(DrawContext context, int mouseX, int mouseY) {
+    private void drawToolbarTabs(GuiGraphics context, int mouseX, int mouseY) {
         int cx = this.width / 2;
         int ty = TOOLBAR_Y;
-        UiComponents.drawSegmentTab(this.textRenderer, context, cx + TAB_ALL_X, ty, TAB_ALL_W, TOOLBAR_H, "All", this.screenTab == ScreenTab.ALL);
+        UiComponents.drawSegmentTab(this.font, context, cx + TAB_ALL_X, ty, TAB_ALL_W, TOOLBAR_H, "All", this.screenTab == ScreenTab.ALL);
         UiComponents.drawSegmentTab(
-                this.textRenderer, context, cx + TAB_SERVER_X, ty, TAB_SERVER_W, TOOLBAR_H, "This Server", this.screenTab == ScreenTab.CURRENT_SERVER);
+                this.font, context, cx + TAB_SERVER_X, ty, TAB_SERVER_W, TOOLBAR_H, "This Server", this.screenTab == ScreenTab.CURRENT_SERVER);
         UiComponents.drawSegmentTab(
-                this.textRenderer, context, cx + TAB_SETTINGS_X, ty, TAB_SETTINGS_W, TOOLBAR_H, "Settings", this.screenTab == ScreenTab.SETTINGS);
+                this.font, context, cx + TAB_SETTINGS_X, ty, TAB_SETTINGS_W, TOOLBAR_H, "Settings", this.screenTab == ScreenTab.SETTINGS);
     }
 
     private boolean clickToolbarTab(double mx, double my) {
@@ -207,7 +206,7 @@ extends Screen {
     }
 
     private void drawPlayerCard(
-            DrawContext context,
+            GuiGraphics context,
             int cardX,
             int cardY,
             int cardW,
@@ -232,15 +231,15 @@ extends Screen {
             coordsLine = "Coords · " + coords;
         }
         boolean showJoin = showSrv && this.canJoinServer(user.server(), currentServer);
-        SkinTextures skin = this.client != null ? SocialScreen.skinForListRow(this.client, user.minecraftUuid()) : null;
+        PlayerSkin skin = this.minecraft != null ? SocialScreen.skinForListRow(this.minecraft, user.minecraftUuid()) : null;
         String uuidShort = user.minecraftUuid().toString();
         if (uuidShort.length() > 22) {
             uuidShort = uuidShort.substring(0, 8) + "…" + uuidShort.substring(uuidShort.length() - 6);
         }
         UiComponents.drawPresenceUserCard(
-                this.textRenderer,
+                this.font,
                 context,
-                this.client,
+                this.minecraft,
                 cardX,
                 cardY,
                 cardW,
@@ -260,7 +259,7 @@ extends Screen {
     }
 
     private void clampListScrollY() {
-        this.listScrollY = MathHelper.clamp((int)this.listScrollY, (int)0, (int)this.maxListScrollY());
+        this.listScrollY = Mth.clamp((int)this.listScrollY, (int)0, (int)this.maxListScrollY());
     }
 
     public void tick() {
@@ -275,11 +274,11 @@ extends Screen {
         }
     }
 
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
     }
 
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         this.drawToolbarTabs(context, mouseX, mouseY);
 
@@ -290,7 +289,7 @@ extends Screen {
 
         if (this.screenTab == ScreenTab.SETTINGS) {
             this.drawSettingsPanel(context, lx, contentTop, lw, contentBottom - contentTop);
-            this.contextMenu.render(context, this.textRenderer, mouseX, mouseY);
+            this.contextMenu.render(context, this.font, mouseX, mouseY);
             return;
         }
 
@@ -307,19 +306,19 @@ extends Screen {
         String listTitle = this.screenTab == ScreenTab.ALL
                 ? "Online DupeClient users"
                 : "Users on your server";
-        context.drawTextWithShadow(this.textRenderer, Text.literal(listTitle), lx + LIST_INSET, listTop + UiTokens.SP_2 + 2, MidnightPalette.PATH_GREEN);
-        context.drawTextWithShadow(
-                this.textRenderer,
-                Text.literal("Right-click a card for actions"),
+        context.drawString(this.font, Component.literal(listTitle), lx + LIST_INSET, listTop + UiTokens.SP_2 + 2, MidnightPalette.PATH_GREEN);
+        context.drawString(
+                this.font,
+                Component.literal("Right-click a card for actions"),
                 lx + LIST_INSET,
                 listTop + UiTokens.SP_2 + 13,
                 MidnightPalette.TEXT_MUTED);
 
         if (!this.loading && !this.rows.isEmpty()) {
             String count = this.rows.size() + (this.rows.size() == 1 ? " online" : " online");
-            int countW = this.textRenderer.getWidth(count);
-            context.drawTextWithShadow(
-                    this.textRenderer, Text.literal(count), lx + lw - countW - LIST_INSET, listTop + UiTokens.SP_2 + 2, MidnightPalette.TEXT_SECONDARY);
+            int countW = this.font.width(count);
+            context.drawString(
+                    this.font, Component.literal(count), lx + lw - countW - LIST_INSET, listTop + UiTokens.SP_2 + 2, MidnightPalette.TEXT_SECONDARY);
         }
 
         int listContentTop = this.listContentTop();
@@ -330,7 +329,7 @@ extends Screen {
         context.enableScissor(lx + 1, listContentTop, lx + lw - 1, listBottom - 1);
         if (this.loading) {
             int cy = listContentTop + UiTokens.SP_3 - this.listScrollY;
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Loading…"), this.width / 2, cy, MidnightPalette.TEXT_SECONDARY);
+            context.drawCenteredString(this.font, Component.literal("Loading…"), this.width / 2, cy, MidnightPalette.TEXT_SECONDARY);
         } else if (this.rows.isEmpty()) {
             String msg = this.statusHint != null && !this.statusHint.isBlank()
                     ? this.statusHint
@@ -338,12 +337,12 @@ extends Screen {
                             ? "No DupeClient users are sharing this same server right now."
                             : "API OK but list empty — enable presence + broadcastPresence, stay in-world so heartbeats run.");
             int ey = listContentTop + UiTokens.SP_3 - this.listScrollY;
-            for (OrderedText line : this.textRenderer.wrapLines(Text.literal(msg), lw - LIST_INSET * 4)) {
-                context.drawCenteredTextWithShadow(this.textRenderer, line, this.width / 2, ey, UiTokens.MINT_400);
+            for (FormattedCharSequence line : this.font.split(Component.literal(msg), lw - LIST_INSET * 4)) {
+                context.drawCenteredString(this.font, line, this.width / 2, ey, UiTokens.MINT_400);
                 ey += 12;
             }
         } else {
-            String currentServer = SocialScreen.currentServerKey(this.client);
+            String currentServer = SocialScreen.currentServerKey(this.minecraft);
             for (int i = 0; i < this.rows.size(); ++i) {
                 int cardY = listContentTop + UiTokens.SP_2 + i * (CARD_H + CARD_GAP) - this.listScrollY;
                 OnlineDupeClientUser u = this.rows.get(i);
@@ -356,35 +355,35 @@ extends Screen {
         }
         context.disableScissor();
 
-        this.contextMenu.render(context, this.textRenderer, mouseX, mouseY);
+        this.contextMenu.render(context, this.font, mouseX, mouseY);
     }
 
-    private void drawSettingsPanel(DrawContext context, int tx, int top, int rowW, int areaH) {
+    private void drawSettingsPanel(GuiGraphics context, int tx, int top, int rowW, int areaH) {
         int cardH = Math.min(SETTINGS_BLOCK_H, areaH);
         int cardY = top + Math.max(0, (areaH - cardH) / 2);
-        UiComponents.drawSectionCard(this.textRenderer, context, tx, cardY, rowW, cardH, "Social settings", false);
+        UiComponents.drawSectionCard(this.font, context, tx, cardY, rowW, cardH, "Social settings", false);
         int innerX = tx + UiTokens.SP_3;
         int innerW = rowW - UiTokens.SP_6;
         DupeClientPresenceSettings s = DupeClientPresenceConfigManager.get();
         int baseY = UiComponents.titledCardBodyY(cardY);
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY, innerW, "Show server on cards (when others share)", Boolean.TRUE.equals(s.showServersInSocial));
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP, innerW, "Show coords on cards (when others share)", Boolean.TRUE.equals(s.showCoordsInSocial));
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP * 2, innerW, "Hide myself in this list", Boolean.TRUE.equals(s.hideSelfInSocial));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY, innerW, "Show server on cards (when others share)", Boolean.TRUE.equals(s.showServersInSocial));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP, innerW, "Show coords on cards (when others share)", Boolean.TRUE.equals(s.showCoordsInSocial));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP * 2, innerW, "Hide myself in this list", Boolean.TRUE.equals(s.hideSelfInSocial));
         boolean everyoneSeesMe = "everyone".equalsIgnoreCase(s.presenceListAudience);
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP * 3, innerW, everyoneSeesMe ? "My presence row: visible to everyone" : "My presence row: friends only", everyoneSeesMe);
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP * 4, innerW, "Social list view: friends only", Boolean.TRUE.equals(s.socialListFriendsOnlyView));
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP * 5, innerW, "Share my current server", Boolean.TRUE.equals(s.shareCurrentServer));
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP * 6, innerW, "Share my current coords", Boolean.TRUE.equals(s.shareCurrentCoords));
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP * 7, innerW, "Share my waypoints", Boolean.TRUE.equals(s.shareWaypoints));
-        UiComponents.drawOptionToggle(this.textRenderer, context, innerX, baseY + UiTokens.ROW_STEP * 8, innerW, "Show waypoints in world", Boolean.TRUE.equals(s.showSharedWaypointsInWorld));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP * 3, innerW, everyoneSeesMe ? "My presence row: visible to everyone" : "My presence row: friends only", everyoneSeesMe);
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP * 4, innerW, "Social list view: friends only", Boolean.TRUE.equals(s.socialListFriendsOnlyView));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP * 5, innerW, "Share my current server", Boolean.TRUE.equals(s.shareCurrentServer));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP * 6, innerW, "Share my current coords", Boolean.TRUE.equals(s.shareCurrentCoords));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP * 7, innerW, "Share my waypoints", Boolean.TRUE.equals(s.shareWaypoints));
+        UiComponents.drawOptionToggle(this.font, context, innerX, baseY + UiTokens.ROW_STEP * 8, innerW, "Show waypoints in world", Boolean.TRUE.equals(s.showSharedWaypointsInWorld));
     }
 
-    private static SkinTextures skinForListRow(MinecraftClient client, UUID uuid) {
-        PlayerListEntry entry;
-        if (client.getNetworkHandler() != null && (entry = client.getNetworkHandler().getPlayerListEntry(uuid)) != null) {
-            return entry.getSkinTextures();
+    private static PlayerSkin skinForListRow(Minecraft client, UUID uuid) {
+        PlayerInfo entry;
+        if (client.getConnection() != null && (entry = client.getConnection().getPlayerInfo(uuid)) != null) {
+            return entry.getSkin();
         }
-        return DefaultSkinHelper.getSkinTextures((UUID)uuid);
+        return DefaultPlayerSkin.get((UUID)uuid);
     }
 
     private static String displayUsername(OnlineDupeClientUser u) {
@@ -403,14 +402,14 @@ extends Screen {
         return s.toLowerCase(Locale.ROOT);
     }
 
-    private static String currentServerKey(MinecraftClient mc) {
+    private static String currentServerKey(Minecraft mc) {
         if (mc == null) {
             return null;
         }
-        if (mc.getCurrentServerEntry() != null && mc.getCurrentServerEntry().address != null) {
-            return SocialScreen.normalizeServerKey(mc.getCurrentServerEntry().address);
+        if (mc.getCurrentServer() != null && mc.getCurrentServer().ip != null) {
+            return SocialScreen.normalizeServerKey(mc.getCurrentServer().ip);
         }
-        if (mc.world != null && mc.player != null) {
+        if (mc.level != null && mc.player != null) {
             return SocialScreen.normalizeServerKey("Singleplayer");
         }
         return null;
@@ -425,16 +424,16 @@ extends Screen {
     }
 
     private void joinSharedServer(String address) {
-        if (this.client == null || address == null || address.isBlank()) {
+        if (this.minecraft == null || address == null || address.isBlank()) {
             return;
         }
         String trimmed = address.trim();
         if ("Singleplayer".equalsIgnoreCase(trimmed)) {
             return;
         }
-        ServerAddress parsed = ServerAddress.parse(trimmed);
-        ServerInfo info = new ServerInfo(trimmed, trimmed, ServerInfo.ServerType.OTHER);
-        ConnectScreen.connect((Screen)this, (MinecraftClient)this.client, (ServerAddress)parsed, (ServerInfo)info, (boolean)false, null);
+        ServerAddress parsed = ServerAddress.parseString(trimmed);
+        ServerData info = new ServerData(trimmed, trimmed, ServerData.Type.OTHER);
+        ConnectScreen.startConnecting((Screen)this, (Minecraft)this.minecraft, (ServerAddress)parsed, (ServerData)info, (boolean)false, null);
     }
 
     private int rowIndexAt(double mx, double my) {
@@ -478,7 +477,7 @@ extends Screen {
             return false;
         }
         OnlineDupeClientUser user = this.rows.get(idx);
-        String currentServer = SocialScreen.currentServerKey(this.client);
+        String currentServer = SocialScreen.currentServerKey(this.minecraft);
         if (!this.canJoinServer(user.server(), currentServer)) {
             return false;
         }
@@ -508,21 +507,21 @@ extends Screen {
             DupeClientSocialFriendsManager.toggleFriend(uuid);
             this.requestList();
         }));
-        String currentServer = SocialScreen.currentServerKey(this.client);
+        String currentServer = SocialScreen.currentServerKey(this.minecraft);
         if (this.canJoinServer(user.server(), currentServer)) {
             items.add(new GuiContextMenu.Entry("Join server", () -> this.joinSharedServer(user.server())));
         }
         if (friend) {
             items.add(new GuiContextMenu.Entry("Send bots to me", () -> {
-                if (this.client != null) {
-                    McpToolsManager.INSTANCE.sendBotsToLocalPlayer(this.client);
+                if (this.minecraft != null) {
+                    McpToolsManager.INSTANCE.sendBotsToLocalPlayer(this.minecraft);
                 }
             }));
         }
-        this.contextMenu.open(anchorX, anchorY, this.width, this.height, this.listAreaTop(), items, this.textRenderer);
+        this.contextMenu.open(anchorX, anchorY, this.width, this.height, this.listAreaTop(), items, this.font);
     }
 
-    public boolean mouseClicked(Click click, boolean doubleClick) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         int idx;
         if (this.contextMenu.isOpen()) {
             if (this.contextMenu.handleClick(click.x(), click.y(), click.button())) {
@@ -625,7 +624,7 @@ extends Screen {
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 

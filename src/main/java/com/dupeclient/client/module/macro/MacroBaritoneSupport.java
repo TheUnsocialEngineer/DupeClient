@@ -1,9 +1,8 @@
 package com.dupeclient.client.module.macro;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.BlockPos;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import java.lang.reflect.Method;
 
 /**
@@ -17,7 +16,7 @@ public final class MacroBaritoneSupport {
     private MacroBaritoneSupport() {
     }
 
-    public static boolean startPathToBlock(MinecraftClient client, BlockPos goal) {
+    public static boolean startPathToBlock(Minecraft client, BlockPos goal) {
         if (client == null || client.player == null || goal == null) {
             return false;
         }
@@ -53,7 +52,7 @@ public final class MacroBaritoneSupport {
     /**
      * Stop any in-flight Baritone goals when entering a world. Prevents stale pathing / async node spam after reconnects.
      */
-    public static void onWorldJoin(MinecraftClient client) {
+    public static void onWorldJoin(Minecraft client) {
         if (client == null) {
             return;
         }
@@ -72,7 +71,7 @@ public final class MacroBaritoneSupport {
         }
     }
 
-    public static void cancelPathing(MinecraftClient client) {
+    public static void cancelPathing(Minecraft client) {
         if (client == null || client.player == null) {
             return;
         }
@@ -88,7 +87,7 @@ public final class MacroBaritoneSupport {
         }
     }
 
-    private static void resetBaritoneInstance(Object baritone, MinecraftClient client) {
+    private static void resetBaritoneInstance(Object baritone, Minecraft client) {
         if (baritone == null || client == null || client.player == null) {
             return;
         }

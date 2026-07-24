@@ -3,19 +3,18 @@ package com.dupeclient.client.gui;
 import com.dupeclient.client.DupeClient;
 import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.option.OptionsScreen;
-import net.minecraft.client.gui.screen.world.SelectWorldScreen;
-import net.minecraft.client.realms.gui.screen.RealmsMainScreen;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
-
+import com.mojang.realmsclient.RealmsMainScreen;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
+import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 public class DupeMainMenuScreen extends TitleScreen {
     private final List<Star> stars = new ArrayList<>();
@@ -29,7 +28,7 @@ public class DupeMainMenuScreen extends TitleScreen {
 
     @Override
     protected void init() {
-        this.clearChildren();
+        this.clearWidgets();
         disableSplashText();
         ensureStars();
 
@@ -40,39 +39,39 @@ public class DupeMainMenuScreen extends TitleScreen {
         int startY = (this.height / 2) - (totalHeight / 2);
         int x = (this.width - buttonWidth) / 2;
 
-        addDrawableChild(new StylishButtonWidget(x, startY, buttonWidth, buttonHeight, Text.literal("Singleplayer"),
-                () -> this.client.setScreen(new SelectWorldScreen(this))));
-        addDrawableChild(new StylishButtonWidget(x, startY + 24, buttonWidth, buttonHeight, Text.literal("Multiplayer"),
-                () -> this.client.setScreen(new MultiplayerScreen(this))));
-        addDrawableChild(new StylishButtonWidget(x, startY + 48, buttonWidth, buttonHeight, Text.literal("Minecraft Realms"),
-                () -> this.client.setScreen(new RealmsMainScreen(this))));
-        addDrawableChild(new StylishButtonWidget(x, startY + 72, buttonWidth, buttonHeight, Text.literal("Mods"),
+        addRenderableWidget(new StylishButtonWidget(x, startY, buttonWidth, buttonHeight, Component.literal("Singleplayer"),
+                () -> this.minecraft.setScreen(new SelectWorldScreen(this))));
+        addRenderableWidget(new StylishButtonWidget(x, startY + 24, buttonWidth, buttonHeight, Component.literal("Multiplayer"),
+                () -> this.minecraft.setScreen(new JoinMultiplayerScreen(this))));
+        addRenderableWidget(new StylishButtonWidget(x, startY + 48, buttonWidth, buttonHeight, Component.literal("Minecraft Realms"),
+                () -> this.minecraft.setScreen(new RealmsMainScreen(this))));
+        addRenderableWidget(new StylishButtonWidget(x, startY + 72, buttonWidth, buttonHeight, Component.literal("Mods"),
                 this::openModsScreen));
-        addDrawableChild(new StylishButtonWidget(x, startY + 96, buttonWidth, buttonHeight, Text.literal("DupeClient settings"),
-                () -> this.client.setScreen(new DupeClientSettingsScreen(this))));
+        addRenderableWidget(new StylishButtonWidget(x, startY + 96, buttonWidth, buttonHeight, Component.literal("DupeClient settings"),
+                () -> this.minecraft.setScreen(new DupeClientSettingsScreen(this))));
 
         int smallWidth = 150;
         int smallGap = 4;
-        addDrawableChild(new StylishButtonWidget(x, startY + 120, smallWidth, buttonHeight, Text.literal("Options"),
-                () -> this.client.setScreen(new OptionsScreen(this, this.client.options))));
-        addDrawableChild(new StylishButtonWidget(x + smallWidth + smallGap, startY + 120, smallWidth, buttonHeight, Text.literal("Quit Game"),
-                () -> this.client.scheduleStop()));
+        addRenderableWidget(new StylishButtonWidget(x, startY + 120, smallWidth, buttonHeight, Component.literal("Options"),
+                () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))));
+        addRenderableWidget(new StylishButtonWidget(x + smallWidth + smallGap, startY + 120, smallWidth, buttonHeight, Component.literal("Quit Game"),
+                () -> this.minecraft.stop()));
     }
 
     private void openModsScreen() {
         try {
             Class<?> clazz = Class.forName("com.terraformersmc.modmenu.gui.ModsScreen");
-            this.client.setScreen((Screen) clazz.getConstructor(Screen.class).newInstance(this));
+            this.minecraft.setScreen((Screen) clazz.getConstructor(Screen.class).newInstance(this));
         } catch (Exception e) {
             DupeClient.LOGGER.warn("ModMenu not available, Mods button ignored.");
         }
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         disableSplashText();
         super.render(context, mouseX, mouseY, delta);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("DupeClient " + DupeClient.BUILD_TAG), 6, 6, 0xFFAED0FF);
+        context.drawString(this.font, Component.literal("DupeClient " + DupeClient.BUILD_TAG), 6, 6, 0xFFAED0FF);
     }
 
     private void ensureStars() {
@@ -95,7 +94,7 @@ public class DupeMainMenuScreen extends TitleScreen {
     }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (appliedSettingsRevision != DupeClient.getVisualSettingsRevision()) {
             invalidateVisualCache();
             appliedSettingsRevision = DupeClient.getVisualSettingsRevision();
@@ -109,20 +108,20 @@ public class DupeMainMenuScreen extends TitleScreen {
         float twinkle = DupeClient.getVisualSettings().twinkleSpeed;
         boolean animated = DupeClient.getVisualSettings().animatedBackground;
 
-        int nebulaAlpha = (int) (24 + 30 * (0.5F + 0.5F * MathHelper.sin(time * 0.38F * (animated ? twinkle : 1.0F))));
+        int nebulaAlpha = (int) (24 + 30 * (0.5F + 0.5F * Mth.sin(time * 0.38F * (animated ? twinkle : 1.0F))));
         int nebulaColor = (nebulaAlpha << 24) | 0x122746;
         context.fillGradient(0, 0, this.width, this.height, 0x26000000, nebulaColor);
         context.fillGradient(0, 0, this.width, this.height, 0x1E081A34, 0x12000000);
 
         for (Star star : stars) {
-            float driftX = animated ? MathHelper.sin(time * 0.16F * motion + star.phase) * 0.0042F * motion : 0.0F;
-            float driftY = animated ? MathHelper.cos(time * 0.13F * motion + star.phase) * 0.0032F * motion : 0.0F;
+            float driftX = animated ? Mth.sin(time * 0.16F * motion + star.phase) * 0.0042F * motion : 0.0F;
+            float driftY = animated ? Mth.cos(time * 0.13F * motion + star.phase) * 0.0032F * motion : 0.0F;
             int x = (int) ((star.xNorm + driftX) * this.width);
             int y = (int) ((star.yNorm + driftY) * this.height);
             float pulse = animated
-                    ? 0.42F + 0.58F * MathHelper.sin(time * (0.85F + star.pulseSpeed) * twinkle + star.phase)
+                    ? 0.42F + 0.58F * Mth.sin(time * (0.85F + star.pulseSpeed) * twinkle + star.phase)
                     : 0.8F;
-            int alpha = (int) (255 * MathHelper.clamp(star.brightness * pulse, 0.15F, 1.0F));
+            int alpha = (int) (255 * Mth.clamp(star.brightness * pulse, 0.15F, 1.0F));
             int color = (alpha << 24) | 0xFFFFFF;
             int size = star.brightness > 0.75F ? 2 : 1;
             context.fill(x, y, x + size, y + size, color);
@@ -130,7 +129,7 @@ public class DupeMainMenuScreen extends TitleScreen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 

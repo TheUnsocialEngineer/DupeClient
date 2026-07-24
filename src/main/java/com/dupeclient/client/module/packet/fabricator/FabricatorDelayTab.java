@@ -5,9 +5,6 @@ import com.dupeclient.client.gui.overlay.OverlayTextField;
 import com.dupeclient.client.module.packet.PacketUtils;
 import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.PacketUtilsSettings;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -16,6 +13,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 /**
  * Delay tab UI for {@link PacketFabricatorOverlay} — holds selected packet types until disabled or flushed.
@@ -81,7 +81,7 @@ public final class FabricatorDelayTab {
         PacketUtilsManager.INSTANCE.setTextInputFocused(false);
     }
 
-    void render(DrawContext context, TextRenderer tr, int tx, int ty, int innerW, int mouseX, int mouseY) {
+    void render(GuiGraphics context, Font tr, int tx, int ty, int innerW, int mouseX, int mouseY) {
         PacketUtilsSettings s = PacketUtilsManager.INSTANCE.getSettings();
         int y = ty;
 
@@ -118,8 +118,8 @@ public final class FabricatorDelayTab {
             drawField(context, tr, searchX, searchY, searchW, searchShown, searchFocused);
             y += FIELD_H + GAP;
 
-            context.drawTextWithShadow(tr, Text.literal("Excluded"), tx, y, 0xFFA1A1AA);
-            context.drawTextWithShadow(tr, Text.literal("Included"), tx + half + GAP, y, 0xFFA1A1AA);
+            context.drawString(tr, Component.literal("Excluded"), tx, y, 0xFFA1A1AA);
+            context.drawString(tr, Component.literal("Included"), tx + half + GAP, y, 0xFFA1A1AA);
             y += 10 + GAP;
 
             ensureSortedNames();
@@ -143,18 +143,18 @@ public final class FabricatorDelayTab {
             for (int r = 0; r < LIST_VISIBLE; r++) {
                 int excIdx = excludedScroll + r;
                 if (excIdx < excluded.size()) {
-                    context.drawTextWithShadow(
+                    context.drawString(
                             tr,
-                            Text.literal(tr.trimToWidth(excluded.get(excIdx), exListW - 8)),
+                            Component.literal(tr.plainSubstrByWidth(excluded.get(excIdx), exListW - 8)),
                             exListX + 4,
                             exListY + 2 + r * LIST_LINE,
                             0xFFF87171);
                 }
                 int incIdx = includedScroll + r;
                 if (incIdx < included.size()) {
-                    context.drawTextWithShadow(
+                    context.drawString(
                             tr,
-                            Text.literal(tr.trimToWidth(included.get(incIdx), inListW - 8)),
+                            Component.literal(tr.plainSubstrByWidth(included.get(incIdx), inListW - 8)),
                             inListX + 4,
                             inListY + 2 + r * LIST_LINE,
                             0xFF34D399);
@@ -172,7 +172,7 @@ public final class FabricatorDelayTab {
                 + " out / "
                 + PacketUtilsManager.INSTANCE.packetDelayIncomingQueueSize()
                 + " in";
-        context.drawTextWithShadow(tr, Text.literal(queued), tx, y, 0xFFA1A1AA);
+        context.drawString(tr, Component.literal(queued), tx, y, 0xFFA1A1AA);
         y += 10 + GAP;
 
         flushY = y;
@@ -334,7 +334,7 @@ public final class FabricatorDelayTab {
         return search.charTyped(codePoint);
     }
 
-    private static void drawField(DrawContext c, TextRenderer tr, int x, int y, int w, String value, boolean focused) {
+    private static void drawField(GuiGraphics c, Font tr, int x, int y, int w, String value, boolean focused) {
         if (focused) {
             c.fill(x - 1, y - 1, x + w + 1, y + FIELD_H + 1, 0x5534D399);
         }
@@ -345,11 +345,11 @@ public final class FabricatorDelayTab {
         c.fill(x, y + FIELD_H - 1, x + w, y + FIELD_H, border);
         c.fill(x, y, x + 1, y + FIELD_H, border);
         c.fill(x + w - 1, y, x + w, y + FIELD_H, border);
-        String display = tr.trimToWidth(value == null || value.isBlank() ? " " : value, w - 10);
-        c.drawTextWithShadow(tr, Text.literal(display), x + 5, y + 5, focused ? 0xFFFFFFFF : 0xFFE5E5E5);
+        String display = tr.plainSubstrByWidth(value == null || value.isBlank() ? " " : value, w - 10);
+        c.drawString(tr, Component.literal(display), x + 5, y + 5, focused ? 0xFFFFFFFF : 0xFFE5E5E5);
     }
 
-    private static void drawListPanel(DrawContext c, int x, int y, int w, int h) {
+    private static void drawListPanel(GuiGraphics c, int x, int y, int w, int h) {
         c.fill(x, y, x + w, y + h, 0xFF27272A);
         c.fill(x, y, x + w, y + 1, 0xFF52525B);
         c.fill(x, y + h - 1, x + w, y + h, 0xFF52525B);

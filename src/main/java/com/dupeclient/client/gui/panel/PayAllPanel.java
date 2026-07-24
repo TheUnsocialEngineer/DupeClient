@@ -5,9 +5,9 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.module.payall.PayAllManager;
 import com.dupeclient.client.module.payall.PayAllOverlay;
 import com.dupeclient.client.module.payall.PayAllSettings;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public class PayAllPanel extends Panel {
     private static final int TOGGLE_H = UiTokens.ROW_STEP;
@@ -17,7 +17,7 @@ public class PayAllPanel extends Panel {
     private boolean capturingOverlayHotkey;
 
     public PayAllPanel(int x, int y) {
-        super("payall", Text.literal("PayAll"), x, y, 280, 140);
+        super("payall", Component.literal("PayAll"), x, y, 280, 140);
     }
 
     private static int cardHeight() {
@@ -31,12 +31,12 @@ public class PayAllPanel extends Panel {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
         }
-        TextRenderer tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        Font tr = net.minecraft.client.Minecraft.getInstance().font;
         PayAllSettings s = manager.getSettings();
         int tx = x + UiTokens.BODY_INSET;
         int ty = y + bodyTopOffset() + UiTokens.UI_GAP;
@@ -67,12 +67,12 @@ public class PayAllPanel extends Panel {
 
         int y4 = y3 + TOGGLE_H + UiTokens.UI_GAP;
         PanelOverlayActions.drawOpenOverlayButton(tr, context, rx, y4, inner, "Open PayAll overlay");
-        context.drawTextWithShadow(tr, Text.literal("Targets and payouts are configured in the PayAll overlay."), rx, y4 + PanelOverlayActions.BTN_H + UiTokens.UI_GAP, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal("Targets and payouts are configured in the PayAll overlay."), rx, y4 + PanelOverlayActions.BTN_H + UiTokens.UI_GAP, UiTokens.TEXT_DIM);
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (capturingOverlayHotkey) {
-            context.drawTextWithShadow(
+            context.drawString(
                     tr,
-                    Text.literal("Press key for overlay hotkey (ESC to unbind)"),
+                    Component.literal("Press key for overlay hotkey (ESC to unbind)"),
                     x + 8,
                     y + height - 12,
                     0xFFFFC857);

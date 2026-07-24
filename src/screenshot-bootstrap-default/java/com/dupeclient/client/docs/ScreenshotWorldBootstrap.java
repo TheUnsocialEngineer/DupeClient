@@ -1,17 +1,17 @@
 package com.dupeclient.client.docs;
 
 import com.dupeclient.client.DupeClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.resource.DataConfiguration;
-import net.minecraft.resource.featuretoggle.FeatureSet;
-import net.minecraft.server.integrated.IntegratedServerLoader;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.gen.GeneratorOptions;
-import net.minecraft.world.gen.WorldPresets;
-import net.minecraft.world.level.LevelInfo;
-import net.minecraft.world.level.storage.LevelStorage;
-import net.minecraft.world.rule.GameRules;
+import net.minecraft.world.flag.FeatureFlagSet;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.level.storage.LevelStorageSource;
 
 public final class ScreenshotWorldBootstrap {
     private static final String WORLD_DIR = "dupeclient_docs";
@@ -21,21 +21,21 @@ public final class ScreenshotWorldBootstrap {
     private ScreenshotWorldBootstrap() {
     }
 
-    public static void ensureWorld(net.minecraft.client.MinecraftClient client) {
+    public static void ensureWorld(net.minecraft.client.Minecraft client) {
         if (!ScreenshotCaptureMode.isActive() || client == null || attempted) {
             return;
         }
-        if (client.player != null && client.world != null) {
+        if (client.player != null && client.level != null) {
             return;
         }
         attempted = true;
-        IntegratedServerLoader loader = client.createIntegratedServerLoader();
+        WorldOpenFlows loader = client.createWorldOpenFlows();
         try {
-            LevelStorage.LevelList worlds = client.getLevelStorage().getLevelList();
-            for (LevelStorage.LevelSave save : worlds) {
+            LevelStorageSource.LevelCandidates worlds = client.getLevelSource().findLevelCandidates();
+            for (LevelStorageSource.LevelDirectory save : worlds) {
                 if (WORLD_DIR.equalsIgnoreCase(save.path().getFileName().toString())) {
                     DupeClient.LOGGER.info("Loading screenshot world {}", WORLD_DIR);
-                    loader.start(WORLD_DIR, () -> DupeClient.LOGGER.warn("Screenshot world load cancelled"));
+                    loader.openWorld(WORLD_DIR, () -> DupeClient.LOGGER.warn("Screenshot world load cancelled"));
                     return;
                 }
             }
@@ -45,22 +45,22 @@ public final class ScreenshotWorldBootstrap {
         createFlatWorld(loader);
     }
 
-    private static void createFlatWorld(IntegratedServerLoader loader) {
-        LevelInfo info = new LevelInfo(
+    private static void createFlatWorld(WorldOpenFlows loader) {
+        LevelSettings info = new LevelSettings(
                 "DupeClient Docs",
-                GameMode.CREATIVE,
+                GameType.CREATIVE,
                 false,
                 Difficulty.PEACEFUL,
                 true,
-                new GameRules(FeatureSet.empty()),
-                DataConfiguration.SAFE_MODE
+                new GameRules(FeatureFlagSet.of()),
+                WorldDataConfiguration.DEFAULT
         );
         DupeClient.LOGGER.info("Creating flat screenshot world {}", WORLD_DIR);
-        loader.createAndStart(
+        loader.createFreshLevel(
                 WORLD_DIR,
                 info,
-                GeneratorOptions.createTestWorld(),
-                WorldPresets::createTestOptions,
+                WorldOptions.testWorldWithRandomSeed(),
+                WorldPresets::createFlatWorldDimensions,
                 (Screen) null
         );
     }

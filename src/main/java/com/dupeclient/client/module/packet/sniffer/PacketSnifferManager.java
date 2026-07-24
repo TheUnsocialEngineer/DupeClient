@@ -6,14 +6,12 @@ import com.dupeclient.client.config.DupeClientConfigDir;
 import com.dupeclient.client.module.packet.FeatureHotkeyManager;
 import com.dupeclient.client.module.packet.PacketUtils;
 import com.dupeclient.client.module.packet.PacketUtilsManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.Set;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.Packet;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -82,7 +80,7 @@ public final class PacketSnifferManager {
         return settings;
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null || client.getWindow() == null) {
             return;
         }
@@ -258,15 +256,15 @@ public final class PacketSnifferManager {
         if (!settings.blockChatNotify || !settings.moduleChatFeedback) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
         String name = PacketUtils.getPacketTypeName(packet);
         String line = direction == PacketDirection.S2C ? "Blocked S2C: " + name : "Blocked C2S: " + name;
-        MutableText msg = Text.literal("[PacketSniffer] ").formatted(Formatting.AQUA, Formatting.BOLD)
-                .append(Text.literal(line).formatted(Formatting.GRAY));
-        client.player.sendMessage(msg, false);
+        MutableComponent msg = Component.literal("[PacketSniffer] ").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
+                .append(Component.literal(line).withStyle(ChatFormatting.GRAY));
+        client.player.displayClientMessage(msg, false);
     }
 
     private static boolean isKeepAliveName(String name) {
@@ -456,13 +454,13 @@ public final class PacketSnifferManager {
         if (!settings.moduleChatFeedback) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
-        MutableText line = Text.literal("[PacketSniffer] ").formatted(Formatting.AQUA, Formatting.BOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY));
-        client.player.sendMessage(line, false);
+        MutableComponent line = Component.literal("[PacketSniffer] ").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
+        client.player.displayClientMessage(line, false);
     }
 
     private void trimEntriesLocked() {

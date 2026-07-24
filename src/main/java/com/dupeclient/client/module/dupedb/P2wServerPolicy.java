@@ -9,14 +9,13 @@ import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.payall.PayAllManager;
 import com.dupeclient.client.module.utility.ChatGamesManager;
 import com.ui_utils.SharedVariables;
-import net.minecraft.client.MinecraftClient;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.client.Minecraft;
 
 /** Loads community P2W/non-P2W lists and enforces module policy on join. */
 public final class P2wServerPolicy {
@@ -102,7 +101,7 @@ public final class P2wServerPolicy {
                     return;
                 }
                 registry = loaded;
-                MinecraftClient client = MinecraftClient.getInstance();
+                Minecraft client = Minecraft.getInstance();
                 if (client != null) {
                     client.execute(() -> applyPolicyForCurrentServer(false));
                 }
@@ -113,7 +112,7 @@ public final class P2wServerPolicy {
     }
 
     public void applyPolicyForCurrentServer(boolean afterLocalMark) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
@@ -161,7 +160,7 @@ public final class P2wServerPolicy {
         currentP2wScore = -1;
     }
 
-    public void enforce(MinecraftClient client) {
+    public void enforce(Minecraft client) {
         if (!modulesLocked || client == null || client.player == null) {
             return;
         }
@@ -177,7 +176,7 @@ public final class P2wServerPolicy {
         forceDisableAllModulesIfNeeded(client);
     }
 
-    private boolean shouldShowNonP2wScreen(MinecraftClient client, String server, boolean afterLocalMark) {
+    private boolean shouldShowNonP2wScreen(Minecraft client, String server, boolean afterLocalMark) {
         if (afterLocalMark) {
             policyUiDismissedForServer = "";
             return true;
@@ -185,10 +184,10 @@ public final class P2wServerPolicy {
         if (server.equals(policyUiDismissedForServer)) {
             return false;
         }
-        return !(client.currentScreen instanceof NonP2wDisclaimerScreen);
+        return !(client.screen instanceof NonP2wDisclaimerScreen);
     }
 
-    private boolean shouldShowP2wAlert(MinecraftClient client, String server, boolean afterLocalMark) {
+    private boolean shouldShowP2wAlert(Minecraft client, String server, boolean afterLocalMark) {
         if (afterLocalMark) {
             policyUiDismissedForServer = "";
             return true;
@@ -196,7 +195,7 @@ public final class P2wServerPolicy {
         if (server.equals(policyUiDismissedForServer)) {
             return false;
         }
-        return !(client.currentScreen instanceof P2wAlertScreen);
+        return !(client.screen instanceof P2wAlertScreen);
     }
 
     private static Map<String, P2wPresenceApi.ServerMark> toMap(List<P2wPresenceApi.ServerMark> list) {
@@ -210,7 +209,7 @@ public final class P2wServerPolicy {
         return map;
     }
 
-    private static void forceDisableAllModulesIfNeeded(MinecraftClient client) {
+    private static void forceDisableAllModulesIfNeeded(Minecraft client) {
         if (MacroEngine.INSTANCE.isRunning()) {
             MacroEngine.INSTANCE.stop(client);
         }
@@ -226,7 +225,7 @@ public final class P2wServerPolicy {
         }
     }
 
-    private static void forceDisableAllModules(MinecraftClient client) {
+    private static void forceDisableAllModules(Minecraft client) {
         MacroEngine.INSTANCE.stop(client);
         PayAllManager.INSTANCE.cancelIfActive();
         CrashesManager.INSTANCE.forceDisableAll();

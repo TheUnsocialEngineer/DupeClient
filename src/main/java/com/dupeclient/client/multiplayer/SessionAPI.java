@@ -3,13 +3,12 @@ package com.dupeclient.client.multiplayer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.util.UndashedUuid;
-import net.minecraft.client.MinecraftClient;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.UUID;
+import net.minecraft.client.Minecraft;
 
 public final class SessionAPI {
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
@@ -47,9 +46,9 @@ public final class SessionAPI {
             UUID uuid = profileInfo[1].contains("-")
                     ? UUID.fromString(profileInfo[1])
                     : UndashedUuid.fromString(profileInfo[1]);
-            var session = MinecraftClient.getInstance().getSession();
-            return profileInfo[0].equalsIgnoreCase(session.getUsername())
-                    && uuid.equals(session.getUuidOrNull());
+            var session = Minecraft.getInstance().getUser();
+            return profileInfo[0].equalsIgnoreCase(session.getName())
+                    && uuid.equals(session.getProfileId());
         } catch (Exception ignored) {
             return false;
         }

@@ -2,30 +2,29 @@ package com.dupeclient.client.module.utility.crashes;
 
 import com.dupeclient.client.module.dupedb.P2wServerPolicy;
 import com.dupeclient.client.module.packet.FeatureHotkeyManager;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.block.entity.TrappedChestBlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.chunk.WorldChunk;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
+import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.TrappedChestBlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 public final class CrashesManager {
     public static final CrashesManager INSTANCE = new CrashesManager();
@@ -60,8 +59,8 @@ public final class CrashesManager {
         textInputFocused = focused;
     }
 
-    public void tick(MinecraftClient client) {
-        if (client == null || client.player == null || client.world == null || client.getNetworkHandler() == null) {
+    public void tick(Minecraft client) {
+        if (client == null || client.player == null || client.level == null || client.getConnection() == null) {
             return;
         }
         if (joinGraceTicks > 0) {
@@ -77,7 +76,7 @@ public final class CrashesManager {
         }
     }
 
-    private void handleHotkeys(MinecraftClient client) {
+    private void handleHotkeys(Minecraft client) {
         if (textInputFocused) {
             return;
         }
@@ -91,7 +90,7 @@ public final class CrashesManager {
 
     public void setChestCrashEnabled(boolean enabled) {
         if (enabled && P2wServerPolicy.INSTANCE.isModulesLocked()) {
-            feedbackChest(MinecraftClient.getInstance(), "Modules locked on non-P2W server.");
+            feedbackChest(Minecraft.getInstance(), "Modules locked on non-P2W server.");
             return;
         }
         if (settings.chestCrashEnabled == enabled) {
@@ -100,23 +99,23 @@ public final class CrashesManager {
         settings.chestCrashEnabled = enabled;
         if (enabled) {
             chestPacketsSent = 0;
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             if (client != null && hasChestsWithBooksInRange(client)) {
                 settings.chestCrashEnabled = false;
                 feedbackChest(client, "Chests with written books in range - disabled to protect them.");
                 save();
                 return;
             }
-            feedbackChest(MinecraftClient.getInstance(), "Chest crash enabled.");
+            feedbackChest(Minecraft.getInstance(), "Chest crash enabled.");
         } else {
-            feedbackChest(MinecraftClient.getInstance(), "Chest crash disabled.");
+            feedbackChest(Minecraft.getInstance(), "Chest crash disabled.");
         }
         save();
     }
 
     public void setArmorPlaceEnabled(boolean enabled) {
         if (enabled && P2wServerPolicy.INSTANCE.isModulesLocked()) {
-            feedbackArmor(MinecraftClient.getInstance(), "Modules locked on non-P2W server.");
+            feedbackArmor(Minecraft.getInstance(), "Modules locked on non-P2W server.");
             return;
         }
         if (settings.armorPlaceEnabled == enabled) {
@@ -124,7 +123,7 @@ public final class CrashesManager {
         }
         settings.armorPlaceEnabled = enabled;
         armorDelayCounter = 0;
-        feedbackArmor(MinecraftClient.getInstance(), enabled ? "Armor stand placer enabled." : "Armor stand placer disabled.");
+        feedbackArmor(Minecraft.getInstance(), enabled ? "Armor stand placer enabled." : "Armor stand placer disabled.");
         save();
     }
 
@@ -174,7 +173,7 @@ public final class CrashesManager {
         }
     }
 
-    private void tickChestCrash(MinecraftClient client) {
+    private void tickChestCrash(Minecraft client) {
         if (hasChestsWithBooksInRange(client)) {
             settings.chestCrashEnabled = false;
             chestPacketsSent = 0;
@@ -200,7 +199,7 @@ public final class CrashesManager {
         }
     }
 
-    private void tickArmorPlace(MinecraftClient client) {
+    private void tickArmorPlace(Minecraft client) {
         if (armorDelayCounter < settings.armorDelay) {
             armorDelayCounter++;
             return;
@@ -209,7 +208,7 @@ public final class CrashesManager {
         placeArmorStands(client);
     }
 
-    private void placeArmorStands(MinecraftClient client) {
+    private void placeArmorStands(Minecraft client) {
         int slot = ensureArmorStandInHotbar(client);
         if (slot == -1) {
             if (settings.armorDisableOnEmpty) {
@@ -227,10 +226,10 @@ public final class CrashesManager {
 
         var inv = client.player.getInventory();
         int prevSlot = inv.getSelectedSlot();
-        var networkHandler = client.getNetworkHandler();
+        var networkHandler = client.getConnection();
 
         inv.setSelectedSlot(slot);
-        networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot));
+        networkHandler.send(new ServerboundSetCarriedItemPacket(slot));
 
         int repeats = Math.max(1, settings.armorPacketsPerTick);
         for (int r = 0; r < repeats; r++) {
@@ -240,10 +239,10 @@ public final class CrashesManager {
         }
 
         inv.setSelectedSlot(prevSlot);
-        networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(prevSlot));
+        networkHandler.send(new ServerboundSetCarriedItemPacket(prevSlot));
     }
 
-    private int ensureArmorStandInHotbar(MinecraftClient client) {
+    private int ensureArmorStandInHotbar(Minecraft client) {
         Predicate<ItemStack> isStand = s -> s.getItem() == Items.ARMOR_STAND;
         var inv = client.player.getInventory();
 
@@ -262,66 +261,66 @@ public final class CrashesManager {
             return -1;
         }
 
-        if (client.interactionManager != null) {
-            client.interactionManager.clickSlot(
-                    client.player.playerScreenHandler.syncId,
+        if (client.gameMode != null) {
+            client.gameMode.handleInventoryMouseClick(
+                    client.player.inventoryMenu.containerId,
                     slot,
                     hotbarSlot,
-                    SlotActionType.SWAP,
+                    ClickType.SWAP,
                     client.player);
         }
         return hotbarSlot;
     }
 
-    private static int findSlot(net.minecraft.entity.player.PlayerInventory inv, int start, int end, Predicate<ItemStack> predicate) {
+    private static int findSlot(net.minecraft.world.entity.player.Inventory inv, int start, int end, Predicate<ItemStack> predicate) {
         for (int i = start; i <= end; i++) {
-            if (predicate.test(inv.getStack(i))) {
+            if (predicate.test(inv.getItem(i))) {
                 return i;
             }
         }
         return -1;
     }
 
-    private static int findEmptyHotbarSlot(net.minecraft.entity.player.PlayerInventory inv) {
+    private static int findEmptyHotbarSlot(net.minecraft.world.entity.player.Inventory inv) {
         for (int i = 0; i <= 8; i++) {
-            if (inv.getStack(i).isEmpty()) {
+            if (inv.getItem(i).isEmpty()) {
                 return i;
             }
         }
         return -1;
     }
 
-    private List<PlaceTarget> collectPlaceTargets(MinecraftClient client) {
-        BlockPos playerPos = client.player.getBlockPos();
-        Direction dir = client.player.getHorizontalFacing();
+    private List<PlaceTarget> collectPlaceTargets(Minecraft client) {
+        BlockPos playerPos = client.player.blockPosition();
+        Direction dir = client.player.getDirection();
         int len = Math.max(1, Math.min(6, settings.armorLength));
         int v = Math.max(1, Math.min(6, settings.armorVerticality));
         List<PlaceTarget> out = new ArrayList<>();
         for (int h = 0; h < v; h++) {
             for (int i = 1; i <= len; i++) {
-                BlockPos at = playerPos.offset(dir, i).up(h);
-                out.add(new PlaceTarget(at.down(), Direction.UP));
+                BlockPos at = playerPos.relative(dir, i).above(h);
+                out.add(new PlaceTarget(at.below(), Direction.UP));
                 out.add(new PlaceTarget(at, dir.getOpposite()));
             }
         }
         return out;
     }
 
-    private static void sendPlacePacket(MinecraftClient client, PlaceTarget target) {
+    private static void sendPlacePacket(Minecraft client, PlaceTarget target) {
         Direction face = target.face();
-        Vec3d hitPos = Vec3d.ofCenter(target.blockPos())
-                .add(face.getOffsetX() * 0.5, face.getOffsetY() * 0.5, face.getOffsetZ() * 0.5);
+        Vec3 hitPos = Vec3.atCenterOf(target.blockPos())
+                .add(face.getStepX() * 0.5, face.getStepY() * 0.5, face.getStepZ() * 0.5);
         BlockHitResult hit = new BlockHitResult(hitPos, face, target.blockPos(), false);
-        client.getNetworkHandler().sendPacket(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, hit, 0));
+        client.getConnection().send(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, hit, 0));
     }
 
-    private boolean hasChestsWithBooksInRange(MinecraftClient client) {
+    private boolean hasChestsWithBooksInRange(Minecraft client) {
         double rangeSq = (double) settings.chestRange * settings.chestRange;
         for (BlockEntity blockEntity : blockEntitiesInRange(client, settings.chestRange)) {
             if (!isChest(blockEntity)) {
                 continue;
             }
-            if (squaredDistanceToPlayer(client, blockEntity.getPos()) > rangeSq) {
+            if (squaredDistanceToPlayer(client, blockEntity.getBlockPos()) > rangeSq) {
                 continue;
             }
             if (hasWrittenBook(blockEntity)) {
@@ -331,14 +330,14 @@ public final class CrashesManager {
         return false;
     }
 
-    private List<BlockPos> getChestsInRange(MinecraftClient client) {
+    private List<BlockPos> getChestsInRange(Minecraft client) {
         List<BlockPos> result = new ArrayList<>();
         double rangeSq = (double) settings.chestRange * settings.chestRange;
         for (BlockEntity blockEntity : blockEntitiesInRange(client, settings.chestRange)) {
             if (!isChest(blockEntity)) {
                 continue;
             }
-            BlockPos pos = blockEntity.getPos();
+            BlockPos pos = blockEntity.getBlockPos();
             if (squaredDistanceToPlayer(client, pos) > rangeSq) {
                 continue;
             }
@@ -358,9 +357,9 @@ public final class CrashesManager {
     }
 
     private static boolean hasWrittenBook(BlockEntity blockEntity) {
-        if (blockEntity instanceof Inventory inv) {
-            for (int i = 0; i < inv.size(); i++) {
-                ItemStack stack = inv.getStack(i);
+        if (blockEntity instanceof Container inv) {
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack stack = inv.getItem(i);
                 if (stack.isEmpty()) {
                     continue;
                 }
@@ -368,7 +367,7 @@ public final class CrashesManager {
                     return true;
                 }
                 if (stack.getItem() == Items.WRITABLE_BOOK) {
-                    var content = stack.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
+                    var content = stack.get(DataComponents.WRITABLE_BOOK_CONTENT);
                     if (content != null && !content.pages().isEmpty()) {
                         return true;
                     }
@@ -378,32 +377,32 @@ public final class CrashesManager {
         return false;
     }
 
-    private static void sendOpenPacket(MinecraftClient client, BlockPos pos) {
+    private static void sendOpenPacket(Minecraft client, BlockPos pos) {
         BlockHitResult hitResult = new BlockHitResult(
-                Vec3d.ofCenter(pos).add(0, 0.5, 0),
+                Vec3.atCenterOf(pos).add(0, 0.5, 0),
                 Direction.UP,
                 pos,
                 false);
-        client.getNetworkHandler().sendPacket(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, hitResult, 0));
+        client.getConnection().send(new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, hitResult, 0));
     }
 
-    private static double squaredDistanceToPlayer(MinecraftClient client, BlockPos pos) {
-        return pos.getSquaredDistance(client.player.getX(), client.player.getY(), client.player.getZ());
+    private static double squaredDistanceToPlayer(Minecraft client, BlockPos pos) {
+        return pos.distToLowCornerSqr(client.player.getX(), client.player.getY(), client.player.getZ());
     }
 
-    private static Iterable<BlockEntity> blockEntitiesInRange(MinecraftClient client, int rangeBlocks) {
+    private static Iterable<BlockEntity> blockEntitiesInRange(Minecraft client, int rangeBlocks) {
         List<BlockEntity> out = new ArrayList<>();
-        ClientWorld world = client.world;
+        ClientLevel world = client.level;
         if (world == null) {
             return out;
         }
-        BlockPos center = client.player.getBlockPos();
+        BlockPos center = client.player.blockPosition();
         int chunkRadius = (rangeBlocks >> 4) + 1;
         int cx = center.getX() >> 4;
         int cz = center.getZ() >> 4;
         for (int dx = -chunkRadius; dx <= chunkRadius; dx++) {
             for (int dz = -chunkRadius; dz <= chunkRadius; dz++) {
-                WorldChunk chunk = world.getChunkManager().getWorldChunk(cx + dx, cz + dz);
+                LevelChunk chunk = world.getChunkSource().getChunkNow(cx + dx, cz + dz);
                 if (chunk == null) {
                     continue;
                 }
@@ -413,31 +412,31 @@ public final class CrashesManager {
         return out;
     }
 
-    public void feedbackChest(MinecraftClient client, String message) {
+    public void feedbackChest(Minecraft client, String message) {
         sendFeedback(client, settings.chestChatFeedback, "[Chest Crash] ", message);
     }
 
-    public void feedbackArmor(MinecraftClient client, String message) {
+    public void feedbackArmor(Minecraft client, String message) {
         sendFeedback(client, settings.armorChatFeedback, "[Armor Placer] ", message);
     }
 
     public void feedbackChestConfigToggle(String message) {
-        sendFeedback(MinecraftClient.getInstance(), true, "[Chest Crash] ", message);
+        sendFeedback(Minecraft.getInstance(), true, "[Chest Crash] ", message);
     }
 
     public void feedbackArmorConfigToggle(String message) {
-        sendFeedback(MinecraftClient.getInstance(), true, "[Armor Placer] ", message);
+        sendFeedback(Minecraft.getInstance(), true, "[Armor Placer] ", message);
     }
 
-    private static void sendFeedback(MinecraftClient client, boolean enabled, String prefix, String message) {
+    private static void sendFeedback(Minecraft client, boolean enabled, String prefix, String message) {
         if (!enabled || client == null || message == null || message.isBlank()) {
             return;
         }
-        Text line = Text.literal(prefix).formatted(Formatting.RED, Formatting.BOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY));
+        Component line = Component.literal(prefix).withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }

@@ -13,16 +13,16 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +31,11 @@ public class MainClient implements ClientModInitializer {
     private static boolean initialized;
 
     public static Logger LOGGER = LoggerFactory.getLogger("ui-utils");
-    public static MinecraftClient mc = MinecraftClient.getInstance();
+    public static Minecraft mc = Minecraft.getInstance();
 
-    public static KeyBinding restoreScreenKey;
-    public static final KeyBinding.Category UI_UTILS_CATEGORY =
-            KeyBinding.Category.create(Identifier.of("ui_utils", "general"));
+    public static KeyMapping restoreScreenKey;
+    public static final KeyMapping.Category UI_UTILS_CATEGORY =
+            KeyMapping.Category.register(Identifier.fromNamespaceAndPath("ui_utils", "general"));
 
     @Override
     public void onInitializeClient() {
@@ -48,38 +48,38 @@ public class MainClient implements ClientModInitializer {
         UpdateUtils.checkForUpdates();
 
         restoreScreenKey = KeyBindingHelper.registerKeyBinding(
-                new KeyBinding("Restore Screen", GLFW.GLFW_KEY_V, UI_UTILS_CATEGORY));
+                new KeyMapping("Restore Screen", GLFW.GLFW_KEY_V, UI_UTILS_CATEGORY));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             PluginScanner.onTick();
             if (InputFocusGuards.shouldBlockGlobalHotkeys(client)) {
                 return;
             }
-            while (restoreScreenKey.wasPressed()) {
+            while (restoreScreenKey.consumeClick()) {
                 if (SharedVariables.storedScreen == null
                         || SharedVariables.storedScreenHandler == null
                         || client.player == null) {
                     continue;
                 }
                 client.setScreen(SharedVariables.storedScreen);
-                client.player.currentScreenHandler = SharedVariables.storedScreenHandler;
+                client.player.containerMenu = SharedVariables.storedScreenHandler;
             }
         });
     }
 
-    public static void createText(MinecraftClient mc, DrawContext context, TextRenderer textRenderer) {
+    public static void createText(Minecraft mc, GuiGraphics context, Font textRenderer) {
         UITheme.drawPanel(context, 153, 4, 56, 24);
-        if (mc.player != null && mc.player.currentScreenHandler != null) {
-            context.drawText(
+        if (mc.player != null && mc.player.containerMenu != null) {
+            context.drawString(
                     textRenderer,
-                    "Sync: " + mc.player.currentScreenHandler.syncId,
+                    "Sync: " + mc.player.containerMenu.containerId,
                     157,
                     7,
                     UITheme.TEXT,
                     false);
-            context.drawText(
+            context.drawString(
                     textRenderer,
-                    "Rev: " + mc.player.currentScreenHandler.getRevision(),
+                    "Rev: " + mc.player.containerMenu.getStateId(),
                     157,
                     17,
                     UITheme.TEXT,
@@ -87,56 +87,56 @@ public class MainClient implements ClientModInitializer {
         }
     }
 
-    public static void createWidgets(MinecraftClient mc, Screen screen) {
+    public static void createWidgets(Minecraft mc, Screen screen) {
         int x = 4;
         int y = 4;
         int w = 145;
         int h = 18;
         int spacing = 2;
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y, w, Text.of("Close without packet"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y, w, Component.nullToEmpty("Close without packet"), button -> {
             PacketUtilsManager.INSTANCE.moduleFeedback("UI Utils: close without packet (overlay).");
             mc.setScreen(null);
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + h + spacing, w, Text.of("Desync"), button -> {
-            if (mc.getNetworkHandler() != null && mc.player != null) {
-                mc.getNetworkHandler()
-                        .sendPacket(new CloseHandledScreenC2SPacket(mc.player.currentScreenHandler.syncId));
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + h + spacing, w, Component.nullToEmpty("Desync"), button -> {
+            if (mc.getConnection() != null && mc.player != null) {
+                mc.getConnection()
+                        .send(new ServerboundContainerClosePacket(mc.player.containerMenu.containerId));
                 PacketUtilsManager.INSTANCE.moduleFeedback("UI Utils: sent CloseHandledScreen (desync).");
             }
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(
+        screen.addRenderableWidget(CustomButtonWidget.create(
                 x,
                 y + (h + spacing) * 2,
                 w,
-                Text.of("Send packets: " + SharedVariables.sendUIPackets),
+                Component.nullToEmpty("Send packets: " + SharedVariables.sendUIPackets),
                 button -> {
                     SharedVariables.sendUIPackets = !SharedVariables.sendUIPackets;
-                    button.setMessage(Text.of("Send packets: " + SharedVariables.sendUIPackets));
+                    button.setMessage(Component.nullToEmpty("Send packets: " + SharedVariables.sendUIPackets));
                     PacketUtilsManager.INSTANCE.save();
                     PacketUtilsManager.INSTANCE.moduleFeedback(
                             "UI Utils send live packets " + (SharedVariables.sendUIPackets ? "ON" : "OFF"));
                 }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(
+        screen.addRenderableWidget(CustomButtonWidget.create(
                 x,
                 y + (h + spacing) * 3,
                 w,
-                Text.of("Delay packets: " + SharedVariables.delayUIPackets),
+                Component.nullToEmpty("Delay packets: " + SharedVariables.delayUIPackets),
                 button -> {
                     PacketUtilsManager.INSTANCE.toggleUiUtilsDelay();
                     PacketUtilsManager.INSTANCE.save();
-                    button.setMessage(Text.of("Delay packets: " + SharedVariables.delayUIPackets));
+                    button.setMessage(Component.nullToEmpty("Delay packets: " + SharedVariables.delayUIPackets));
                 }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 4, w, Text.of("Leave & Send Packets"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 4, w, Component.nullToEmpty("Leave & Send Packets"), button -> {
             int queued = SharedVariables.delayedUIPackets.size();
             SharedVariables.delayUIPackets = false;
-            if (mc.getNetworkHandler() != null) {
+            if (mc.getConnection() != null) {
                 for (Packet<?> packet : SharedVariables.delayedUIPackets) {
-                    mc.getNetworkHandler().sendPacket(packet);
+                    mc.getConnection().send(packet);
                 }
             }
             SharedVariables.delayedUIPackets.clear();
@@ -148,90 +148,90 @@ public class MainClient implements ClientModInitializer {
                 x,
                 y + (h + spacing) * 5,
                 w,
-                Text.of(clickslotFabricatorButtonLabel()),
+                Component.nullToEmpty(clickslotFabricatorButtonLabel()),
                 button -> {
                     PacketFabricatorOverlay.INSTANCE.toggleClickslotFabricator();
-                    button.setMessage(Text.of(clickslotFabricatorButtonLabel()));
+                    button.setMessage(Component.nullToEmpty(clickslotFabricatorButtonLabel()));
                     PacketUtilsManager.INSTANCE.moduleFeedback(
                             "Clickslot fabricator "
                                     + (PacketFabricatorOverlay.INSTANCE.isModuleEnabled() ? "ON" : "OFF"));
                 });
-        screen.addDrawableChild(fabricatorButton);
+        screen.addRenderableWidget(fabricatorButton);
 
-        screen.addDrawableChild(CustomButtonWidget.create(
+        screen.addRenderableWidget(CustomButtonWidget.create(
                 x,
                 y + (h + spacing) * 6,
                 w,
-                Text.of(slotIdsButtonLabel()),
+                Component.nullToEmpty(slotIdsButtonLabel()),
                 button -> {
                     PacketUtilsSettings settings = PacketUtilsManager.INSTANCE.getSettings();
                     settings.slotIdsOverlayEnabled = !settings.slotIdsOverlayEnabled;
                     PacketUtilsManager.INSTANCE.save();
-                    button.setMessage(Text.of(slotIdsButtonLabel()));
+                    button.setMessage(Component.nullToEmpty(slotIdsButtonLabel()));
                     PacketUtilsManager.INSTANCE.moduleFeedback(
                             "Slot ID overlay " + (settings.slotIdsOverlayEnabled ? "ON" : "OFF"));
                 }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 7, w, Text.of("Copy GUI Title JSON"), button -> {
-            if (mc.currentScreen != null) {
-                Text title = mc.currentScreen.getTitle();
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 7, w, Component.nullToEmpty("Copy GUI Title JSON"), button -> {
+            if (mc.screen != null) {
+                Component title = mc.screen.getTitle();
                 String json = getTextAsJson(title, mc);
-                mc.keyboard.setClipboard(json);
+                mc.keyboardHandler.setClipboard(json);
                 if (mc.player != null) {
-                    mc.player.sendMessage(Text.literal("§7[§c*§7] §7Copied GUI title JSON to clipboard"), false);
+                    mc.player.displayClientMessage(Component.literal("§7[§c*§7] §7Copied GUI title JSON to clipboard"), false);
                 }
             }
         }));
 
         int halfW = (w - spacing) / 2;
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 8, halfW, Text.of("Save GUI"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 8, halfW, Component.nullToEmpty("Save GUI"), button -> {
             if (mc.player != null) {
-                SharedVariables.storedScreen = mc.currentScreen;
-                SharedVariables.storedScreenHandler = mc.player.currentScreenHandler;
-                SharedVariables.savedScreens.put("default", mc.currentScreen);
-                SharedVariables.savedScreenHandlers.put("default", mc.player.currentScreenHandler);
-                mc.player.sendMessage(Text.literal("§7[§c*§7] §7GUI saved"), false);
+                SharedVariables.storedScreen = mc.screen;
+                SharedVariables.storedScreenHandler = mc.player.containerMenu;
+                SharedVariables.savedScreens.put("default", mc.screen);
+                SharedVariables.savedScreenHandlers.put("default", mc.player.containerMenu);
+                mc.player.displayClientMessage(Component.literal("§7[§c*§7] §7GUI saved"), false);
             }
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(
-                x + halfW + spacing, y + (h + spacing) * 8, halfW, Text.of("Load GUI"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(
+                x + halfW + spacing, y + (h + spacing) * 8, halfW, Component.nullToEmpty("Load GUI"), button -> {
                     if (SharedVariables.storedScreen != null
                             && SharedVariables.storedScreenHandler != null
                             && mc.player != null) {
                         mc.setScreen(SharedVariables.storedScreen);
-                        mc.player.currentScreenHandler = SharedVariables.storedScreenHandler;
+                        mc.player.containerMenu = SharedVariables.storedScreenHandler;
                     }
                 }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 9, halfW, Text.of("Clear Queue"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 9, halfW, Component.nullToEmpty("Clear Queue"), button -> {
             int count = SharedVariables.delayedUIPackets.size();
             SharedVariables.delayedUIPackets.clear();
             if (mc.player != null) {
-                mc.player.sendMessage(
-                        Text.literal("§7[§c*§7] §7Cleared §c" + count + " §7packets"), false);
+                mc.player.displayClientMessage(
+                        Component.literal("§7[§c*§7] §7Cleared §c" + count + " §7packets"), false);
             }
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(
+        screen.addRenderableWidget(CustomButtonWidget.create(
                 x + halfW + spacing,
                 y + (h + spacing) * 9,
                 halfW,
-                Text.of("Queue: 0"),
-                button -> button.setMessage(Text.of("Queue: " + SharedVariables.delayedUIPackets.size()))));
+                Component.nullToEmpty("Queue: 0"),
+                button -> button.setMessage(Component.nullToEmpty("Queue: " + SharedVariables.delayedUIPackets.size()))));
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 10, halfW, Text.of("Resync Inv"), button -> {
-            if (mc.getNetworkHandler() != null && mc.player != null) {
-                mc.player.currentScreenHandler.syncState();
-                mc.player.sendMessage(Text.literal("§7[§c*§7] §7Inventory resynced"), false);
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 10, halfW, Component.nullToEmpty("Resync Inv"), button -> {
+            if (mc.getConnection() != null && mc.player != null) {
+                mc.player.containerMenu.sendAllDataToRemote();
+                mc.player.displayClientMessage(Component.literal("§7[§c*§7] §7Inventory resynced"), false);
             }
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(
-                x + halfW + spacing, y + (h + spacing) * 10, halfW, Text.of("Disconnect"), button -> {
-                    if (mc.getNetworkHandler() != null) {
-                        mc.getNetworkHandler().getConnection().disconnect(Text.literal("Disconnected"));
+        screen.addRenderableWidget(CustomButtonWidget.create(
+                x + halfW + spacing, y + (h + spacing) * 10, halfW, Component.nullToEmpty("Disconnect"), button -> {
+                    if (mc.getConnection() != null) {
+                        mc.getConnection().getConnection().disconnect(Component.literal("Disconnected"));
                     }
                 }));
 
@@ -239,70 +239,70 @@ public class MainClient implements ClientModInitializer {
                 x + 32,
                 y + (h + spacing) * 11,
                 w - 64,
-                Text.of("Spam (x" + SharedVariables.spamCount + ")"),
+                Component.nullToEmpty("Spam (x" + SharedVariables.spamCount + ")"),
                 button -> {
-                    if (mc.getNetworkHandler() != null && !SharedVariables.delayedUIPackets.isEmpty()) {
+                    if (mc.getConnection() != null && !SharedVariables.delayedUIPackets.isEmpty()) {
                         int sent = 0;
                         for (int i = 0; i < SharedVariables.spamCount; i++) {
                             for (Packet<?> packet : SharedVariables.delayedUIPackets) {
-                                mc.getNetworkHandler().sendPacket(packet);
+                                mc.getConnection().send(packet);
                                 sent++;
                             }
                         }
                         if (mc.player != null) {
-                            mc.player.sendMessage(
-                                    Text.literal("§7[§c*§7] §7Spammed §c" + sent + " §7packets"), false);
+                            mc.player.displayClientMessage(
+                                    Component.literal("§7[§c*§7] §7Spammed §c" + sent + " §7packets"), false);
                         }
                     } else if (mc.player != null) {
-                        mc.player.sendMessage(Text.literal("§7[§c*§7] §cNo packets in queue"), false);
+                        mc.player.displayClientMessage(Component.literal("§7[§c*§7] §cNo packets in queue"), false);
                     }
                 });
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 11, 30, Text.of("-"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 11, 30, Component.nullToEmpty("-"), button -> {
             if (SharedVariables.spamCount > 1) {
                 SharedVariables.spamCount--;
-                spamButton.setMessage(Text.of("Spam (x" + SharedVariables.spamCount + ")"));
+                spamButton.setMessage(Component.nullToEmpty("Spam (x" + SharedVariables.spamCount + ")"));
             }
         }));
 
-        screen.addDrawableChild(spamButton);
+        screen.addRenderableWidget(spamButton);
 
-        screen.addDrawableChild(CustomButtonWidget.create(x + w - 30, y + (h + spacing) * 11, 30, Text.of("+"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(x + w - 30, y + (h + spacing) * 11, 30, Component.nullToEmpty("+"), button -> {
             if (SharedVariables.spamCount < 100) {
                 SharedVariables.spamCount++;
-                spamButton.setMessage(Text.of("Spam (x" + SharedVariables.spamCount + ")"));
+                spamButton.setMessage(Component.nullToEmpty("Spam (x" + SharedVariables.spamCount + ")"));
             }
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 12, halfW, Text.of("Send One"), button -> {
-            if (mc.getNetworkHandler() != null && !SharedVariables.delayedUIPackets.isEmpty()) {
+        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 12, halfW, Component.nullToEmpty("Send One"), button -> {
+            if (mc.getConnection() != null && !SharedVariables.delayedUIPackets.isEmpty()) {
                 Packet<?> packet = SharedVariables.delayedUIPackets.remove(0);
-                mc.getNetworkHandler().sendPacket(packet);
+                mc.getConnection().send(packet);
                 if (mc.player != null) {
-                    mc.player.sendMessage(
-                            Text.literal("§7[§c*§7] §7Sent 1 packet §7(§c"
+                    mc.player.displayClientMessage(
+                            Component.literal("§7[§c*§7] §7Sent 1 packet §7(§c"
                                     + SharedVariables.delayedUIPackets.size()
                                     + "§7 left)"),
                             false);
                 }
             } else if (mc.player != null) {
-                mc.player.sendMessage(Text.literal("§7[§c*§7] §cNo packets in queue"), false);
+                mc.player.displayClientMessage(Component.literal("§7[§c*§7] §cNo packets in queue"), false);
             }
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(
-                x + halfW + spacing, y + (h + spacing) * 12, halfW, Text.of("Pop Last"), button -> {
+        screen.addRenderableWidget(CustomButtonWidget.create(
+                x + halfW + spacing, y + (h + spacing) * 12, halfW, Component.nullToEmpty("Pop Last"), button -> {
                     if (!SharedVariables.delayedUIPackets.isEmpty()) {
                         SharedVariables.delayedUIPackets.remove(SharedVariables.delayedUIPackets.size() - 1);
                         if (mc.player != null) {
-                            mc.player.sendMessage(
-                                    Text.literal("§7[§c*§7] §7Removed last packet §7(§c"
+                            mc.player.displayClientMessage(
+                                    Component.literal("§7[§c*§7] §7Removed last packet §7(§c"
                                             + SharedVariables.delayedUIPackets.size()
                                             + "§7 left)"),
                                     false);
                         }
                     } else if (mc.player != null) {
-                        mc.player.sendMessage(Text.literal("§7[§c*§7] §cNo packets in queue"), false);
+                        mc.player.displayClientMessage(Component.literal("§7[§c*§7] §cNo packets in queue"), false);
                     }
                 }));
     }
@@ -319,21 +319,21 @@ public class MainClient implements ClientModInitializer {
         return settings.slotIdsOverlayEnabled ? "Slot IDs: ON" : "Slot IDs: OFF";
     }
 
-    private static String getTextAsJson(Text text, MinecraftClient mc) {
+    private static String getTextAsJson(Component text, Minecraft mc) {
         try {
             Class<?> serializationClass = Class.forName("net.minecraft.text.Text$Serialization");
             Method toJsonMethod =
-                    serializationClass.getMethod("toJsonString", Text.class, RegistryWrapper.WrapperLookup.class);
-            RegistryWrapper.WrapperLookup registries =
-                    mc.world != null ? mc.world.getRegistryManager() : mc.getNetworkHandler().getRegistryManager();
+                    serializationClass.getMethod("toJsonString", Component.class, HolderLookup.Provider.class);
+            HolderLookup.Provider registries =
+                    mc.level != null ? mc.level.registryAccess() : mc.getConnection().registryAccess();
             return (String) toJsonMethod.invoke(null, text, registries);
         } catch (ClassNotFoundException e) {
             try {
                 Class<?> serializerClass = Class.forName("net.minecraft.text.Text$Serializer");
                 Method toJsonMethod =
-                        serializerClass.getMethod("toJson", Text.class, RegistryWrapper.WrapperLookup.class);
-                RegistryWrapper.WrapperLookup registries =
-                        mc.world != null ? mc.world.getRegistryManager() : mc.getNetworkHandler().getRegistryManager();
+                        serializerClass.getMethod("toJson", Component.class, HolderLookup.Provider.class);
+                HolderLookup.Provider registries =
+                        mc.level != null ? mc.level.registryAccess() : mc.getConnection().registryAccess();
                 Object result = toJsonMethod.invoke(null, text, registries);
                 return result.toString();
             } catch (Exception ex) {

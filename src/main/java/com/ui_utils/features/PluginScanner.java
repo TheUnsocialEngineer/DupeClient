@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import net.minecraft.text.Text;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 
 public class PluginScanner {
     private static final String P = "\u00a77[\u00a7c*\u00a77] ";
@@ -21,8 +21,8 @@ public class PluginScanner {
     private static final List<String> foundPlugins = new ArrayList<String>();
 
     public static void startScan() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null || mc.player == null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null || mc.player == null) {
             return;
         }
         if (scanning) {
@@ -31,7 +31,7 @@ public class PluginScanner {
         foundPlugins.clear();
         scanning = true;
         ticksWaiting = 0;
-        mc.getNetworkHandler().sendPacket((Packet)new RequestCommandCompletionsC2SPacket(RANDOM.nextInt(200), "ver "));
+        mc.getConnection().send((Packet)new ServerboundCommandSuggestionPacket(RANDOM.nextInt(200), "ver "));
     }
 
     public static void onTick() {
@@ -43,17 +43,17 @@ public class PluginScanner {
         }
     }
 
-    public static void onCommandSuggestions(CommandSuggestionsS2CPacket packet) {
+    public static void onCommandSuggestions(ClientboundCommandSuggestionsPacket packet) {
         if (!scanning) {
             return;
         }
         scanning = false;
         try {
-            Suggestions suggestions = packet.getSuggestions();
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Suggestions suggestions = packet.toSuggestions();
+            Minecraft mc = Minecraft.getInstance();
             if (suggestions.isEmpty()) {
                 if (mc.player != null) {
-                    mc.player.sendMessage(Text.of((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found or blocked"), false);
+                    mc.player.displayClientMessage(Component.nullToEmpty((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found or blocked"), false);
                 }
                 return;
             }
@@ -72,12 +72,12 @@ public class PluginScanner {
     private static void printResults() {
         scanning = false;
         ticksWaiting = 0;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return;
         }
         if (foundPlugins.isEmpty()) {
-            mc.player.sendMessage(Text.of((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found"), false);
+            mc.player.displayClientMessage(Component.nullToEmpty((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found"), false);
             return;
         }
         foundPlugins.sort(String.CASE_INSENSITIVE_ORDER);
@@ -94,7 +94,7 @@ public class PluginScanner {
             if (i >= foundPlugins.size() - 1) continue;
             sb.append("\u00a77, ");
         }
-        mc.player.sendMessage(Text.of((String)sb.toString()), false);
+        mc.player.displayClientMessage(Component.nullToEmpty((String)sb.toString()), false);
         foundPlugins.clear();
     }
 

@@ -7,10 +7,10 @@ import com.dupeclient.client.gui.overlay.IngameModuleOverlayScreen;
 import com.dupeclient.client.gui.overlay.IngameOverlayHost;
 import com.dupeclient.client.module.hud.HudEditorScreen;
 import com.dupeclient.client.module.packet.sniffer.PacketWorkbenchScreen;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.ParentElement;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,11 +20,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Routes module overlay mouse input on open {@link Screen}s. Screens with custom handlers
  * (hub, social, HUD editor) call {@link IngameOverlayHost} themselves before their own logic.
  */
-@Mixin(ParentElement.class)
+@Mixin(ContainerEventHandler.class)
 public interface OpenScreenOverlayInputMixin {
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void dupeclient$overlayMouseClicked(Click click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-        if (!dupeclient$shouldRouteOverlayOn((ParentElement) (Object) this)) {
+    private void dupeclient$overlayMouseClicked(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
+        if (!dupeclient$shouldRouteOverlayOn((ContainerEventHandler) (Object) this)) {
             return;
         }
         if (IngameOverlayHost.onScreenOverlayMouseClicked(click.x(), click.y(), click.button())) {
@@ -34,8 +34,8 @@ public interface OpenScreenOverlayInputMixin {
     }
 
     @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
-    private void dupeclient$overlayMouseReleased(Click click, CallbackInfoReturnable<Boolean> cir) {
-        if (!dupeclient$shouldRouteOverlayOn((ParentElement) (Object) this)) {
+    private void dupeclient$overlayMouseReleased(MouseButtonEvent click, CallbackInfoReturnable<Boolean> cir) {
+        if (!dupeclient$shouldRouteOverlayOn((ContainerEventHandler) (Object) this)) {
             return;
         }
         if (IngameOverlayHost.onScreenOverlayMouseReleased(click.x(), click.y(), click.button())) {
@@ -45,8 +45,8 @@ public interface OpenScreenOverlayInputMixin {
     }
 
     @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
-    private void dupeclient$overlayMouseDragged(Click click, double offsetX, double offsetY, CallbackInfoReturnable<Boolean> cir) {
-        if (!dupeclient$shouldRouteOverlayOn((ParentElement) (Object) this)) {
+    private void dupeclient$overlayMouseDragged(MouseButtonEvent click, double offsetX, double offsetY, CallbackInfoReturnable<Boolean> cir) {
+        if (!dupeclient$shouldRouteOverlayOn((ContainerEventHandler) (Object) this)) {
             return;
         }
         if (IngameOverlayHost.onScreenOverlayMouseDragged(click.x(), click.y(), click.button())) {
@@ -58,7 +58,7 @@ public interface OpenScreenOverlayInputMixin {
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
     private void dupeclient$overlayMouseScrolled(
             double mouseX, double mouseY, double horizontal, double vertical, CallbackInfoReturnable<Boolean> cir) {
-        if (!dupeclient$shouldRouteOverlayOn((ParentElement) (Object) this)) {
+        if (!dupeclient$shouldRouteOverlayOn((ContainerEventHandler) (Object) this)) {
             return;
         }
         if (IngameOverlayHost.onScreenOverlayMouseScrolled(mouseX, mouseY, horizontal, vertical)) {
@@ -67,11 +67,11 @@ public interface OpenScreenOverlayInputMixin {
         }
     }
 
-    private static boolean dupeclient$shouldRouteOverlayOn(ParentElement element) {
+    private static boolean dupeclient$shouldRouteOverlayOn(ContainerEventHandler element) {
         if (!(element instanceof Screen screen)) {
             return false;
         }
-        return !(screen instanceof HandledScreen<?>)
+        return !(screen instanceof AbstractContainerScreen<?>)
                 && !(screen instanceof IngameModuleOverlayScreen)
                 && !(screen instanceof PacketWorkbenchScreen)
                 && !(screen instanceof ClientGuiScreen)

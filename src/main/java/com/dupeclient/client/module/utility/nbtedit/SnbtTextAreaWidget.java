@@ -1,20 +1,20 @@
 package com.dupeclient.client.module.utility.nbtedit;
 
 import com.dupeclient.client.gui.overlay.EditableTextBuffer;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 /**
  * Scrollable multiline SNBT editor with a high character limit (no vanilla TextField cap).
  */
-public final class SnbtTextAreaWidget extends ClickableWidget {
+public final class SnbtTextAreaWidget extends AbstractWidget {
     private static final int LINE_HEIGHT = 10;
     private static final int MAX_CHARS = 262_144;
 
@@ -23,7 +23,7 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
     private int scrollLine;
 
     public SnbtTextAreaWidget(int x, int y, int width, int height) {
-        super(x, y, width, height, Text.empty());
+        super(x, y, width, height, Component.empty());
     }
 
     public String text() {
@@ -39,7 +39,7 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
         scrollLine = 0;
     }
 
-    public boolean handleKey(KeyInput input) {
+    public boolean handleKey(KeyEvent input) {
         if (!isFocused()) {
             return false;
         }
@@ -129,9 +129,9 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
     }
 
     @Override
-    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        TextRenderer tr = client.textRenderer;
+    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+        Minecraft client = Minecraft.getInstance();
+        Font tr = client.font;
         context.fill(getX(), getY(), getX() + width, getY() + height, 0xCC0F172A);
         context.fill(getX(), getY(), getX() + width, getY() + 1, 0xFF334155);
         context.fill(getX(), getY() + height - 1, getX() + width, getY() + height, 0xFF334155);
@@ -151,7 +151,7 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
                 break;
             }
             String line = lineAt(lineIdx);
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(line, width - 10)), getX() + 5, drawY, 0xFFE2E8F0);
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(line, width - 10)), getX() + 5, drawY, 0xFFE2E8F0);
             drawY += LINE_HEIGHT;
         }
 
@@ -159,14 +159,14 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
             int caretY = getY() + 4 + (cursorLine - scrollLine) * LINE_HEIGHT;
             if (cursorLine >= scrollLine && cursorLine < scrollLine + visibleLines) {
                 String before = lineAt(cursorLine).substring(0, Math.min(cursorCol, lineAt(cursorLine).length()));
-                int caretX = getX() + 5 + tr.getWidth(before);
+                int caretX = getX() + 5 + tr.width(before);
                 context.fill(caretX, caretY - 1, caretX + 1, caretY + 9, 0xFF4ADE80);
             }
         }
     }
 
     @Override
-    public void onClick(Click click, boolean doubled) {
+    public void onClick(MouseButtonEvent click, boolean doubled) {
         if (!visible || !active) {
             return;
         }
@@ -182,8 +182,8 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        appendDefaultNarrations(builder);
+    protected void updateWidgetNarration(NarrationElementOutput builder) {
+        defaultButtonNarrationText(builder);
     }
 
     private void insert(char ch) {
@@ -196,11 +196,11 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
     }
 
     private void paste() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.keyboard == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.keyboardHandler == null) {
             return;
         }
-        String clip = client.keyboard.getClipboard();
+        String clip = client.keyboardHandler.getClipboard();
         if (clip == null || clip.isEmpty()) {
             return;
         }
@@ -218,14 +218,14 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
     }
 
     private void copyAll() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.keyboard != null) {
-            client.keyboard.setClipboard(text.toString());
+        Minecraft client = Minecraft.getInstance();
+        if (client != null && client.keyboardHandler != null) {
+            client.keyboardHandler.setClipboard(text.toString());
         }
     }
 
     private void moveCursorToClick(double mouseX, double mouseY) {
-        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        Font tr = Minecraft.getInstance().font;
         int relY = (int) mouseY - (getY() + 4);
         int lineIdx = scrollLine + Math.max(0, relY / LINE_HEIGHT);
         lineIdx = Math.min(lineIdx, Math.max(0, lineCount() - 1));
@@ -233,7 +233,7 @@ public final class SnbtTextAreaWidget extends ClickableWidget {
         int relX = (int) mouseX - (getX() + 5);
         int best = line.length();
         for (int i = 0; i <= line.length(); i++) {
-            if (tr.getWidth(line.substring(0, i)) > relX) {
+            if (tr.width(line.substring(0, i)) > relX) {
                 best = Math.max(0, i - 1);
                 break;
             }

@@ -2,11 +2,11 @@ package com.dupeclient.client.gui.widget;
 
 import com.dupeclient.client.gui.modern.ModernTextInputChrome;
 import com.dupeclient.client.gui.overlay.EditableTextBuffer;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.function.IntPredicate;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * Single-line text field for panels and overlays — cursor, selection, clipboard, modern chrome.
@@ -73,7 +73,7 @@ public final class InlineTextField {
         }
         if (contains(mouseX, mouseY)) {
             focused = true;
-            TextRenderer tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+            Font tr = net.minecraft.client.Minecraft.getInstance().font;
             buffer.setCursorFromClick(tr, (int) mouseX, x + ModernTextInputChrome.PAD_X, w - ModernTextInputChrome.PAD_X * 2);
             return true;
         }
@@ -112,7 +112,7 @@ public final class InlineTextField {
         return buffer.handleCodePoint((char) codePoint);
     }
 
-    public void render(DrawContext context, TextRenderer tr) {
+    public void render(GuiGraphics context, Font tr) {
         ModernTextInputChrome.drawField(context, x, y, w, h, focused);
         int textX = x + ModernTextInputChrome.PAD_X;
         int textY = ModernTextInputChrome.textY(y, h);

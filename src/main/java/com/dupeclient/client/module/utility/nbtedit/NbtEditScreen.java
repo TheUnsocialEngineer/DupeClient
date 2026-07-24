@@ -9,28 +9,27 @@ import com.dupeclient.client.gui.widget.IntegerStepperWidget;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
 import com.dupeclient.client.gui.widget.StylishSearchableDropdownWidget;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.CustomModelDataComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Unit;
-
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomModelData;
+import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -100,7 +99,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     private int loreScroll;
 
     public NbtEditScreen(Screen parent, ItemStack stack) {
-        super(Text.literal("NBT Editor"));
+        super(Component.literal("NBT Editor"));
         this.parent = parent;
         this.workingStack = stack.copy();
     }
@@ -117,7 +116,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
 
     private void initContent() {
         syncActiveTabFields();
-        clearChildren();
+        clearWidgets();
         enchantDropdowns.clear();
         enchantLevelSteppers.clear();
         loreFields.clear();
@@ -141,17 +140,17 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         }
 
         int footerY = height - FOOTER_H;
-        addDrawableChild(new StylishButtonWidget(PAD, footerY, 88, FIELD_H, Text.literal("Apply"), this::applyToHand));
-        addDrawableChild(new StylishButtonWidget(PAD + 94, footerY, 88, FIELD_H, Text.literal("Revert"), this::revert));
-        addDrawableChild(new StylishButtonWidget(PAD + 188, footerY, 96, FIELD_H, Text.literal("Copy SNBT"), this::copySnbt));
-        addDrawableChild(new StylishButtonWidget(PAD + 290, footerY, 104, FIELD_H, Text.literal("Copy /give"), this::copyGive));
-        addDrawableChild(new StylishButtonWidget(width - PAD - 88, footerY, 88, FIELD_H, ScreenTexts.BACK, this::goBack));
+        addRenderableWidget(new StylishButtonWidget(PAD, footerY, 88, FIELD_H, Component.literal("Apply"), this::applyToHand));
+        addRenderableWidget(new StylishButtonWidget(PAD + 94, footerY, 88, FIELD_H, Component.literal("Revert"), this::revert));
+        addRenderableWidget(new StylishButtonWidget(PAD + 188, footerY, 96, FIELD_H, Component.literal("Copy SNBT"), this::copySnbt));
+        addRenderableWidget(new StylishButtonWidget(PAD + 290, footerY, 104, FIELD_H, Component.literal("Copy /give"), this::copyGive));
+        addRenderableWidget(new StylishButtonWidget(width - PAD - 88, footerY, 88, FIELD_H, CommonComponents.GUI_BACK, this::goBack));
     }
 
     private void addTabButton(int x, int y, int w, int h, String label, Tab target) {
-        StylishButtonWidget button = new StylishButtonWidget(x, y, w, h, Text.literal(label), () -> switchTab(target));
+        StylishButtonWidget button = new StylishButtonWidget(x, y, w, h, Component.literal(label), () -> switchTab(target));
         button.setSelected(tab == target);
-        addDrawableChild(button);
+        addRenderableWidget(button);
     }
 
     private int labelY(int row) {
@@ -166,12 +165,12 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         return width - PAD * 2 - 8;
     }
 
-    private void drawLabel(DrawContext context, TextRenderer tr, String text, int row) {
-        context.drawText(tr, text, INNER_X, labelY(row), UiTokens.SLATE_300, false);
+    private void drawLabel(GuiGraphics context, Font tr, String text, int row) {
+        context.drawString(tr, text, INNER_X, labelY(row), UiTokens.SLATE_300, false);
     }
 
-    private void drawLabelAt(DrawContext context, TextRenderer tr, String text, int row, int x) {
-        context.drawText(tr, text, x, labelY(row), UiTokens.SLATE_300, false);
+    private void drawLabelAt(GuiGraphics context, Font tr, String text, int row, int x) {
+        context.drawString(tr, text, x, labelY(row), UiTokens.SLATE_300, false);
     }
 
     private void switchTab(Tab next) {
@@ -193,27 +192,27 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         int half = (w - GAP) / 2;
 
         countStepper = addStepper(x, fieldY(0), 160, FIELD_H, 1, Integer.MAX_VALUE, workingStack.getCount(), null);
-        nameField = addField(x, fieldY(1), w, plainText(workingStack.get(DataComponentTypes.CUSTOM_NAME)));
-        itemNameField = addField(x, fieldY(2), w, plainText(workingStack.get(DataComponentTypes.ITEM_NAME)));
+        nameField = addField(x, fieldY(1), w, plainText(workingStack.get(DataComponents.CUSTOM_NAME)));
+        itemNameField = addField(x, fieldY(2), w, plainText(workingStack.get(DataComponents.ITEM_NAME)));
 
-        Integer damage = workingStack.get(DataComponentTypes.DAMAGE);
+        Integer damage = workingStack.get(DataComponents.DAMAGE);
         damageStepper = addStepper(x, fieldY(3), half, FIELD_H, 0, Integer.MAX_VALUE, damage == null ? 0 : damage, null);
-        Integer repair = workingStack.get(DataComponentTypes.REPAIR_COST);
+        Integer repair = workingStack.get(DataComponents.REPAIR_COST);
         repairStepper = addStepper(
                 x + half + GAP, fieldY(3), half, FIELD_H, 0, Integer.MAX_VALUE, repair == null ? 0 : repair, null);
 
-        unbreakable = workingStack.contains(DataComponentTypes.UNBREAKABLE);
-        Boolean glint = workingStack.get(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
+        unbreakable = workingStack.has(DataComponents.UNBREAKABLE);
+        Boolean glint = workingStack.get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
         glintSet = glint != null;
         glintOverride = glint != null && glint;
 
-        addDrawableChild(new StylishButtonWidget(x, fieldY(4), half, FIELD_H,
-                Text.literal("Unbreakable: " + (unbreakable ? "ON" : "OFF")), () -> {
+        addRenderableWidget(new StylishButtonWidget(x, fieldY(4), half, FIELD_H,
+                Component.literal("Unbreakable: " + (unbreakable ? "ON" : "OFF")), () -> {
             unbreakable = !unbreakable;
             init();
         }));
-        addDrawableChild(new StylishButtonWidget(x + half + GAP, fieldY(4), half, FIELD_H,
-                Text.literal("Glint: " + (glintSet ? (glintOverride ? "ON" : "OFF") : "DEFAULT")), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + half + GAP, fieldY(4), half, FIELD_H,
+                Component.literal("Glint: " + (glintSet ? (glintOverride ? "ON" : "OFF") : "DEFAULT")), () -> {
             if (!glintSet) {
                 glintSet = true;
                 glintOverride = true;
@@ -238,19 +237,19 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         }
 
         int btnW = (w - 3 * GAP) / 4;
-        addDrawableChild(new StylishButtonWidget(x, contentTop, btnW, FIELD_H, Text.literal("+ Floats"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x, contentTop, btnW, FIELD_H, Component.literal("+ Floats"), () -> {
             cmdFloats.add(0f);
             init();
         }));
-        addDrawableChild(new StylishButtonWidget(x + btnW + GAP, contentTop, btnW, FIELD_H, Text.literal("+ Flags"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + btnW + GAP, contentTop, btnW, FIELD_H, Component.literal("+ Flags"), () -> {
             cmdFlags.add(false);
             init();
         }));
-        addDrawableChild(new StylishButtonWidget(x + (btnW + GAP) * 2, contentTop, btnW, FIELD_H, Text.literal("+ Colors"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + (btnW + GAP) * 2, contentTop, btnW, FIELD_H, Component.literal("+ Colors"), () -> {
             cmdColors.add(0);
             init();
         }));
-        addDrawableChild(new StylishButtonWidget(x + (btnW + GAP) * 3, contentTop, btnW, FIELD_H, Text.literal("+ String"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + (btnW + GAP) * 3, contentTop, btnW, FIELD_H, Component.literal("+ String"), () -> {
             cmdStrings.add("");
             init();
         }));
@@ -277,7 +276,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         float raw = cmdFloats.get(index);
         StylishTextFieldWidget field = addField(x, rowY, w - 36, Float.toString(raw));
         cmdFloatFields.add(field);
-        addDrawableChild(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Text.literal("−"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Component.literal("−"), () -> {
             cmdFloats.remove(index);
             init();
         }));
@@ -285,12 +284,12 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
 
     private void addCmdFlagRow(int x, int w, int rowY, int index) {
         boolean on = cmdFlags.get(index);
-        addDrawableChild(new StylishButtonWidget(x, rowY, w - 36, FIELD_H,
-                Text.literal("Flag " + (index + 1) + ": " + (on ? "ON" : "OFF")), () -> {
+        addRenderableWidget(new StylishButtonWidget(x, rowY, w - 36, FIELD_H,
+                Component.literal("Flag " + (index + 1) + ": " + (on ? "ON" : "OFF")), () -> {
             cmdFlags.set(index, !cmdFlags.get(index));
             init();
         }));
-        addDrawableChild(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Text.literal("−"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Component.literal("−"), () -> {
             cmdFlags.remove(index);
             init();
         }));
@@ -302,7 +301,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
                 x, rowY, w - 36, FIELD_H, Integer.MIN_VALUE / 4, Integer.MAX_VALUE / 4, raw,
                 v -> cmdColors.set(index, v));
         cmdColorSteppers.add(stepper);
-        addDrawableChild(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Text.literal("−"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Component.literal("−"), () -> {
             cmdColors.remove(index);
             init();
         }));
@@ -311,7 +310,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     private void addCmdStringRow(int x, int w, int rowY, int index) {
         StylishTextFieldWidget field = addField(x, rowY, w - 36, cmdStrings.get(index));
         cmdStringFields.add(field);
-        addDrawableChild(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Text.literal("−"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Component.literal("−"), () -> {
             cmdStrings.remove(index);
             init();
         }));
@@ -328,11 +327,11 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         int visible = Math.max(1, (listBottom - y - 30) / CMD_ITEM_H);
         enchantScroll = Math.min(enchantScroll, Math.max(0, enchantRows.size() - visible));
 
-        addDrawableChild(new StylishButtonWidget(x, y, 120, FIELD_H, Text.literal("+ Add enchant"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x, y, 120, FIELD_H, Component.literal("+ Add enchant"), () -> {
             enchantRows.add(new EnchantRow(defaultEnchantId(), 1));
             init();
         }));
-        addDrawableChild(new StylishButtonWidget(x + 128, y, 140, FIELD_H, Text.literal("+ Add all enchants"), this::addAllEnchants));
+        addRenderableWidget(new StylishButtonWidget(x + 128, y, 140, FIELD_H, Component.literal("+ Add all enchants"), this::addAllEnchants));
         y += FIELD_H + 8;
 
         for (int i = 0; i < visible; i++) {
@@ -352,7 +351,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
                     enchantmentIds,
                     row.enchantId(),
                     value -> enchantRows.set(idx, new EnchantRow(value, row.level())));
-            addDrawableChild(picker);
+            addRenderableWidget(picker);
             enchantDropdowns.add(picker);
 
             IntegerStepperWidget level = addStepper(
@@ -361,7 +360,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
             enchantLevelSteppers.add(level);
 
             int removeIdx = idx;
-            addDrawableChild(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Text.literal("−"), () -> {
+            addRenderableWidget(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Component.literal("−"), () -> {
                 if (removeIdx >= 0 && removeIdx < enchantRows.size()) {
                     enchantRows.remove(removeIdx);
                     init();
@@ -381,7 +380,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         int visible = Math.max(1, (listBottom - y - 30) / CMD_ITEM_H);
         loreScroll = Math.min(loreScroll, Math.max(0, loreLines.size() - visible));
 
-        addDrawableChild(new StylishButtonWidget(x, y, 110, FIELD_H, Text.literal("+ Add line"), () -> {
+        addRenderableWidget(new StylishButtonWidget(x, y, 110, FIELD_H, Component.literal("+ Add line"), () -> {
             loreLines.add("");
             init();
         }));
@@ -396,7 +395,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
             StylishTextFieldWidget field = addField(x, rowY, w - 36, loreLines.get(idx));
             loreFields.add(field);
             int removeIdx = idx;
-            addDrawableChild(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Text.literal("−"), () -> {
+            addRenderableWidget(new StylishButtonWidget(x + w - 30, rowY, 30, FIELD_H, Component.literal("−"), () -> {
                 if (removeIdx >= 0 && removeIdx < loreLines.size()) {
                     loreLines.remove(removeIdx);
                     init();
@@ -410,8 +409,8 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         int h = height - top - FOOTER_H - 8;
         rawEditor = new SnbtTextAreaWidget(PAD, top, width - PAD * 2, Math.max(100, h));
         rawEditor.setText(ItemStackNbtCodec.toSnbt(workingStack, registries()));
-        addDrawableChild(rawEditor);
-        addDrawableChild(new StylishButtonWidget(PAD, height - FOOTER_H - 30, 110, 22, Text.literal("Parse SNBT"), this::parseRawEditor));
+        addRenderableWidget(rawEditor);
+        addRenderableWidget(new StylishButtonWidget(PAD, height - FOOTER_H - 30, 110, 22, Component.literal("Parse SNBT"), this::parseRawEditor));
     }
 
     private void loadCmdListsFromStack() {
@@ -419,7 +418,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         cmdFlags.clear();
         cmdColors.clear();
         cmdStrings.clear();
-        CustomModelDataComponent cmd = workingStack.get(DataComponentTypes.CUSTOM_MODEL_DATA);
+        CustomModelData cmd = workingStack.get(DataComponents.CUSTOM_MODEL_DATA);
         if (cmd != null) {
             cmdFloats.addAll(cmd.floats());
             cmdFlags.addAll(cmd.flags());
@@ -430,12 +429,12 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
 
     private void loadEnchantRowsFromStack() {
         enchantRows.clear();
-        ItemEnchantmentsComponent enchants = workingStack.getOrDefault(
-                DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT);
-        for (var entry : enchants.getEnchantmentEntries()) {
-            RegistryEntry<Enchantment> enchant = entry.getKey();
-            Optional<RegistryKey<Enchantment>> key = enchant.getKey();
-            String id = key.map(k -> k.getValue().toString()).orElse(defaultEnchantId());
+        ItemEnchantments enchants = workingStack.getOrDefault(
+                DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (var entry : enchants.entrySet()) {
+            Holder<Enchantment> enchant = entry.getKey();
+            Optional<ResourceKey<Enchantment>> key = enchant.unwrapKey();
+            String id = key.map(k -> k.identifier().toString()).orElse(defaultEnchantId());
             enchantRows.add(new EnchantRow(id, entry.getIntValue()));
         }
         if (enchantRows.isEmpty()) {
@@ -445,9 +444,9 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
 
     private void loadLoreLinesFromStack() {
         loreLines.clear();
-        LoreComponent lore = workingStack.get(DataComponentTypes.LORE);
+        ItemLore lore = workingStack.get(DataComponents.LORE);
         if (lore != null) {
-            for (Text line : lore.lines()) {
+            for (Component line : lore.lines()) {
                 loreLines.add(line.getString());
             }
         }
@@ -457,9 +456,9 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     private List<String> loadEnchantmentIds() {
-        RegistryWrapper.Impl<Enchantment> registry = registries().getOrThrow(RegistryKeys.ENCHANTMENT);
+        HolderLookup.RegistryLookup<Enchantment> registry = registries().lookupOrThrow(Registries.ENCHANTMENT);
         List<String> ids = new ArrayList<>();
-        registry.streamKeys().map(key -> key.getValue().toString()).forEach(ids::add);
+        registry.listElementIds().map(key -> key.identifier().toString()).forEach(ids::add);
         ids.sort(Comparator.naturalOrder());
         if (ids.isEmpty()) {
             ids.add("minecraft:sharpness");
@@ -508,36 +507,36 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
             workingStack.setCount(countStepper.getValue());
         }
         if (nameField != null) {
-            String name = nameField.getText().trim();
+            String name = nameField.getValue().trim();
             if (name.isEmpty()) {
-                workingStack.remove(DataComponentTypes.CUSTOM_NAME);
+                workingStack.remove(DataComponents.CUSTOM_NAME);
             } else {
-                workingStack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(name));
+                workingStack.set(DataComponents.CUSTOM_NAME, Component.literal(name));
             }
         }
         if (itemNameField != null) {
-            String name = itemNameField.getText().trim();
+            String name = itemNameField.getValue().trim();
             if (name.isEmpty()) {
-                workingStack.remove(DataComponentTypes.ITEM_NAME);
+                workingStack.remove(DataComponents.ITEM_NAME);
             } else {
-                workingStack.set(DataComponentTypes.ITEM_NAME, Text.literal(name));
+                workingStack.set(DataComponents.ITEM_NAME, Component.literal(name));
             }
         }
         if (damageStepper != null) {
-            workingStack.set(DataComponentTypes.DAMAGE, damageStepper.getValue());
+            workingStack.set(DataComponents.DAMAGE, damageStepper.getValue());
         }
         if (repairStepper != null) {
-            workingStack.set(DataComponentTypes.REPAIR_COST, repairStepper.getValue());
+            workingStack.set(DataComponents.REPAIR_COST, repairStepper.getValue());
         }
         if (unbreakable) {
-            workingStack.set(DataComponentTypes.UNBREAKABLE, Unit.INSTANCE);
+            workingStack.set(DataComponents.UNBREAKABLE, Unit.INSTANCE);
         } else {
-            workingStack.remove(DataComponentTypes.UNBREAKABLE);
+            workingStack.remove(DataComponents.UNBREAKABLE);
         }
         if (glintSet) {
-            workingStack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, glintOverride);
+            workingStack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, glintOverride);
         } else {
-            workingStack.remove(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
+            workingStack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
         }
         applyCustomModelData();
     }
@@ -545,7 +544,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     private void readCmdFields() {
         for (int i = 0; i < cmdFloatFields.size() && i < cmdFloats.size(); i++) {
             try {
-                cmdFloats.set(i, Float.parseFloat(cmdFloatFields.get(i).getText().trim()));
+                cmdFloats.set(i, Float.parseFloat(cmdFloatFields.get(i).getValue().trim()));
             } catch (NumberFormatException ignored) {
             }
         }
@@ -553,7 +552,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
             cmdColors.set(i, cmdColorSteppers.get(i).getValue());
         }
         for (int i = 0; i < cmdStringFields.size() && i < cmdStrings.size(); i++) {
-            cmdStrings.set(i, cmdStringFields.get(i).getText());
+            cmdStrings.set(i, cmdStringFields.get(i).getValue());
         }
     }
 
@@ -563,11 +562,11 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         List<Integer> colors = new ArrayList<>(cmdColors);
         List<String> strings = cmdStrings.stream().filter(s -> s != null && !s.isBlank()).toList();
         if (floats.isEmpty() && flags.isEmpty() && colors.isEmpty() && strings.isEmpty()) {
-            workingStack.remove(DataComponentTypes.CUSTOM_MODEL_DATA);
+            workingStack.remove(DataComponents.CUSTOM_MODEL_DATA);
             return;
         }
-        workingStack.set(DataComponentTypes.CUSTOM_MODEL_DATA,
-                new CustomModelDataComponent(floats, flags, strings, colors));
+        workingStack.set(DataComponents.CUSTOM_MODEL_DATA,
+                new CustomModelData(floats, flags, strings, colors));
     }
 
     private void syncActiveTabFields() {
@@ -596,10 +595,10 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     private void applyEnchantFields() {
-        RegistryWrapper.WrapperLookup lookup = registries();
-        var enchantments = lookup.getOrThrow(RegistryKeys.ENCHANTMENT);
-        ItemEnchantmentsComponent.Builder builder = new ItemEnchantmentsComponent.Builder(
-                ItemEnchantmentsComponent.DEFAULT);
+        HolderLookup.Provider lookup = registries();
+        var enchantments = lookup.lookupOrThrow(Registries.ENCHANTMENT);
+        ItemEnchantments.Mutable builder = new ItemEnchantments.Mutable(
+                ItemEnchantments.EMPTY);
         for (EnchantRow row : enchantRows) {
             if (row.enchantId() == null || row.enchantId().isBlank()) {
                 continue;
@@ -608,14 +607,14 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
             if (id == null) {
                 continue;
             }
-            RegistryKey<Enchantment> key = RegistryKey.of(RegistryKeys.ENCHANTMENT, id);
-            enchantments.getOptional(key).ifPresent(entry -> builder.set(entry, row.level()));
+            ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, id);
+            enchantments.get(key).ifPresent(entry -> builder.set(entry, row.level()));
         }
-        ItemEnchantmentsComponent built = builder.build();
+        ItemEnchantments built = builder.toImmutable();
         if (built.isEmpty()) {
-            workingStack.remove(DataComponentTypes.ENCHANTMENTS);
+            workingStack.remove(DataComponents.ENCHANTMENTS);
         } else {
-            workingStack.set(DataComponentTypes.ENCHANTMENTS, built);
+            workingStack.set(DataComponents.ENCHANTMENTS, built);
         }
     }
 
@@ -625,22 +624,22 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
             if (idx >= loreLines.size()) {
                 break;
             }
-            loreLines.set(idx, loreFields.get(i).getText());
+            loreLines.set(idx, loreFields.get(i).getValue());
         }
     }
 
     private void applyLoreFields() {
-        List<Text> lines = new ArrayList<>();
+        List<Component> lines = new ArrayList<>();
         for (String line : loreLines) {
             if (line == null || line.isBlank()) {
                 continue;
             }
-            lines.add(Text.literal(line).styled(style -> style.withItalic(true)));
+            lines.add(Component.literal(line).withStyle(style -> style.withItalic(true)));
         }
         if (lines.isEmpty()) {
-            workingStack.remove(DataComponentTypes.LORE);
+            workingStack.remove(DataComponents.LORE);
         } else {
-            workingStack.set(DataComponentTypes.LORE, new LoreComponent(lines));
+            workingStack.set(DataComponents.LORE, new ItemLore(lines));
         }
     }
 
@@ -674,26 +673,26 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         } else {
             applyStructuredToStack();
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client.player == null) {
             status = "Not in world";
             return;
         }
-        if (client.player.getMainHandStack().isEmpty()) {
+        if (client.player.getMainHandItem().isEmpty()) {
             status = "Main hand is empty";
             return;
         }
-        client.player.getInventory().setStack(client.player.getInventory().getSelectedSlot(), workingStack.copy());
+        client.player.getInventory().setItem(client.player.getInventory().getSelectedSlot(), workingStack.copy());
         status = "Applied to main hand";
     }
 
     private void revert() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.player.getMainHandStack().isEmpty()) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || client.player.getMainHandItem().isEmpty()) {
             status = "Nothing to revert from";
             return;
         }
-        workingStack = client.player.getMainHandStack().copy();
+        workingStack = client.player.getMainHandItem().copy();
         enchantRows.clear();
         loreLines.clear();
         status = "Reverted to held item";
@@ -702,16 +701,16 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
 
     private void copySnbt() {
         applyBeforeCopy();
-        if (client != null && client.keyboard != null) {
-            client.keyboard.setClipboard(ItemStackNbtCodec.toSnbt(workingStack, registries()));
+        if (minecraft != null && minecraft.keyboardHandler != null) {
+            minecraft.keyboardHandler.setClipboard(ItemStackNbtCodec.toSnbt(workingStack, registries()));
             status = "Copied SNBT";
         }
     }
 
     private void copyGive() {
         applyBeforeCopy();
-        if (client != null && client.keyboard != null) {
-            client.keyboard.setClipboard(ItemStackNbtCodec.toGiveCommand(workingStack, registries()));
+        if (minecraft != null && minecraft.keyboardHandler != null) {
+            minecraft.keyboardHandler.setClipboard(ItemStackNbtCodec.toGiveCommand(workingStack, registries()));
             status = "Copied /give command";
         }
     }
@@ -725,19 +724,19 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     private void goBack() {
-        if (client != null) {
-            client.setScreen(parent);
+        if (minecraft != null) {
+            minecraft.setScreen(parent);
         }
     }
 
-    private RegistryWrapper.WrapperLookup registries() {
-        return ItemStackNbtCodec.registries(MinecraftClient.getInstance());
+    private HolderLookup.Provider registries() {
+        return ItemStackNbtCodec.registries(Minecraft.getInstance());
     }
 
     private StylishTextFieldWidget addField(int x, int y, int w, String value) {
-        StylishTextFieldWidget field = new StylishTextFieldWidget(textRenderer, x, y, w, FIELD_H, Text.empty());
-        field.setText(value == null ? "" : value);
-        return addDrawableChild(field);
+        StylishTextFieldWidget field = new StylishTextFieldWidget(font, x, y, w, FIELD_H, Component.empty());
+        field.setValue(value == null ? "" : value);
+        return addRenderableWidget(field);
     }
 
     private IntegerStepperWidget addStepper(
@@ -749,9 +748,9 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
             int max,
             int initial,
             @org.jetbrains.annotations.Nullable java.util.function.IntConsumer onChange) {
-        IntegerStepperWidget stepper = new IntegerStepperWidget(textRenderer, x, y, w, h, min, max, initial, onChange);
+        IntegerStepperWidget stepper = new IntegerStepperWidget(font, x, y, w, h, min, max, initial, onChange);
         for (var widget : stepper.widgets()) {
-            addDrawableChild(widget);
+            addRenderableWidget(widget);
         }
         return stepper;
     }
@@ -800,26 +799,26 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         return stepper != null && stepper.valueField().isFocused();
     }
 
-    private static String plainText(Text text) {
+    private static String plainText(Component text) {
         return text == null ? "" : text.getString();
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, width, height);
         UiDraw.cardElevated(context, 8, 8, width - 16, height - 16, UiTokens.R_XL);
 
-        TextRenderer tr = textRenderer;
-        context.drawText(tr, "NBT Editor", PAD, PAD, UiTokens.TEXT, false);
-        context.drawText(tr, ItemStackNbtCodec.itemSummary(workingStack), PAD, PAD + 14, UiTokens.MINT_300, false);
+        Font tr = font;
+        context.drawString(tr, "NBT Editor", PAD, PAD, UiTokens.TEXT, false);
+        context.drawString(tr, ItemStackNbtCodec.itemSummary(workingStack), PAD, PAD + 14, UiTokens.MINT_300, false);
 
         if (tab == Tab.GENERAL) {
             drawGeneralChrome(context, tr);
         } else if (tab == Tab.ENCHANTS) {
-            context.drawText(tr, "Search enchantment · adjust level with +/-", INNER_X, contentY - 10,
+            context.drawString(tr, "Search enchantment · adjust level with +/-", INNER_X, contentY - 10,
                     UiTokens.SLATE_300, false);
         } else if (tab == Tab.LORE) {
-            context.drawText(tr, "Lore lines render italic in-game", INNER_X, contentY - 10,
+            context.drawString(tr, "Lore lines render italic in-game", INNER_X, contentY - 10,
                     UiTokens.SLATE_300, false);
         }
 
@@ -832,12 +831,12 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         }
 
         if (!status.isBlank()) {
-            context.drawCenteredTextWithShadow(tr, Text.literal(status), width / 2, height - 12,
+            context.drawCenteredString(tr, Component.literal(status), width / 2, height - 12,
                     status.toLowerCase(Locale.ROOT).contains("fail") ? 0xFFF87171 : UiTokens.MINT_300);
         }
     }
 
-    private void drawGeneralChrome(DrawContext context, TextRenderer tr) {
+    private void drawGeneralChrome(GuiGraphics context, Font tr) {
         int half = (innerWidth() - GAP) / 2;
         drawLabel(context, tr, "Stack count", 0);
         drawLabel(context, tr, "Custom display name", 1);
@@ -856,7 +855,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (tab == Tab.ENCHANTS && handleEnchantDropdownClick(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -884,7 +883,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         if (tab == Tab.RAW && rawEditor != null && rawEditor.handleKey(input)) {
             return true;
         }
@@ -899,7 +898,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     @Override
-    public boolean charTyped(CharInput input) {
+    public boolean charTyped(CharacterEvent input) {
         if (tab == Tab.RAW && rawEditor != null && rawEditor.handleChar((char) input.codepoint())) {
             return true;
         }
@@ -954,7 +953,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     @Override
-    public void close() {
+    public void onClose() {
         goBack();
     }
 }

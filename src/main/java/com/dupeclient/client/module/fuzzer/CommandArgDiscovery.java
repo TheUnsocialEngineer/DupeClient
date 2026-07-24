@@ -3,10 +3,6 @@ package com.dupeclient.client.module.fuzzer;
 import com.dupeclient.client.module.fuzzer.economy.EconomyFuzzerManager;
 import com.dupeclient.client.module.fuzzer.economy.EconomyFuzzerSettings;
 import com.mojang.brigadier.suggestion.Suggestion;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
-import net.minecraft.network.packet.s2c.play.CommandSuggestionsS2CPacket;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -20,6 +16,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 
 /**
  * Discovers injectable command templates via paced tab-complete (DupeDB-style), help output, and usage text.
@@ -74,19 +73,19 @@ public final class CommandArgDiscovery {
         return status;
     }
 
-    public int pathCount(MinecraftClient client) {
+    public int pathCount(Minecraft client) {
         return pathsForContext(client).size();
     }
 
-    public boolean hasCached(MinecraftClient client) {
+    public boolean hasCached(Minecraft client) {
         return !pathsForContext(client).isEmpty();
     }
 
-    public List<String> pathsForClient(MinecraftClient client) {
+    public List<String> pathsForClient(Minecraft client) {
         return new ArrayList<>(pathsForContext(client));
     }
 
-    private Set<String> pathsForContext(MinecraftClient client) {
+    private Set<String> pathsForContext(Minecraft client) {
         String ctx = contextKey(client);
         if (ctx.isBlank()) {
             return Set.of();
@@ -94,15 +93,15 @@ public final class CommandArgDiscovery {
         return pathsByContext.getOrDefault(ctx, Set.of());
     }
 
-    public void clearContext(MinecraftClient client) {
+    public void clearContext(Minecraft client) {
         String ctx = contextKey(client);
         if (!ctx.isBlank()) {
             pathsByContext.remove(ctx);
         }
     }
 
-    public void startDiscovery(MinecraftClient client) {
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+    public void startDiscovery(Minecraft client) {
+        if (client == null || client.player == null || client.getConnection() == null) {
             status = "Join a server first";
             return;
         }
@@ -146,8 +145,8 @@ public final class CommandArgDiscovery {
         status = reason == null ? "Idle" : reason;
     }
 
-    public void tick(MinecraftClient client) {
-        if (!discovering || client == null || client.player == null || client.getNetworkHandler() == null) {
+    public void tick(Minecraft client) {
+        if (!discovering || client == null || client.player == null || client.getConnection() == null) {
             return;
         }
         String ctx = contextKey(client);
@@ -166,7 +165,7 @@ public final class CommandArgDiscovery {
         if (!helpQueue.isEmpty() && tabQueue.isEmpty() && now >= nextHelpAtMs) {
             String helpCmd = helpQueue.pollFirst();
             if (helpCmd != null) {
-                client.player.networkHandler.sendChatCommand(helpCmd);
+                client.player.connection.sendCommand(helpCmd);
                 lastResponseAtMs = now;
                 nextHelpAtMs = now + helpDelayMs();
                 status = "Help · " + pathsForContext(client).size() + " paths";
@@ -195,7 +194,7 @@ public final class CommandArgDiscovery {
         maybeFinish(now, client);
     }
 
-    private void maybeFinish(long now, MinecraftClient client) {
+    private void maybeFinish(long now, Minecraft client) {
         if (!tabQueue.isEmpty() || !pendingTab.isEmpty() || !helpQueue.isEmpty()) {
             return;
         }
@@ -220,7 +219,7 @@ public final class CommandArgDiscovery {
         }
     }
 
-    public void onCommandSuggestions(CommandSuggestionsS2CPacket packet) {
+    public void onCommandSuggestions(ClientboundCommandSuggestionsPacket packet) {
         if (!discovering || packet == null) {
             return;
         }
@@ -238,7 +237,7 @@ public final class CommandArgDiscovery {
         nextProbeAtMs = now + probeDelayMs();
 
         List<String> suggestions = new ArrayList<>();
-        for (Suggestion suggestion : packet.getSuggestions().getList()) {
+        for (Suggestion suggestion : packet.toSuggestions().getList()) {
             if (suggestion == null || suggestion.getText() == null) {
                 continue;
             }
@@ -298,13 +297,13 @@ public final class CommandArgDiscovery {
         status = "Done (" + count + " paths)";
     }
 
-    private void seedBrigadierPaths(MinecraftClient client) {
+    private void seedBrigadierPaths(Minecraft client) {
         for (String path : CommandEnumerator.brigadierPaths(client)) {
             addPath(path);
         }
     }
 
-    private void seedTabProbes(MinecraftClient client) {
+    private void seedTabProbes(Minecraft client) {
         EconomyFuzzerSettings settings = EconomyFuzzerManager.INSTANCE.getSettings();
         String selected = settings.sqliCommand == null ? "" : settings.sqliCommand.trim();
         if (!selected.isBlank()) {
@@ -329,7 +328,7 @@ public final class CommandArgDiscovery {
         }
     }
 
-    private void seedHelpProbes(MinecraftClient client) {
+    private void seedHelpProbes(Minecraft client) {
         EconomyFuzzerSettings settings = EconomyFuzzerManager.INSTANCE.getSettings();
         String selected = settings.sqliCommand == null ? "" : settings.sqliCommand.trim();
         if (!selected.isBlank()) {
@@ -349,10 +348,10 @@ public final class CommandArgDiscovery {
         }
     }
 
-    private void sendTabProbe(MinecraftClient client, TabProbe probe) {
+    private void sendTabProbe(Minecraft client, TabProbe probe) {
         int id = nextCompletionId++;
         pendingTab.put(id, probe);
-        client.getNetworkHandler().sendPacket(new RequestCommandCompletionsC2SPacket(id, probe.query()));
+        client.getConnection().send(new ServerboundCommandSuggestionPacket(id, probe.query()));
     }
 
     private void enqueueTab(String query, String pathPrefix, int depth) {
@@ -514,7 +513,7 @@ public final class CommandArgDiscovery {
         return s.matches("[a-zA-Z][a-zA-Z0-9_\\-]*");
     }
 
-    private static Set<String> rootLiterals(MinecraftClient client) {
+    private static Set<String> rootLiterals(Minecraft client) {
         Set<String> roots = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         List<String> paths = CommandEnumerator.brigadierPaths(client);
         for (String path : paths) {
@@ -526,18 +525,18 @@ public final class CommandArgDiscovery {
         return roots;
     }
 
-    private static String contextKey(MinecraftClient client) {
+    private static String contextKey(Minecraft client) {
         if (client == null) {
             return "";
         }
         String addr = "sp";
-        if (client.getCurrentServerEntry() != null && client.getCurrentServerEntry().address != null) {
-            addr = client.getCurrentServerEntry().address.trim().toLowerCase(Locale.ROOT);
+        if (client.getCurrentServer() != null && client.getCurrentServer().ip != null) {
+            addr = client.getCurrentServer().ip.trim().toLowerCase(Locale.ROOT);
         }
         String world = "";
         try {
-            if (client.world != null && client.world.getRegistryKey() != null) {
-                world = client.world.getRegistryKey().getValue().toString();
+            if (client.level != null && client.level.dimension() != null) {
+                world = client.level.dimension().identifier().toString();
             }
         } catch (Exception ignored) {
         }
@@ -548,7 +547,7 @@ public final class CommandArgDiscovery {
         return raw.replaceAll("§.", "");
     }
 
-    private static Integer extractCompletionId(CommandSuggestionsS2CPacket packet) {
+    private static Integer extractCompletionId(ClientboundCommandSuggestionsPacket packet) {
         try {
             Object value = packet.getClass().getMethod("getCompletionId").invoke(packet);
             if (value instanceof Integer i) {

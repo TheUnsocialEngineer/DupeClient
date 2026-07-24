@@ -8,7 +8,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.MinecraftClient;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -29,6 +28,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import net.minecraft.client.Minecraft;
 
 /**
  * Fetches {@code GET {apiBase}/list} for the Social screen.
@@ -43,10 +43,10 @@ public final class DupeClientSocialListFetcher {
 
     /**
      * @param minecraftClient screen {@code client} — used to hop back to the render thread (avoid relying on
-     *                        {@link MinecraftClient#getInstance()} alone, which can be unset in rare launch states).
+     *                        {@link Minecraft#getInstance()} alone, which can be unset in rare launch states).
      * @param onMainThread    (rows, errorHint) — {@code errorHint} is null on success; non-null for timeouts / HTTP / parse issues.
      */
-    public static void fetchAsync(@Nullable MinecraftClient minecraftClient, BiConsumer<List<OnlineDupeClientUser>, @Nullable String> onMainThread) {
+    public static void fetchAsync(@Nullable Minecraft minecraftClient, BiConsumer<List<OnlineDupeClientUser>, @Nullable String> onMainThread) {
         CompletableFuture
                 .supplyAsync(DupeClientSocialListFetcher::fetchRowsBlocking)
                 .orTimeout(FETCH_DEADLINE_SEC, TimeUnit.SECONDS)
@@ -91,10 +91,10 @@ public final class DupeClientSocialListFetcher {
 
     private static String buildListUrl() {
         String base = DupeClientCapePresence.resolvedPresenceApiBase() + "/list";
-        MinecraftClient mc = MinecraftClient.getInstance();
-        UUID viewerUuid = mc != null && mc.player != null ? mc.player.getUuid() : null;
-        if (viewerUuid == null && mc != null && mc.getSession() != null) {
-            viewerUuid = mc.getSession().getUuidOrNull();
+        Minecraft mc = Minecraft.getInstance();
+        UUID viewerUuid = mc != null && mc.player != null ? mc.player.getUUID() : null;
+        if (viewerUuid == null && mc != null && mc.getUser() != null) {
+            viewerUuid = mc.getUser().getProfileId();
         }
         if (viewerUuid == null) {
             return base;
@@ -120,12 +120,12 @@ public final class DupeClientSocialListFetcher {
     }
 
     private static void finish(
-            @Nullable MinecraftClient minecraftClient,
+            @Nullable Minecraft minecraftClient,
             List<OnlineDupeClientUser> rows,
             @Nullable String errorHint,
             BiConsumer<List<OnlineDupeClientUser>, @Nullable String> onMainThread
     ) {
-        MinecraftClient mc = minecraftClient != null ? minecraftClient : MinecraftClient.getInstance();
+        Minecraft mc = minecraftClient != null ? minecraftClient : Minecraft.getInstance();
         Runnable apply = () -> onMainThread.accept(rows, errorHint);
         if (mc != null) {
             mc.execute(apply);

@@ -4,12 +4,12 @@ import com.ui_utils.MainClient;
 import com.ui_utils.UiUtilsScreens;
 import com.ui_utils.gui.ChatTextFieldWidget;
 import com.ui_utils.gui.CustomTextFieldWidget;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,21 +23,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Inventory / container screens: widgets from {@link ScreenMixin}; keyboard routing for the overlay chat field.
  */
-@Mixin(HandledScreen.class)
+@Mixin(AbstractContainerScreen.class)
 public abstract class HandledScreenMixin extends Screen {
     private HandledScreenMixin() {
         super(null);
     }
 
     @Shadow
-    protected abstract void onMouseClick(Slot slot, int slotId, int button, SlotActionType actionType);
+    protected abstract void slotClicked(Slot slot, int slotId, int button, ClickType actionType);
 
     @Shadow
     @Nullable
-    protected Slot focusedSlot;
+    protected Slot hoveredSlot;
 
     @Unique
-    private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static final Minecraft mc = Minecraft.getInstance();
 
     @Unique
     private CustomTextFieldWidget uiutils$chatField;
@@ -49,7 +49,7 @@ public abstract class HandledScreenMixin extends Screen {
             return;
         }
         uiutils$chatField = null;
-        HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
+        AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
         for (var child : screen.children()) {
             if (child instanceof ChatTextFieldWidget field) {
                 uiutils$chatField = field;
@@ -59,7 +59,7 @@ public abstract class HandledScreenMixin extends Screen {
     }
 
     @Inject(at = @At("HEAD"), method = "keyPressed", cancellable = true)
-    public void uiutils$onKeyPressed(KeyInput keyInput, CallbackInfoReturnable<Boolean> cir) {
+    public void uiutils$onKeyPressed(KeyEvent keyInput, CallbackInfoReturnable<Boolean> cir) {
         if (uiutils$chatField != null && uiutils$chatField.isFocused()) {
             if (uiutils$chatField.keyPressed(keyInput)) {
                 cir.setReturnValue(true);
@@ -77,20 +77,20 @@ public abstract class HandledScreenMixin extends Screen {
         if (super.keyPressed(keyInput)) {
             cir.setReturnValue(true);
             cir.cancel();
-        } else if (MainClient.mc.options.inventoryKey.matchesKey(keyInput)) {
-            this.close();
+        } else if (MainClient.mc.options.keyInventory.matches(keyInput)) {
+            this.onClose();
             cir.setReturnValue(true);
             cir.cancel();
-        } else if (this.focusedSlot != null && this.focusedSlot.hasStack()) {
-            if (mc.options.pickItemKey.matchesKey(keyInput)) {
-                this.onMouseClick(this.focusedSlot, this.focusedSlot.id, 0, SlotActionType.CLONE);
+        } else if (this.hoveredSlot != null && this.hoveredSlot.hasItem()) {
+            if (mc.options.keyPickItem.matches(keyInput)) {
+                this.slotClicked(this.hoveredSlot, this.hoveredSlot.index, 0, ClickType.CLONE);
                 cir.setReturnValue(true);
                 cir.cancel();
                 return;
             }
-            if (mc.options.dropKey.matchesKey(keyInput)) {
+            if (mc.options.keyDrop.matches(keyInput)) {
                 boolean controlDown = (keyInput.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
-                this.onMouseClick(this.focusedSlot, this.focusedSlot.id, controlDown ? 1 : 0, SlotActionType.THROW);
+                this.slotClicked(this.hoveredSlot, this.hoveredSlot.index, controlDown ? 1 : 0, ClickType.THROW);
                 cir.setReturnValue(true);
                 cir.cancel();
             }

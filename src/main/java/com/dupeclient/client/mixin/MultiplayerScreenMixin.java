@@ -5,13 +5,6 @@ import com.dupeclient.client.module.serverpassword.ServerPasswordScreen;
 import com.dupeclient.client.multiplayer.MultiplayerHeaderButtonFilter;
 import com.dupeclient.client.multiplayer.OfflineAccountsScreen;
 import com.dupeclient.client.multiplayer.ProxiesScreen;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,8 +13,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.network.chat.Component;
 
-@Mixin(value = MultiplayerScreen.class, priority = 5000)
+@Mixin(value = JoinMultiplayerScreen.class, priority = 5000)
 public abstract class MultiplayerScreenMixin extends Screen {
     @Unique
     private static final int DUPECLIENT$HEADER_BTN_W = 75;
@@ -43,13 +43,13 @@ public abstract class MultiplayerScreenMixin extends Screen {
     private static final String DUPECLIENT$ACCOUNTS_LABEL = "Accounts";
 
     @Unique
-    private ButtonWidget dupeClient$vaultButton;
+    private Button dupeClient$vaultButton;
     @Unique
-    private ButtonWidget dupeClient$serverSearchButton;
+    private Button dupeClient$serverSearchButton;
     @Unique
-    private ButtonWidget dupeClient$proxiesButton;
+    private Button dupeClient$proxiesButton;
     @Unique
-    private ButtonWidget dupeClient$accountsButton;
+    private Button dupeClient$accountsButton;
 
     protected MultiplayerScreenMixin() {
         super(null);
@@ -62,7 +62,7 @@ public abstract class MultiplayerScreenMixin extends Screen {
         dupeClient$layoutHeaderButtons();
     }
 
-    @Inject(method = "refreshWidgetPositions", at = @At("TAIL"))
+    @Inject(method = "repositionElements", at = @At("TAIL"))
     private void dupeClient$refreshHeaderButtons(CallbackInfo ci) {
         dupeClient$stripForeignHeaderButtons();
         dupeClient$attachHeaderButtonsIfNeeded();
@@ -76,37 +76,37 @@ public abstract class MultiplayerScreenMixin extends Screen {
         }
         dupeClient$detachOwnedHeaderButtons();
 
-        dupeClient$vaultButton = ButtonWidget.builder(Text.literal(DUPECLIENT$VAULT_LABEL), button -> {
-            MinecraftClient client = MinecraftClient.getInstance();
+        dupeClient$vaultButton = Button.builder(Component.literal(DUPECLIENT$VAULT_LABEL), button -> {
+            Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new ServerPasswordScreen((MultiplayerScreen) (Object) this));
+                client.setScreen(new ServerPasswordScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$VAULT_BTN_W, 20).build();
-        this.addDrawableChild(dupeClient$vaultButton);
+        this.addRenderableWidget(dupeClient$vaultButton);
 
-        dupeClient$serverSearchButton = ButtonWidget.builder(Text.literal(DUPECLIENT$SEARCH_LABEL), button -> {
-            MinecraftClient client = MinecraftClient.getInstance();
+        dupeClient$serverSearchButton = Button.builder(Component.literal(DUPECLIENT$SEARCH_LABEL), button -> {
+            Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new ServerSearchAuthScreen((MultiplayerScreen) (Object) this));
+                client.setScreen(new ServerSearchAuthScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$SEARCH_BTN_W, 20).build();
-        this.addDrawableChild(dupeClient$serverSearchButton);
+        this.addRenderableWidget(dupeClient$serverSearchButton);
 
-        dupeClient$proxiesButton = ButtonWidget.builder(Text.literal(DUPECLIENT$PROXIES_LABEL), button -> {
-            MinecraftClient client = MinecraftClient.getInstance();
+        dupeClient$proxiesButton = Button.builder(Component.literal(DUPECLIENT$PROXIES_LABEL), button -> {
+            Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new ProxiesScreen((MultiplayerScreen) (Object) this));
+                client.setScreen(new ProxiesScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$HEADER_BTN_W, 20).build();
-        this.addDrawableChild(dupeClient$proxiesButton);
+        this.addRenderableWidget(dupeClient$proxiesButton);
 
-        dupeClient$accountsButton = ButtonWidget.builder(Text.literal(DUPECLIENT$ACCOUNTS_LABEL), button -> {
-            MinecraftClient client = MinecraftClient.getInstance();
+        dupeClient$accountsButton = Button.builder(Component.literal(DUPECLIENT$ACCOUNTS_LABEL), button -> {
+            Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new OfflineAccountsScreen((MultiplayerScreen) (Object) this));
+                client.setScreen(new OfflineAccountsScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$HEADER_BTN_W, 20).build();
-        this.addDrawableChild(dupeClient$accountsButton);
+        this.addRenderableWidget(dupeClient$accountsButton);
     }
 
     @Unique
@@ -139,32 +139,32 @@ public abstract class MultiplayerScreenMixin extends Screen {
 
     @Unique
     private void dupeClient$stripForeignHeaderButtons() {
-        List<Element> toRemove = new ArrayList<>();
-        for (Element child : this.children()) {
-            if (child instanceof ClickableWidget widget
+        List<GuiEventListener> toRemove = new ArrayList<>();
+        for (GuiEventListener child : this.children()) {
+            if (child instanceof AbstractWidget widget
                 && MultiplayerHeaderButtonFilter.isForeignHeaderButton(
                 widget, dupeClient$vaultButton, dupeClient$serverSearchButton, dupeClient$proxiesButton, dupeClient$accountsButton)) {
                 toRemove.add(child);
             }
         }
-        for (Element child : toRemove) {
-            this.remove(child);
+        for (GuiEventListener child : toRemove) {
+            this.removeWidget(child);
         }
     }
 
     @Unique
     private void dupeClient$detachOwnedHeaderButtons() {
         if (dupeClient$vaultButton != null) {
-            this.remove(dupeClient$vaultButton);
+            this.removeWidget(dupeClient$vaultButton);
         }
         if (dupeClient$serverSearchButton != null) {
-            this.remove(dupeClient$serverSearchButton);
+            this.removeWidget(dupeClient$serverSearchButton);
         }
         if (dupeClient$proxiesButton != null) {
-            this.remove(dupeClient$proxiesButton);
+            this.removeWidget(dupeClient$proxiesButton);
         }
         if (dupeClient$accountsButton != null) {
-            this.remove(dupeClient$accountsButton);
+            this.removeWidget(dupeClient$accountsButton);
         }
         dupeClient$vaultButton = null;
         dupeClient$serverSearchButton = null;

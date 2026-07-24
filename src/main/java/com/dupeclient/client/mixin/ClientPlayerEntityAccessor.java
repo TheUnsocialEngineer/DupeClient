@@ -1,47 +1,47 @@
 package com.dupeclient.client.mixin;
 
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.player.LocalPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-/** Last-sent movement state used by {@link ClientPlayerEntity#sendMovementPackets()}. */
-@Mixin(ClientPlayerEntity.class)
+/** Last-sent movement state used by {@link LocalPlayer#sendPosition()}. */
+@Mixin(LocalPlayer.class)
 public interface ClientPlayerEntityAccessor {
     @Accessor
-    double getLastXClient();
+    double getXLast();
 
     @Mutable
     @Accessor
-    void setLastXClient(double x);
+    void setXLast(double x);
 
     @Accessor
-    double getLastYClient();
-
-    @Mutable
-    @Accessor
-    void setLastYClient(double y);
-
-    @Accessor
-    double getLastZClient();
+    double getYLast();
 
     @Mutable
     @Accessor
-    void setLastZClient(double z);
+    void setYLast(double y);
 
     @Accessor
-    float getLastYawClient();
-
-    @Mutable
-    @Accessor
-    void setLastYawClient(float yaw);
-
-    @Accessor
-    float getLastPitchClient();
+    double getZLast();
 
     @Mutable
     @Accessor
-    void setLastPitchClient(float pitch);
+    void setZLast(double z);
+
+    @Accessor
+    float getYRotLast();
+
+    @Mutable
+    @Accessor
+    void setYRotLast(float yaw);
+
+    @Accessor
+    float getXRotLast();
+
+    @Mutable
+    @Accessor
+    void setXRotLast(float pitch);
 
     @Accessor
     boolean getLastOnGround();
@@ -58,9 +58,9 @@ public interface ClientPlayerEntityAccessor {
     void setLastHorizontalCollision(boolean horizontalCollision);
 
     @Accessor
-    int getTicksSinceLastPositionPacketSent();
+    int getPositionReminder();
 
     @Mutable
     @Accessor
-    void setTicksSinceLastPositionPacketSent(int ticks);
+    void setPositionReminder(int ticks);
 }

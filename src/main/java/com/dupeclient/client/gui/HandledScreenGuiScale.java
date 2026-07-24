@@ -3,14 +3,14 @@ package com.dupeclient.client.gui;
 import com.dupeclient.client.compat.ModCompat;
 import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.PacketUtilsSettings;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.screen.slot.Slot;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.world.inventory.Slot;
 import org.joml.Matrix3x2fStack;
 
 /**
- * Scales {@link net.minecraft.client.gui.screen.ingame.HandledScreen} rendering without changing global GUI scale.
+ * Scales {@link net.minecraft.client.gui.screens.inventory.AbstractContainerScreen} rendering without changing global GUI scale.
  */
 public final class HandledScreenGuiScale {
     public static final float[] SCALE_PRESETS = {1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
@@ -94,7 +94,7 @@ public final class HandledScreenGuiScale {
     }
 
     /** Scale around the panel center in absolute screen coordinates (for {@code drawBackground}). */
-    public static void pushScaleScreen(DrawContext context, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
+    public static void pushScaleScreen(GuiGraphics context, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
         float scale = getScale();
         if (scale <= 1.001f) {
             return;
@@ -107,7 +107,7 @@ public final class HandledScreenGuiScale {
     /**
      * Scale around the panel center in GUI-local coordinates (after {@code translate(x, y)} in {@code renderMain}).
      */
-    public static void pushScaleLocal(DrawContext context, int backgroundWidth, int backgroundHeight) {
+    public static void pushScaleLocal(GuiGraphics context, int backgroundWidth, int backgroundHeight) {
         float scale = getScale();
         if (scale <= 1.001f) {
             return;
@@ -117,19 +117,19 @@ public final class HandledScreenGuiScale {
         applyScaleAround(context, centerX, centerY, scale);
     }
 
-    private static void applyScaleAround(DrawContext context, float centerX, float centerY, float scale) {
-        Matrix3x2fStack matrices = context.getMatrices();
+    private static void applyScaleAround(GuiGraphics context, float centerX, float centerY, float scale) {
+        Matrix3x2fStack matrices = context.pose();
         matrices.pushMatrix();
         matrices.translate(centerX, centerY);
         matrices.scale(scale, scale);
         matrices.translate(-centerX, -centerY);
     }
 
-    public static void popScale(DrawContext context) {
+    public static void popScale(GuiGraphics context) {
         if (!isActive()) {
             return;
         }
-        context.getMatrices().popMatrix();
+        context.pose().popMatrix();
     }
 
     /** Maps a GUI-local point to screen space using the same transform as rendering. */
@@ -311,14 +311,14 @@ public final class HandledScreenGuiScale {
     }
 
     /** UI Utils buttons/fields use fixed screen coordinates and must not follow panel scaling. */
-    public static boolean isScreenFixedOverlayWidget(Element child) {
+    public static boolean isScreenFixedOverlayWidget(GuiEventListener child) {
         String name = child.getClass().getName();
         return name.startsWith("com.ui_utils.gui.")
                 || name.startsWith("com.dupeclient.client.module.packet.fabricator.");
     }
 
     /** Third-party mod widgets that should follow bigger-container scaling when on/near the panel. */
-    public static boolean isThirdPartyContainerWidget(Element child) {
+    public static boolean isThirdPartyContainerWidget(GuiEventListener child) {
         String name = child.getClass().getName();
         return name.startsWith("com.chaosmrp.axiom")
                 || name.contains(".axiom.")
@@ -327,7 +327,7 @@ public final class HandledScreenGuiScale {
                 || name.startsWith("dev.voxy.");
     }
 
-    public static boolean shouldLayoutWithPanel(Element child) {
+    public static boolean shouldLayoutWithPanel(GuiEventListener child) {
         if (isScreenFixedOverlayWidget(child)) {
             return false;
         }
@@ -336,8 +336,8 @@ public final class HandledScreenGuiScale {
 
     /** Whether a widget should be repositioned with the scaled panel bounds. */
     public static boolean shouldScaleWithPanel(
-            Element child, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
-        if (!(child instanceof ClickableWidget widget)) {
+            GuiEventListener child, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
+        if (!(child instanceof AbstractWidget widget)) {
             return false;
         }
         if (isScreenFixedOverlayWidget(child)) {
@@ -354,7 +354,7 @@ public final class HandledScreenGuiScale {
     }
 
     /** Restores a screen-fixed overlay widget to its init-time screen position and size. */
-    public static void pinScreenFixedWidget(ClickableWidget widget, java.util.Map<Element, int[]> screenBases) {
+    public static void pinScreenFixedWidget(AbstractWidget widget, java.util.Map<GuiEventListener, int[]> screenBases) {
         int[] base = screenBases.computeIfAbsent(widget, ignored -> new int[] {
             widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight()
         });
@@ -366,7 +366,7 @@ public final class HandledScreenGuiScale {
 
     /** Captures a widget's unscaled GUI-local bounds for {@link #layoutWidget}. */
     public static int[] captureWidgetLocalBounds(
-            ClickableWidget widget, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
+            AbstractWidget widget, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
         int dx = widget.getX() - guiLeft;
         int dy = widget.getY() - guiTop;
         float scale = getScale();
@@ -390,7 +390,7 @@ public final class HandledScreenGuiScale {
 
     /** Repositions a child widget from unscaled GUI-local layout coords to scaled screen coords. */
     public static void layoutWidget(
-            ClickableWidget widget,
+            AbstractWidget widget,
             int localX,
             int localY,
             int localWidth,

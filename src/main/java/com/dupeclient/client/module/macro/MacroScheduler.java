@@ -1,9 +1,8 @@
 package com.dupeclient.client.module.macro;
 
-import net.minecraft.client.MinecraftClient;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
+import net.minecraft.client.Minecraft;
 
 public final class MacroScheduler {
     private static final MacroScheduler INSTANCE = new MacroScheduler();
@@ -61,7 +60,7 @@ public final class MacroScheduler {
         }
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null || client.player == null) {
             return;
         }

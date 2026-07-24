@@ -6,12 +6,11 @@ import com.dupeclient.client.config.ClientGuiLayoutStorage;
 import com.dupeclient.client.gui.panel.Panel;
 import com.dupeclient.client.core.session.HubModuleRules;
 import com.dupeclient.client.core.session.PresenceRosterSync;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
-
 import java.util.List;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 /**
  * Responsive hub layout: wide = left rail + content; compact = top pill nav + content.
@@ -58,7 +57,7 @@ public final class HubShell {
         if (vw < UiTokens.BP_COMPACT) {
             return 0;
         }
-        return MathHelper.clamp(148, 140, 160);
+        return Mth.clamp(148, 140, 160);
     }
 
     public void onScreenOpen() {
@@ -67,7 +66,7 @@ public final class HubShell {
         }
         if (firstLayoutTick) {
             int n = panelCount();
-            selectedModuleIndex = MathHelper.clamp(ClientGuiLayoutStorage.loadSelectedModule(), 0, Math.max(0, n - 1));
+            selectedModuleIndex = Mth.clamp(ClientGuiLayoutStorage.loadSelectedModule(), 0, Math.max(0, n - 1));
             moduleScrollY = ClientGuiLayoutStorage.loadModuleScrollY(n);
             firstLayoutTick = false;
         }
@@ -158,7 +157,7 @@ public final class HubShell {
         if (n == 0) {
             return;
         }
-        selectedModuleIndex = MathHelper.clamp(index, 0, n - 1);
+        selectedModuleIndex = Mth.clamp(index, 0, n - 1);
     }
 
     private void notifyModuleHidden(int index) {
@@ -175,7 +174,7 @@ public final class HubShell {
         }
     }
 
-    public void applyEmbeddedLayout(TextRenderer textRenderer) {
+    public void applyEmbeddedLayout(Font textRenderer) {
         recomputeLayout(DupeClient.getGuiManager().getPanels());
         ensureScrollBuffers();
         List<Panel> panels = DupeClient.getGuiManager().getPanels();
@@ -203,11 +202,11 @@ public final class HubShell {
         if (si >= 0 && si < n && moduleScrollY != null && si < moduleScrollY.length) {
             Panel active = panels.get(si);
             double maxScroll = Math.max(0.0, (double) active.getLayoutContentHeight() - contentScrollH);
-            moduleScrollY[si] = MathHelper.clamp(moduleScrollY[si], 0.0, maxScroll);
+            moduleScrollY[si] = Mth.clamp(moduleScrollY[si], 0.0, maxScroll);
         }
     }
 
-    public void render(DrawContext context, TextRenderer tr, int mouseX, int mouseY, float deltaTicks, int viewW, int viewH) {
+    public void render(GuiGraphics context, Font tr, int mouseX, int mouseY, float deltaTicks, int viewW, int viewH) {
         int vw = Math.max(1, viewW);
         int vh = Math.max(1, viewH);
         this.viewportW = vw;
@@ -217,16 +216,16 @@ public final class HubShell {
 
         if (reserveTopForVanillaCloseButton) {
             UiDraw.drawTopFullWidthBand(context, vw, UiTokens.APP_BAR_H);
-            context.drawTextWithShadow(tr, Text.literal("DupeClient"), UiTokens.SP_4, 12, UiTokens.SLATE_50);
-            context.drawTextWithShadow(tr, Text.literal("Modules"), UiTokens.SP_4, 24, UiTokens.TEXT_DIM);
+            context.drawString(tr, Component.literal("DupeClient"), UiTokens.SP_4, 12, UiTokens.SLATE_50);
+            context.drawString(tr, Component.literal("Modules"), UiTokens.SP_4, 24, UiTokens.TEXT_DIM);
             String buildLine = DupeClient.MOD_VERSION + " · " + DupeClient.BUILD_TAG;
-            int buildW = tr.getWidth(buildLine);
-            context.drawTextWithShadow(tr, Text.literal(buildLine), vw - buildW - UiTokens.SP_4, 18, UiTokens.TEXT_DIM);
+            int buildW = tr.width(buildLine);
+            context.drawString(tr, Component.literal(buildLine), vw - buildW - UiTokens.SP_4, 18, UiTokens.TEXT_DIM);
             drawHubStatusLine(context, tr, vw);
         } else {
             String buildLine = DupeClient.MOD_VERSION + " · " + DupeClient.BUILD_TAG;
-            int buildW = tr.getWidth(buildLine);
-            context.drawTextWithShadow(tr, Text.literal(buildLine), vw - buildW - UiTokens.SP_4, UiTokens.SP_2, UiTokens.TEXT_DIM);
+            int buildW = tr.width(buildLine);
+            context.drawString(tr, Component.literal(buildLine), vw - buildW - UiTokens.SP_4, UiTokens.SP_2, UiTokens.TEXT_DIM);
             drawHubStatusLine(context, tr, vw);
         }
 
@@ -335,7 +334,7 @@ public final class HubShell {
                 && mouseY >= contentScrollTop
                 && mouseY < contentScrollTop + contentScrollH
                 && verticalAmount != 0) {
-            applyEmbeddedLayout(net.minecraft.client.MinecraftClient.getInstance().textRenderer);
+            applyEmbeddedLayout(net.minecraft.client.Minecraft.getInstance().font);
             int n = panelCount();
             if (n == 0 || moduleScrollY == null) {
                 return true;
@@ -346,7 +345,7 @@ public final class HubShell {
             }
             double maxScroll = Math.max(0.0, (double) DupeClient.getGuiManager().getPanels().get(si).getLayoutContentHeight() - contentScrollH);
             moduleScrollY[si] -= verticalAmount * 20.0;
-            moduleScrollY[si] = MathHelper.clamp(moduleScrollY[si], 0.0, maxScroll);
+            moduleScrollY[si] = Mth.clamp(moduleScrollY[si], 0.0, maxScroll);
             return true;
         }
         return false;
@@ -375,7 +374,7 @@ public final class HubShell {
         return null;
     }
 
-    private static void drawHubStatusLine(DrawContext context, TextRenderer tr, int vw) {
+    private static void drawHubStatusLine(GuiGraphics context, Font tr, int vw) {
         String status;
         int color;
         if (HubModuleRules.viewerRestricted()) {
@@ -393,7 +392,7 @@ public final class HubShell {
         if (status.length() > 72) {
             status = status.substring(0, 69) + "…";
         }
-        int w = tr.getWidth(status);
-        context.drawTextWithShadow(tr, Text.literal(status), Math.max(UiTokens.SP_4, (vw - w) / 2), UiTokens.SP_2 + 12, color);
+        int w = tr.width(status);
+        context.drawString(tr, Component.literal(status), Math.max(UiTokens.SP_4, (vw - w) / 2), UiTokens.SP_2 + 12, color);
     }
 }

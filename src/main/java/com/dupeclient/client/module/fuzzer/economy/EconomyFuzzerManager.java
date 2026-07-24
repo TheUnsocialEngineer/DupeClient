@@ -1,16 +1,14 @@
 package com.dupeclient.client.module.fuzzer.economy;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import com.dupeclient.client.core.InputFocusGuards;
 import com.dupeclient.client.module.packet.FeatureHotkeyManager;
 
@@ -129,7 +127,7 @@ public final class EconomyFuzzerManager {
         return Math.min(1f, (float) fuzzIndex / (float) fuzzValues.size());
     }
 
-    public List<String> getPayCommandOptions(MinecraftClient client) {
+    public List<String> getPayCommandOptions(Minecraft client) {
         return EconomyCommandDetector.payCommandOptions(client);
     }
 
@@ -157,7 +155,7 @@ public final class EconomyFuzzerManager {
         feedback("Syntax: " + EconomyCommandDetector.syntaxModeLabel(settings.syntaxMode, settings.payCommand));
     }
 
-    public void cyclePayCommand(MinecraftClient client) {
+    public void cyclePayCommand(Minecraft client) {
         List<String> options = getPayCommandOptions(client);
         if (options.isEmpty()) {
             return;
@@ -168,12 +166,12 @@ public final class EconomyFuzzerManager {
         feedback("Pay command: /" + settings.payCommand);
     }
 
-    public List<String> onlinePlayerNames(MinecraftClient client) {
+    public List<String> onlinePlayerNames(Minecraft client) {
         List<String> names = new ArrayList<>();
-        if (client == null || client.getNetworkHandler() == null) {
+        if (client == null || client.getConnection() == null) {
             return names;
         }
-        for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+        for (PlayerInfo entry : client.getConnection().getOnlinePlayers()) {
             if (entry != null && entry.getProfile() != null && entry.getProfile().name() != null) {
                 String n = entry.getProfile().name();
                 if (!n.isBlank()) {
@@ -195,7 +193,7 @@ public final class EconomyFuzzerManager {
         }
     }
 
-    public void cycleTargetPlayer(MinecraftClient client, int delta) {
+    public void cycleTargetPlayer(Minecraft client, int delta) {
         List<String> names = onlinePlayerNames(client);
         if (client != null && client.player != null) {
             String self = client.player.getName().getString();
@@ -224,7 +222,7 @@ public final class EconomyFuzzerManager {
         return "/" + buildChatCommand(amount);
     }
 
-    public void start(MinecraftClient client) {
+    public void start(Minecraft client) {
         if (running) {
             return;
         }
@@ -236,7 +234,7 @@ public final class EconomyFuzzerManager {
             feedback("Select a target player.");
             return;
         }
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+        if (client == null || client.player == null || client.getConnection() == null) {
             feedback("Join a world/server first.");
             return;
         }
@@ -276,7 +274,7 @@ public final class EconomyFuzzerManager {
         }
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client != null && client.getWindow() != null
                 && !InputFocusGuards.shouldBlockOverlayToggleHotkeys(client)
                 && overlayHotkeys.consumePress(client, settings.overlayToggleKey)) {
@@ -332,7 +330,7 @@ public final class EconomyFuzzerManager {
         lastResponseLineAtMs = System.currentTimeMillis();
     }
 
-    private void sendCurrent(MinecraftClient client) {
+    private void sendCurrent(Minecraft client) {
         String amount = fuzzValues.get(fuzzIndex);
         String command = buildChatCommand(amount);
         pendingResponses.clear();
@@ -341,8 +339,8 @@ public final class EconomyFuzzerManager {
         lastResponseLineAtMs = 0L;
         addLog("[" + (fuzzIndex + 1) + "/" + fuzzValues.size() + "] >> " + command);
         client.execute(() -> {
-            if (client.player != null && client.player.networkHandler != null) {
-                client.player.networkHandler.sendChatCommand(command);
+            if (client.player != null && client.player.connection != null) {
+                client.player.connection.sendCommand(command);
             }
         });
     }
@@ -517,15 +515,15 @@ public final class EconomyFuzzerManager {
         if (!settings.moduleChatFeedback) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
-        MutableText line = Text.literal("[EconomyFuzzer] ").formatted(Formatting.GOLD, Formatting.BOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY));
+        MutableComponent line = Component.literal("[EconomyFuzzer] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }

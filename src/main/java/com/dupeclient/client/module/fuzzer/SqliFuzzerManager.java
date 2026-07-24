@@ -2,14 +2,13 @@ package com.dupeclient.client.module.fuzzer;
 
 import com.dupeclient.client.module.fuzzer.economy.EconomyFuzzerManager;
 import com.dupeclient.client.module.fuzzer.economy.EconomyFuzzerSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 public final class SqliFuzzerManager {
     public static final SqliFuzzerManager INSTANCE = new SqliFuzzerManager();
@@ -103,7 +102,7 @@ public final class SqliFuzzerManager {
         logs.clear();
     }
 
-    public void start(MinecraftClient client) {
+    public void start(Minecraft client) {
         if (running) {
             return;
         }
@@ -144,7 +143,7 @@ public final class SqliFuzzerManager {
         feedback(paused ? "SQLI fuzz paused." : "SQLI fuzz resumed.");
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (!running || paused || client == null || client.player == null) {
             return;
         }
@@ -166,8 +165,8 @@ public final class SqliFuzzerManager {
         String slotLabel = slotIdx < 0 ? "append" : CommandEnumerator.argSlots(template).get(slotIdx);
         addLog("[" + (index + 1) + "/" + total + "] <" + slotLabel + "> >> " + command);
         client.execute(() -> {
-            if (client.player != null && client.player.networkHandler != null) {
-                client.player.networkHandler.sendChatCommand(command);
+            if (client.player != null && client.player.connection != null) {
+                client.player.connection.sendCommand(command);
             }
         });
         index++;
@@ -203,15 +202,15 @@ public final class SqliFuzzerManager {
         if (!s.moduleChatFeedback) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }
-        MutableText line = Text.literal("[SQLI Fuzzer] ").formatted(Formatting.GOLD, Formatting.BOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY));
+        MutableComponent line = Component.literal("[SQLI Fuzzer] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }

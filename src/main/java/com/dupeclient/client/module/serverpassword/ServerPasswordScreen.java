@@ -10,11 +10,11 @@ import com.dupeclient.client.multiplayer.MultiplayerScreens;
 import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 
 public class ServerPasswordScreen extends Screen {
    private static final int PANEL_TOP = 24;
@@ -77,22 +77,22 @@ public class ServerPasswordScreen extends Screen {
    private VaultTable table;
 
    public ServerPasswordScreen(Screen parent) {
-      super(Text.literal("Server Password Vault"));
+      super(Component.literal("Server Password Vault"));
       this.parent = parent;
    }
 
    private void goBack() {
-      MultiplayerScreens.returnToMultiplayer(this.client, this.parent);
+      MultiplayerScreens.returnToMultiplayer(this.minecraft, this.parent);
    }
 
-   public void close() {
+   public void onClose() {
       this.goBack();
    }
 
    protected void init() {
       super.init();
       this.settingsBottomY = 0;
-      this.clearChildren();
+      this.clearWidgets();
       this.layoutPanel();
       this.table = VaultTable.compute(this.innerX, this.innerW);
       if (!ServerPasswordManager.INSTANCE.isVaultInitialized()) {
@@ -122,21 +122,21 @@ public class ServerPasswordScreen extends Screen {
       int fieldW = this.authCardW - 40;
       this.authFieldY = this.authCardY + 98;
       this.masterField = this.addStyledSecretField(fieldX, this.authFieldY, fieldW, "Master password");
-      this.masterField.setChangedListener(text -> this.status = "");
+      this.masterField.setResponder(text -> this.status = "");
       if (creating) {
          this.confirmField = this.addStyledSecretField(fieldX, this.authFieldY + 22 + 10, fieldW, "Confirm password");
-         this.confirmField.setChangedListener(text -> this.status = "");
+         this.confirmField.setResponder(text -> this.status = "");
       } else {
          this.confirmField = null;
       }
 
       int primaryY = creating ? this.authFieldY + 64 + 14 : this.authFieldY + 22 + 14;
-      this.addDrawableChild(
+      this.addRenderableWidget(
          new StylishButtonWidget(
-            fieldX, primaryY, fieldW, 22, Text.literal(creating ? "Create vault" : "Unlock vault"), creating ? this::createVault : this::unlockVault
+            fieldX, primaryY, fieldW, 22, Component.literal(creating ? "Create vault" : "Unlock vault"), creating ? this::createVault : this::unlockVault
          )
       );
-      this.addDrawableChild(new StylishButtonWidget(fieldX, primaryY + 22 + 8, fieldW, 22, ScreenTexts.BACK, this::goBack));
+      this.addRenderableWidget(new StylishButtonWidget(fieldX, primaryY + 22 + 8, fieldW, 22, CommonComponents.GUI_BACK, this::goBack));
       this.setFocused(this.masterField);
    }
 
@@ -148,22 +148,22 @@ public class ServerPasswordScreen extends Screen {
       this.autoGenerate = settings.autoGeneratePassword();
       this.loginDelay = settings.loginDelayTicks();
       int toggleW = (this.innerW - 24) / 4;
-      this.addDrawableChild(new StylishButtonWidget(this.innerX, y, toggleW, 20, toggleLabel("Auto login", this.autoLogin), () -> {
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX, y, toggleW, 20, toggleLabel("Auto login", this.autoLogin), () -> {
          this.autoLogin = !this.autoLogin;
          this.saveSettings();
          this.init();
       }));
-      this.addDrawableChild(new StylishButtonWidget(this.innerX + toggleW + 8, y, toggleW, 20, toggleLabel("Auto register", this.autoRegister), () -> {
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX + toggleW + 8, y, toggleW, 20, toggleLabel("Auto register", this.autoRegister), () -> {
          this.autoRegister = !this.autoRegister;
          this.saveSettings();
          this.init();
       }));
-      this.addDrawableChild(new StylishButtonWidget(this.innerX + (toggleW + 8) * 2, y, toggleW, 20, toggleLabel("Save prompt", this.promptOnAuth), () -> {
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX + (toggleW + 8) * 2, y, toggleW, 20, toggleLabel("Save prompt", this.promptOnAuth), () -> {
          this.promptOnAuth = !this.promptOnAuth;
          this.saveSettings();
          this.init();
       }));
-      this.addDrawableChild(new StylishButtonWidget(this.innerX + (toggleW + 8) * 3, y, toggleW, 20, toggleLabel("Auto-generate", this.autoGenerate), () -> {
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX + (toggleW + 8) * 3, y, toggleW, 20, toggleLabel("Auto-generate", this.autoGenerate), () -> {
          this.autoGenerate = !this.autoGenerate;
          this.saveSettings();
          this.init();
@@ -172,33 +172,33 @@ public class ServerPasswordScreen extends Screen {
       int half = (this.innerW - 8) / 2;
       int fieldW = half - 22 - 2;
       this.hostField = this.addField(this.innerX, y, fieldW, "play.example.com");
-      this.addCopyFieldButton(this.innerX + half - 22, y, () -> this.copyFieldText(this.hostField.getText(), "server IP"));
+      this.addCopyFieldButton(this.innerX + half - 22, y, () -> this.copyFieldText(this.hostField.getValue(), "server IP"));
       this.userField = this.addField(this.innerX + half + 8, y, fieldW, "Username / email (optional)");
-      this.addCopyFieldButton(this.innerX + this.innerW - 22, y, () -> this.copyFieldText(this.userField.getText(), identityLabel(this.userField.getText())));
+      this.addCopyFieldButton(this.innerX + this.innerW - 22, y, () -> this.copyFieldText(this.userField.getValue(), identityLabel(this.userField.getValue())));
       y += 28;
       this.passField = this.addSecretField(this.innerX, y, fieldW, "Password");
-      this.addCopyFieldButton(this.innerX + half - 22, y, () -> this.copyFieldText(this.passField.getText(), "password"));
+      this.addCopyFieldButton(this.innerX + half - 22, y, () -> this.copyFieldText(this.passField.getValue(), "password"));
       this.loginCmdField = this.addField(this.innerX + half + 8, y, 84, "login");
       this.registerCmdField = this.addField(this.innerX + half + 8 + 92, y, 84, "register");
       y += 28;
       this.notesField = this.addField(this.innerX, y, this.innerW, "Notes (optional)");
       y += 28;
       int actionW = (this.innerW - 24) / 4;
-      this.addDrawableChild(
-         new StylishButtonWidget(this.innerX, y, actionW, 20, Text.literal(this.editingId == null ? "Add Entry" : "Update Entry"), this::saveEntry)
+      this.addRenderableWidget(
+         new StylishButtonWidget(this.innerX, y, actionW, 20, Component.literal(this.editingId == null ? "Add Entry" : "Update Entry"), this::saveEntry)
       );
-      this.addDrawableChild(new StylishButtonWidget(this.innerX + actionW + 8, y, actionW, 20, Text.literal("Clear"), this::clearForm));
-      this.addDrawableChild(new StylishButtonWidget(this.innerX + (actionW + 8) * 2, y, actionW, 20, Text.literal("Lock"), this::lockVault));
-      this.addDrawableChild(new StylishButtonWidget(this.innerX + (actionW + 8) * 3, y, actionW, 20, Text.literal("Login now"), this::loginSelectedHost));
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX + actionW + 8, y, actionW, 20, Component.literal("Clear"), this::clearForm));
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX + (actionW + 8) * 2, y, actionW, 20, Component.literal("Lock"), this::lockVault));
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX + (actionW + 8) * 3, y, actionW, 20, Component.literal("Login now"), this::loginSelectedHost));
       y += 24;
       int halfW = (this.innerW - 8) / 2;
-      this.addDrawableChild(
-         new StylishButtonWidget(this.innerX, y, halfW, 20, Text.literal(this.revealPasswords ? "Hide Passwords" : "Show Passwords"), () -> {
+      this.addRenderableWidget(
+         new StylishButtonWidget(this.innerX, y, halfW, 20, Component.literal(this.revealPasswords ? "Hide Passwords" : "Show Passwords"), () -> {
             this.revealPasswords = !this.revealPasswords;
             this.init();
          })
       );
-      this.addDrawableChild(new StylishButtonWidget(this.innerX + halfW + 8, y, halfW, 20, ScreenTexts.BACK, this::goBack));
+      this.addRenderableWidget(new StylishButtonWidget(this.innerX + halfW + 8, y, halfW, 20, CommonComponents.GUI_BACK, this::goBack));
       this.settingsBottomY = y + 20;
       this.recomputeTableLayout();
       int visibleRows = this.visibleTableRows();
@@ -214,11 +214,11 @@ public class ServerPasswordScreen extends Screen {
          int rowY = this.listTop + i * 28;
          int btnY = rowY + 4;
          int copyY = rowY + 5;
-         this.addDrawableChild(new StylishButtonWidget(this.table.copyIpX(), copyY, 24, 18, Text.literal("IP"), () -> this.copyEntryServer(entry)));
-         this.addDrawableChild(new StylishButtonWidget(this.table.copyMailX(), copyY, 24, 18, Text.literal("@"), () -> this.copyEntryUser(entry)));
-         this.addDrawableChild(new StylishButtonWidget(this.table.copyPwdX(), copyY, 24, 18, Text.literal("Pw"), () -> this.copyEntryPassword(entry)));
-         this.addDrawableChild(new StylishButtonWidget(this.table.editX(), btnY, 58, 20, Text.literal("Edit"), () -> this.loadEntry(entry)));
-         this.addDrawableChild(new StylishButtonWidget(this.table.delX(), btnY, 58, 20, Text.literal("Delete"), () -> this.deleteEntry(entry)));
+         this.addRenderableWidget(new StylishButtonWidget(this.table.copyIpX(), copyY, 24, 18, Component.literal("IP"), () -> this.copyEntryServer(entry)));
+         this.addRenderableWidget(new StylishButtonWidget(this.table.copyMailX(), copyY, 24, 18, Component.literal("@"), () -> this.copyEntryUser(entry)));
+         this.addRenderableWidget(new StylishButtonWidget(this.table.copyPwdX(), copyY, 24, 18, Component.literal("Pw"), () -> this.copyEntryPassword(entry)));
+         this.addRenderableWidget(new StylishButtonWidget(this.table.editX(), btnY, 58, 20, Component.literal("Edit"), () -> this.loadEntry(entry)));
+         this.addRenderableWidget(new StylishButtonWidget(this.table.delX(), btnY, 58, 20, Component.literal("Delete"), () -> this.deleteEntry(entry)));
       }
    }
 
@@ -245,7 +245,7 @@ public class ServerPasswordScreen extends Screen {
       return Math.max(1, (this.listBottom - this.listTop) / 28);
    }
 
-   public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+   public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
       boolean authMode = this.isAuthMode();
       if (authMode) {
          this.layoutAuthCard(this.creatingVault);
@@ -281,44 +281,44 @@ public class ServerPasswordScreen extends Screen {
       return !ServerPasswordManager.INSTANCE.isVaultInitialized() || !ServerPasswordManager.INSTANCE.isUnlocked();
    }
 
-   private void drawAuthChrome(DrawContext context, int cardX) {
+   private void drawAuthChrome(GuiGraphics context, int cardX) {
       int iconX = this.width / 2;
       int iconY = this.authCardY + 28;
       int iconR = 14;
       UiDraw.card(context, iconX - iconR, iconY - iconR, iconR * 2, iconR * 2);
-      context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(this.creatingVault ? "+" : "V"), iconX, iconY - 4, -7934036);
+      context.drawCenteredString(this.font, Component.literal(this.creatingVault ? "+" : "V"), iconX, iconY - 4, -7934036);
       String headline = this.creatingVault ? "Create your vault" : "Unlock vault";
-      context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(headline), this.width / 2, this.authCardY + 52, -460036);
+      context.drawCenteredString(this.font, Component.literal(headline), this.width / 2, this.authCardY + 52, -460036);
       int accentW = 56;
       context.fill(this.width / 2 - accentW / 2, this.authCardY + 64, this.width / 2 + accentW / 2, this.authCardY + 65, -11870592);
       String subtitle = this.creatingVault
          ? "Pick a master password to encrypt saved server credentials."
          : "Enter your master password to access saved server passwords.";
       this.drawWrappedCentered(context, subtitle, cardX + 20, this.authCardY + 72, this.authCardW - 40, -7035976);
-      context.drawText(this.textRenderer, "Master password", cardX + 20, this.authFieldY - 10, -7035976, false);
+      context.drawString(this.font, "Master password", cardX + 20, this.authFieldY - 10, -7035976, false);
       if (this.creatingVault && this.confirmField != null) {
-         context.drawText(this.textRenderer, "Confirm password", cardX + 20, this.authFieldY + 22 + 1, -7035976, false);
+         context.drawString(this.font, "Confirm password", cardX + 20, this.authFieldY + 22 + 1, -7035976, false);
       }
 
       if (this.creatingVault) {
-         context.drawText(
-            this.textRenderer, "Minimum 4 characters · never stored in plain text", cardX + 20, this.authCardY + this.authCardH - 14, -10193781, false
+         context.drawString(
+            this.font, "Minimum 4 characters · never stored in plain text", cardX + 20, this.authCardY + this.authCardH - 14, -10193781, false
          );
       }
    }
 
-   private void drawWrappedCentered(DrawContext context, String text, int x, int y, int maxW, int color) {
+   private void drawWrappedCentered(GuiGraphics context, String text, int x, int y, int maxW, int color) {
       if (text != null && !text.isBlank()) {
-         String trimmed = this.textRenderer.trimToWidth(text, maxW);
-         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(trimmed), x + maxW / 2, y, color);
+         String trimmed = this.font.plainSubstrByWidth(text, maxW);
+         context.drawCenteredString(this.font, Component.literal(trimmed), x + maxW / 2, y, color);
       }
    }
 
-   private void drawStatus(DrawContext context, boolean authMode) {
+   private void drawStatus(GuiGraphics context, boolean authMode) {
       if (!this.status.isBlank()) {
          int color = this.statusColor();
          int y = authMode ? this.authCardY + this.authCardH - 28 : this.height - 24;
-         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(this.status), this.width / 2, y, color);
+         context.drawCenteredString(this.font, Component.literal(this.status), this.width / 2, y, color);
       }
    }
 
@@ -360,7 +360,7 @@ public class ServerPasswordScreen extends Screen {
       this.authErrorShakeUntil = System.currentTimeMillis() + 420L;
    }
 
-   public boolean keyPressed(KeyInput input) {
+   public boolean keyPressed(KeyEvent input) {
       if (this.isAuthMode()) {
          int key = input.key();
          if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
@@ -377,21 +377,21 @@ public class ServerPasswordScreen extends Screen {
       return super.keyPressed(input);
    }
 
-   private void drawPanelHeader(DrawContext context) {
+   private void drawPanelHeader(GuiGraphics context) {
       int headerBottom = 54;
       context.fill(this.panelX + 1, 25, this.panelX + this.panelW - 1, headerBottom, UiTokens.argb(102, -15788246));
       context.fill(this.innerX, headerBottom - 1, this.innerX + this.innerW, headerBottom, UiTokens.argb(136, -15293622));
-      context.drawText(this.textRenderer, this.title.getString(), this.innerX, 35, -460036, false);
+      context.drawString(this.font, this.title.getString(), this.innerX, 35, -460036, false);
       String hint = "Profile: " + ServerPasswordManager.INSTANCE.currentProfileName();
-      int hintW = this.textRenderer.getWidth(hint);
-      context.drawText(this.textRenderer, hint, this.innerX + this.innerW - hintW, 35, -10193781, false);
+      int hintW = this.font.width(hint);
+      context.drawString(this.font, hint, this.innerX + this.innerW - hintW, 35, -10193781, false);
    }
 
-   private void drawSectionLabel(DrawContext context, String label, int y) {
-      context.drawText(this.textRenderer, label, this.innerX, y, -7035976, false);
+   private void drawSectionLabel(GuiGraphics context, String label, int y) {
+      context.drawString(this.font, label, this.innerX, y, -7035976, false);
    }
 
-   private void drawTable(DrawContext context) {
+   private void drawTable(GuiGraphics context) {
       int tableLeft = this.innerX;
       int tableRight = this.innerX + this.innerW;
       int tableBottom = this.tableBodyBottom;
@@ -412,8 +412,8 @@ public class ServerPasswordScreen extends Screen {
          int emptyTop = this.listTop;
          int emptyH = Math.max(28, tableBottom - emptyTop);
          context.fill(tableLeft, emptyTop, tableRight, emptyTop + emptyH, UiTokens.argb(51, -14800581));
-         context.drawCenteredTextWithShadow(
-            this.textRenderer, Text.literal("No saved servers yet"), tableLeft + this.innerW / 2, emptyTop + (emptyH - 8) / 2, -7035976
+         context.drawCenteredString(
+            this.font, Component.literal("No saved servers yet"), tableLeft + this.innerW / 2, emptyTop + (emptyH - 8) / 2, -7035976
          );
       } else {
          for (int i = 0; i < visibleRows; i++) {
@@ -449,7 +449,7 @@ public class ServerPasswordScreen extends Screen {
       }
    }
 
-   private void drawColumnGuides(DrawContext context, int top, int bottom) {
+   private void drawColumnGuides(GuiGraphics context, int top, int bottom) {
       int[] dividers = new int[]{this.table.userX() - 3, this.table.flagsX() - 3, this.table.pwdX() - 3, this.table.copyIpX() - 3, this.table.editX() - 3};
 
       for (int x : dividers) {
@@ -457,13 +457,13 @@ public class ServerPasswordScreen extends Screen {
       }
    }
 
-   private void drawHeaderCell(DrawContext context, String label, int x, int w, int y) {
-      context.drawText(this.textRenderer, label, x + 4, y, -3418655, false);
+   private void drawHeaderCell(GuiGraphics context, String label, int x, int w, int y) {
+      context.drawString(this.font, label, x + 4, y, -3418655, false);
    }
 
-   private void drawCellText(DrawContext context, String text, int x, int w, int y, int color) {
-      String shown = this.textRenderer.trimToWidth(text == null ? "" : text, Math.max(8, w - 8));
-      context.drawText(this.textRenderer, shown, x + 4, y, color, false);
+   private void drawCellText(GuiGraphics context, String text, int x, int w, int y, int color) {
+      String shown = this.font.plainSubstrByWidth(text == null ? "" : text, Math.max(8, w - 8));
+      context.drawString(this.font, shown, x + 4, y, color, false);
    }
 
    private void lockVault() {
@@ -473,11 +473,11 @@ public class ServerPasswordScreen extends Screen {
    }
 
    private void createVault() {
-      char[] pass = this.masterField.getText().toCharArray();
+      char[] pass = this.masterField.getValue().toCharArray();
       if (pass.length < 4) {
          this.status = "Master password must be at least 4 characters";
          this.shakeAuth();
-      } else if (this.confirmField != null && !this.masterField.getText().equals(this.confirmField.getText())) {
+      } else if (this.confirmField != null && !this.masterField.getValue().equals(this.confirmField.getValue())) {
          this.status = "Passwords do not match";
          this.shakeAuth();
          ServerPasswordVault.wipe(pass);
@@ -499,7 +499,7 @@ public class ServerPasswordScreen extends Screen {
    }
 
    private void unlockVault() {
-      char[] pass = this.masterField.getText().toCharArray();
+      char[] pass = this.masterField.getValue().toCharArray();
       if (pass.length == 0) {
          this.status = "Master password required";
          this.shakeAuth();
@@ -507,7 +507,7 @@ public class ServerPasswordScreen extends Screen {
       } else {
          if (ServerPasswordManager.INSTANCE.unlock(pass)) {
             this.status = "Vault unlocked";
-            this.masterField.setText("");
+            this.masterField.setValue("");
             this.init();
          } else {
             this.status = "Incorrect master password";
@@ -520,13 +520,13 @@ public class ServerPasswordScreen extends Screen {
 
    private void saveEntry() {
       try {
-         String host = ServerPasswordKeys.normalize(this.hostField.getText());
+         String host = ServerPasswordKeys.normalize(this.hostField.getValue());
          if (host.isBlank()) {
             this.status = "Server address required";
             return;
          }
 
-         if (this.passField.getText().isBlank()) {
+         if (this.passField.getValue().isBlank()) {
             this.status = "Password required";
             return;
          }
@@ -538,14 +538,14 @@ public class ServerPasswordScreen extends Screen {
             this.editingId == null ? 0L : this.editingId,
             host,
             profile,
-            this.hostField.getText().trim(),
-            this.userField.getText().trim(),
-            this.passField.getText(),
-            this.loginCmdField.getText().trim(),
-            this.registerCmdField.getText().trim(),
+            this.hostField.getValue().trim(),
+            this.userField.getValue().trim(),
+            this.passField.getValue(),
+            this.loginCmdField.getValue().trim(),
+            this.registerCmdField.getValue().trim(),
             this.autoLogin,
             this.autoRegister,
-            this.notesField.getText().trim(),
+            this.notesField.getValue().trim(),
             System.currentTimeMillis()
          );
          ServerPasswordManager.INSTANCE.saveVaultEntry(entry);
@@ -578,12 +578,12 @@ public class ServerPasswordScreen extends Screen {
    private void loadEntry(ServerPasswordEntry entry) {
       this.editingId = entry.id();
       this.editingProfile = entry.profileName();
-      this.hostField.setText(entry.hostKey());
-      this.userField.setText(entry.username() == null ? "" : entry.username());
-      this.passField.setText(entry.password());
-      this.loginCmdField.setText(entry.loginCommand());
-      this.registerCmdField.setText(entry.registerCommand());
-      this.notesField.setText(entry.notes() == null ? "" : entry.notes());
+      this.hostField.setValue(entry.hostKey());
+      this.userField.setValue(entry.username() == null ? "" : entry.username());
+      this.passField.setValue(entry.password());
+      this.loginCmdField.setValue(entry.loginCommand());
+      this.registerCmdField.setValue(entry.registerCommand());
+      this.notesField.setValue(entry.notes() == null ? "" : entry.notes());
       this.autoLogin = entry.autoLogin();
       this.autoRegister = entry.autoRegister();
       this.status = "Editing " + entry.hostKey();
@@ -593,37 +593,37 @@ public class ServerPasswordScreen extends Screen {
       this.editingId = null;
       this.editingProfile = null;
       if (this.hostField != null) {
-         this.hostField.setText("");
+         this.hostField.setValue("");
       }
 
       if (this.userField != null) {
-         this.userField.setText("");
+         this.userField.setValue("");
       }
 
       if (this.passField != null) {
-         this.passField.setText("");
+         this.passField.setValue("");
       }
 
       if (this.loginCmdField != null) {
-         this.loginCmdField.setText("login");
+         this.loginCmdField.setValue("login");
       }
 
       if (this.registerCmdField != null) {
-         this.registerCmdField.setText("register");
+         this.registerCmdField.setValue("register");
       }
 
       if (this.notesField != null) {
-         this.notesField.setText("");
+         this.notesField.setValue("");
       }
    }
 
    private void loginSelectedHost() {
-      String host = ServerPasswordKeys.normalize(this.hostField.getText());
+      String host = ServerPasswordKeys.normalize(this.hostField.getValue());
       if (host.isBlank()) {
          this.status = "Enter a server host first";
       } else {
          ServerPasswordManager.INSTANCE.findEntry(host).ifPresentOrElse(entry -> {
-            ServerPasswordManager.INSTANCE.sendAuthCommand(this.client, entry.loginCommand(), entry.username(), entry.password());
+            ServerPasswordManager.INSTANCE.sendAuthCommand(this.minecraft, entry.loginCommand(), entry.username(), entry.password());
             this.status = "Login command sent";
          }, () -> this.status = "No saved entry for that host");
       }
@@ -647,7 +647,7 @@ public class ServerPasswordScreen extends Screen {
    }
 
    private void addCopyFieldButton(int x, int y, Runnable action) {
-      this.addDrawableChild(new StylishButtonWidget(x, y, 22, 20, Text.literal("⎘"), action));
+      this.addRenderableWidget(new StylishButtonWidget(x, y, 22, 20, Component.literal("⎘"), action));
    }
 
    private void copyFieldText(String value, String label) {
@@ -677,8 +677,8 @@ public class ServerPasswordScreen extends Screen {
 
    private void copyToClipboard(String value, String label) {
       if (value != null && !value.isBlank()) {
-         if (this.client != null && this.client.keyboard != null) {
-            this.client.keyboard.setClipboard(value);
+         if (this.minecraft != null && this.minecraft.keyboardHandler != null) {
+            this.minecraft.keyboardHandler.setClipboard(value);
             this.status = "Copied " + label;
          }
       } else {
@@ -695,25 +695,25 @@ public class ServerPasswordScreen extends Screen {
    }
 
    private StylishTextFieldWidget addField(int x, int y, int w, String placeholder) {
-      StylishTextFieldWidget field = StylishTextFieldWidget.create(this.textRenderer, x, y, w, Text.literal(placeholder));
+      StylishTextFieldWidget field = StylishTextFieldWidget.create(this.font, x, y, w, Component.literal(placeholder));
       field.setPlaceholder(placeholder);
       field.setMaxLength(256);
-      return (StylishTextFieldWidget)this.addDrawableChild(field);
+      return (StylishTextFieldWidget)this.addRenderableWidget(field);
    }
 
    private StylishTextFieldWidget addStyledSecretField(int x, int y, int w, String placeholder) {
-      StylishTextFieldWidget field = StylishTextFieldWidget.create(this.textRenderer, x, y, w, AUTH_FIELD_H, Text.literal(placeholder));
+      StylishTextFieldWidget field = StylishTextFieldWidget.create(this.font, x, y, w, AUTH_FIELD_H, Component.literal(placeholder));
       field.setPlaceholder(placeholder);
       field.setMaxLength(256);
-      return this.addDrawableChild(field);
+      return this.addRenderableWidget(field);
    }
 
    private StylishTextFieldWidget addSecretField(int x, int y, int w, String placeholder) {
       return this.addField(x, y, w, placeholder);
    }
 
-   private static Text toggleLabel(String label, boolean on) {
-      return Text.literal(label + ": " + (on ? "ON" : "OFF"));
+   private static Component toggleLabel(String label, boolean on) {
+      return Component.literal(label + ": " + (on ? "ON" : "OFF"));
    }
 
    private String formatEntryUser(ServerPasswordEntry entry) {
@@ -743,7 +743,7 @@ public class ServerPasswordScreen extends Screen {
    }
 
    private String truncateToWidth(String value, int maxWidth) {
-      return value == null ? "" : this.textRenderer.trimToWidth(value, Math.max(8, maxWidth - 8));
+      return value == null ? "" : this.font.plainSubstrByWidth(value, Math.max(8, maxWidth - 8));
    }
 
    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {

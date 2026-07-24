@@ -1,7 +1,7 @@
 package com.dupeclient.client.module.packet.sniffer;
 
 import com.dupeclient.client.module.packet.PacketUtils;
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 import org.jetbrains.annotations.Nullable;
 
 public final class PacketSnifferEntry {

@@ -31,33 +31,32 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.recipe.NetworkRecipeId;
-import net.minecraft.screen.sync.ItemStackHash;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.network.HashedStack;
+import net.minecraft.network.chat.LastSeenMessages;
+import net.minecraft.network.chat.MessageSignature;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.Difficulty;
-import net.minecraft.util.Hand;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.world.GameMode;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.registry.Registry;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.util.Identifier;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.network.message.MessageSignatureData;
-import net.minecraft.network.message.LastSeenMessageList;
-import net.minecraft.registry.Registries;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.display.RecipeDisplayId;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 public final class PacketRecordCodec {
@@ -101,10 +100,10 @@ public final class PacketRecordCodec {
     }
 
     public static List<PacketFieldModel> describeType(String typeName) {
-        return PacketRecordCodec.describeType(typeName, MinecraftClient.getInstance());
+        return PacketRecordCodec.describeType(typeName, Minecraft.getInstance());
     }
 
-    public static List<PacketFieldModel> describeType(String typeName, @Nullable MinecraftClient client) {
+    public static List<PacketFieldModel> describeType(String typeName, @Nullable Minecraft client) {
         List<PacketFieldModel> move = PacketMoveCodec.describeType(typeName, client);
         if (!move.isEmpty()) {
             return move;
@@ -117,8 +116,8 @@ public final class PacketRecordCodec {
         if (clazz == null) {
             return List.of(new PacketFieldModel("type", "String", typeName, false, String.class));
         }
-        if (ClickSlotC2SPacket.class.isAssignableFrom(clazz)) {
-            return List.of(new PacketFieldModel("type", "String", typeName, false, String.class), new PacketFieldModel("syncId", "int", "0", true, Integer.TYPE), new PacketFieldModel("revision", "int", "0", true, Integer.TYPE), new PacketFieldModel("slot", "short", "0", true, Short.TYPE), new PacketFieldModel("button", "byte", "0", true, Byte.TYPE), new PacketFieldModel("actionType", "SlotActionType", SlotActionType.PICKUP.name(), true, SlotActionType.class));
+        if (ServerboundContainerClickPacket.class.isAssignableFrom(clazz)) {
+            return List.of(new PacketFieldModel("type", "String", typeName, false, String.class), new PacketFieldModel("syncId", "int", "0", true, Integer.TYPE), new PacketFieldModel("revision", "int", "0", true, Integer.TYPE), new PacketFieldModel("slot", "short", "0", true, Short.TYPE), new PacketFieldModel("button", "byte", "0", true, Byte.TYPE), new PacketFieldModel("actionType", "SlotActionType", ClickType.PICKUP.name(), true, ClickType.class));
         }
         List<PacketFieldModel> classDesc = PacketClassCodec.describeType(typeName, clazz, client);
         if (!classDesc.isEmpty()) {
@@ -159,7 +158,7 @@ public final class PacketRecordCodec {
         ArrayList<PacketFieldModel> rows = new ArrayList<PacketFieldModel>();
         rows.add(new PacketFieldModel("type", "String", type, false, String.class));
         if (PacketMoveCodec.supportsType(type)) {
-            for (PacketFieldModel template : PacketMoveCodec.describeType(type, MinecraftClient.getInstance())) {
+            for (PacketFieldModel template : PacketMoveCodec.describeType(type, Minecraft.getInstance())) {
                 if ("type".equals(template.name)) {
                     rows.add(template);
                     continue;
@@ -176,7 +175,7 @@ public final class PacketRecordCodec {
                 rows.add(new PacketFieldModel(template.name, template.typeName, normalized.getOrDefault(template.name, template.value), template.editable, template.valueType));
             }
         } else if (clazz != null && PacketClassCodec.supports(clazz)) {
-            for (PacketFieldModel template : PacketClassCodec.describeType(type, clazz, MinecraftClient.getInstance())) {
+            for (PacketFieldModel template : PacketClassCodec.describeType(type, clazz, Minecraft.getInstance())) {
                 if ("type".equals(template.name) || "note".equals(template.name)) {
                     if (!"type".equals(template.name)) continue;
                     rows.add(template);
@@ -273,7 +272,7 @@ public final class PacketRecordCodec {
     }
 
     private static boolean isEditableType(Class<?> type, @Nullable Type genericType) {
-        if (type == String.class || type == Integer.TYPE || type == Integer.class || type == Short.TYPE || type == Short.class || type == Byte.TYPE || type == Byte.class || type == Long.TYPE || type == Long.class || type == Float.TYPE || type == Float.class || type == Double.TYPE || type == Double.class || type == Boolean.TYPE || type == Boolean.class || type == UUID.class || type == Identifier.class || type == NetworkRecipeId.class || type == BlockHitResult.class || type == ItemStack.class || type == Instant.class || type == Vec3i.class || type == GameMode.class || type == Difficulty.class || type == NbtElement.class || type == MessageSignatureData.class || type == LastSeenMessageList.Acknowledgment.class || type.isEnum() || type == Hand.class || type == BlockPos.class || type == Direction.class || type == Vec3d.class || type == SlotActionType.class) {
+        if (type == String.class || type == Integer.TYPE || type == Integer.class || type == Short.TYPE || type == Short.class || type == Byte.TYPE || type == Byte.class || type == Long.TYPE || type == Long.class || type == Float.TYPE || type == Float.class || type == Double.TYPE || type == Double.class || type == Boolean.TYPE || type == Boolean.class || type == UUID.class || type == Identifier.class || type == RecipeDisplayId.class || type == BlockHitResult.class || type == ItemStack.class || type == Instant.class || type == Vec3i.class || type == GameType.class || type == Difficulty.class || type == Tag.class || type == MessageSignature.class || type == LastSeenMessages.Update.class || type.isEnum() || type == InteractionHand.class || type == BlockPos.class || type == Direction.class || type == Vec3.class || type == ClickType.class) {
             return true;
         }
         if (type.isArray()) {
@@ -294,7 +293,7 @@ public final class PacketRecordCodec {
                 ParameterizedType registryParam;
                 ParameterizedType parameterized = (ParameterizedType)genericType;
                 Type arg = parameterized.getActualTypeArguments()[0];
-                if (arg instanceof ParameterizedType && RegistryEntry.class.isAssignableFrom(PacketRecordCodec.erasure((registryParam = (ParameterizedType)arg).getRawType()))) {
+                if (arg instanceof ParameterizedType && Holder.class.isAssignableFrom(PacketRecordCodec.erasure((registryParam = (ParameterizedType)arg).getRawType()))) {
                     return true;
                 }
                 return PacketRecordCodec.isEditableType(PacketRecordCodec.erasure(arg), arg instanceof ParameterizedType ? (inner = (ParameterizedType)arg) : null);
@@ -338,7 +337,7 @@ public final class PacketRecordCodec {
     }
 
     public static String templateForType(String typeName) {
-        List<PacketFieldModel> move = PacketMoveCodec.describeType(typeName, MinecraftClient.getInstance());
+        List<PacketFieldModel> move = PacketMoveCodec.describeType(typeName, Minecraft.getInstance());
         if (!move.isEmpty()) {
             return PacketRecordCodec.buildEditable(move);
         }
@@ -350,10 +349,10 @@ public final class PacketRecordCodec {
         if (clazz == null) {
             return "type=" + typeName + "\n# Unknown packet type";
         }
-        if (ClickSlotC2SPacket.class.isAssignableFrom(clazz)) {
+        if (ServerboundContainerClickPacket.class.isAssignableFrom(clazz)) {
             return "type=ClickSlotC2SPacket\nsyncId=0\nrevision=0\nslot=0\nbutton=0\nactionType=PICKUP\n";
         }
-        List<PacketFieldModel> classDesc = PacketClassCodec.describeType(typeName, clazz, MinecraftClient.getInstance());
+        List<PacketFieldModel> classDesc = PacketClassCodec.describeType(typeName, clazz, Minecraft.getInstance());
         if (!classDesc.isEmpty()) {
             return PacketRecordCodec.buildEditable(classDesc);
         }
@@ -382,7 +381,7 @@ public final class PacketRecordCodec {
         if (clazz == null) {
             throw new PacketBuildException("Unknown packet type: " + type);
         }
-        if (ClickSlotC2SPacket.class.isAssignableFrom(clazz)) {
+        if (ServerboundContainerClickPacket.class.isAssignableFrom(clazz)) {
             return PacketRecordCodec.buildClickSlot(fields);
         }
         if (PacketMoveCodec.supportsType(type)) {
@@ -392,7 +391,7 @@ public final class PacketRecordCodec {
             return PacketChatCodec.build(PacketChatCodec.normalizeFields(fields));
         }
         if (PacketClassCodec.supports(clazz)) {
-            return PacketClassCodec.build(clazz, fields, MinecraftClient.getInstance());
+            return PacketClassCodec.build(clazz, fields, Minecraft.getInstance());
         }
         if (!clazz.isRecord()) {
             throw new PacketBuildException("Cannot build non-record packet: " + type);
@@ -422,20 +421,20 @@ public final class PacketRecordCodec {
         }
     }
 
-    public static ClickSlotC2SPacket refreshClickSlot(ClickSlotC2SPacket packet, MinecraftClient client) {
-        if (client == null || client.player == null || client.player.currentScreenHandler == null) {
+    public static ServerboundContainerClickPacket refreshClickSlot(ServerboundContainerClickPacket packet, Minecraft client) {
+        if (client == null || client.player == null || client.player.containerMenu == null) {
             return packet;
         }
-        return ClickSlotPackets.refresh(packet, client.player.currentScreenHandler);
+        return ClickSlotPackets.refresh(packet, client.player.containerMenu);
     }
 
-    private static ClickSlotC2SPacket buildClickSlot(Map<String, String> fields) throws PacketBuildException {
+    private static ServerboundContainerClickPacket buildClickSlot(Map<String, String> fields) throws PacketBuildException {
         int syncId = PacketRecordCodec.parseInt(fields, "syncId", 0);
         int revision = PacketRecordCodec.parseInt(fields, "revision", 0);
         int slot = PacketRecordCodec.parseInt(fields, "slot", 0);
         int button = PacketRecordCodec.parseLabeledInt("ClickSlotC2SPacket", "button", fields, "button", 0);
-        SlotActionType action = PacketRecordCodec.parseEnum(fields.get("actionType"), SlotActionType.class, SlotActionType.PICKUP);
-        return new ClickSlotC2SPacket(syncId, revision, (short)slot, (byte)button, action, (Int2ObjectMap)new Int2ObjectArrayMap(), ItemStackHash.EMPTY);
+        ClickType action = PacketRecordCodec.parseEnum(fields.get("actionType"), ClickType.class, ClickType.PICKUP);
+        return new ServerboundContainerClickPacket(syncId, revision, (short)slot, (byte)button, action, (Int2ObjectMap)new Int2ObjectArrayMap(), HashedStack.EMPTY);
     }
 
     private static Map<String, String> parseFields(String text) {
@@ -453,12 +452,12 @@ public final class PacketRecordCodec {
         if (value == null) {
             return "null";
         }
-        if (value instanceof MessageSignatureData) {
-            MessageSignatureData signature = (MessageSignatureData)value;
-            return PacketRecordCodec.encodeBytes(signature.data());
+        if (value instanceof MessageSignature) {
+            MessageSignature signature = (MessageSignature)value;
+            return PacketRecordCodec.encodeBytes(signature.bytes());
         }
-        if (value instanceof LastSeenMessageList.Acknowledgment) {
-            LastSeenMessageList.Acknowledgment acknowledgment = (LastSeenMessageList.Acknowledgment)value;
+        if (value instanceof LastSeenMessages.Update) {
+            LastSeenMessages.Update acknowledgment = (LastSeenMessages.Update)value;
             return PacketChatCodec.formatAcknowledgment(acknowledgment);
         }
         if (value instanceof Optional) {
@@ -484,8 +483,8 @@ public final class PacketRecordCodec {
             Identifier id = (Identifier)value;
             return id.toString();
         }
-        if (value instanceof NetworkRecipeId) {
-            NetworkRecipeId recipeId = (NetworkRecipeId)value;
+        if (value instanceof RecipeDisplayId) {
+            RecipeDisplayId recipeId = (RecipeDisplayId)value;
             return Integer.toString(recipeId.index());
         }
         if (value instanceof BlockHitResult) {
@@ -508,12 +507,12 @@ public final class PacketRecordCodec {
             byte[] bytes = (byte[])value;
             return PacketRecordCodec.encodeBytes(bytes);
         }
-        if (value instanceof NbtElement) {
-            NbtElement nbt = (NbtElement)value;
+        if (value instanceof Tag) {
+            Tag nbt = (Tag)value;
             return nbt.toString();
         }
-        if (value instanceof RegistryEntry<?> entry && entry.value() instanceof StatusEffect effect) {
-            return Registries.STATUS_EFFECT.getId(effect).toString();
+        if (value instanceof Holder<?> entry && entry.value() instanceof MobEffect effect) {
+            return BuiltInRegistries.MOB_EFFECT.getKey(effect).toString();
         }
         String registryEncoded = PacketRecordCodec.encodeRegistryValue(value);
         if (registryEncoded != null) {
@@ -575,8 +574,8 @@ public final class PacketRecordCodec {
         if (type == Identifier.class) {
             return PacketRecordCodec.parseIdentifier(value);
         }
-        if (type == NetworkRecipeId.class) {
-            return new NetworkRecipeId(Integer.parseInt(value));
+        if (type == RecipeDisplayId.class) {
+            return new RecipeDisplayId(Integer.parseInt(value));
         }
         if (type == BlockHitResult.class) {
             return PacketRecordCodec.parseBlockHitResult(value);
@@ -590,19 +589,19 @@ public final class PacketRecordCodec {
         if (type == Vec3i.class) {
             return PacketRecordCodec.parseVec3i(value);
         }
-        if (type == GameMode.class) {
-            return GameMode.valueOf((String)value.toUpperCase(Locale.ROOT));
+        if (type == GameType.class) {
+            return GameType.valueOf((String)value.toUpperCase(Locale.ROOT));
         }
         if (type == Difficulty.class) {
             return Difficulty.valueOf((String)value.toUpperCase(Locale.ROOT));
         }
-        if (type == NbtElement.class) {
+        if (type == Tag.class) {
             return PacketRecordCodec.parseNbt(value);
         }
-        if (type == MessageSignatureData.class) {
+        if (type == MessageSignature.class) {
             return PacketRecordCodec.parseMessageSignature(value);
         }
-        if (type == LastSeenMessageList.Acknowledgment.class) {
+        if (type == LastSeenMessages.Update.class) {
             return PacketRecordCodec.parseChatAcknowledgment(value);
         }
         if (Set.class.isAssignableFrom(type)) {
@@ -611,8 +610,8 @@ public final class PacketRecordCodec {
         if (type.isEnum()) {
             return PacketRecordCodec.parseEnumLoose(value, type);
         }
-        if (type == Hand.class) {
-            return Hand.valueOf((String)value.toUpperCase(Locale.ROOT));
+        if (type == InteractionHand.class) {
+            return InteractionHand.valueOf((String)value.toUpperCase(Locale.ROOT));
         }
         if (type == BlockPos.class) {
             return PacketRecordCodec.parseBlockPos(value);
@@ -620,11 +619,11 @@ public final class PacketRecordCodec {
         if (type == Direction.class) {
             return Direction.valueOf((String)value.toUpperCase(Locale.ROOT));
         }
-        if (type == Vec3d.class) {
+        if (type == Vec3.class) {
             return PacketRecordCodec.parseVec3d(value);
         }
-        if (type == SlotActionType.class) {
-            return SlotActionType.valueOf((String)value.toUpperCase(Locale.ROOT));
+        if (type == ClickType.class) {
+            return ClickType.valueOf((String)value.toUpperCase(Locale.ROOT));
         }
         Object registryValue = PacketRecordCodec.decodeRegistryValue(type, value);
         if (registryValue != null) {
@@ -730,7 +729,7 @@ public final class PacketRecordCodec {
             return Optional.empty();
         }
         Class<?> inner = PacketRecordCodec.elementType(genericType, String.class);
-        if (genericType instanceof ParameterizedType && RegistryEntry.class.isAssignableFrom(PacketRecordCodec.erasure((parameterized = (ParameterizedType)genericType).getActualTypeArguments()[0]))) {
+        if (genericType instanceof ParameterizedType && Holder.class.isAssignableFrom(PacketRecordCodec.erasure((parameterized = (ParameterizedType)genericType).getActualTypeArguments()[0]))) {
             return Optional.of(PacketRecordCodec.parseStatusEffectEntry(raw));
         }
         return Optional.of(PacketRecordCodec.decodeValue(inner, null, raw));
@@ -852,7 +851,7 @@ public final class PacketRecordCodec {
         throw new PacketBuildException("Could not parse BlockPos: " + value);
     }
 
-    private static Vec3d parseVec3d(String value) throws PacketBuildException {
+    private static Vec3 parseVec3d(String value) throws PacketBuildException {
         String cleaned = value.replace("Vec3d", "").replace("{", "").replace("}", "");
         String[] parts = cleaned.split("[,\\s]+");
         ArrayList<Double> nums = new ArrayList<Double>();
@@ -868,7 +867,7 @@ public final class PacketRecordCodec {
             }
         }
         if (nums.size() >= 3) {
-            return new Vec3d(((Double)nums.get(0)).doubleValue(), ((Double)nums.get(1)).doubleValue(), ((Double)nums.get(2)).doubleValue());
+            return new Vec3(((Double)nums.get(0)).doubleValue(), ((Double)nums.get(1)).doubleValue(), ((Double)nums.get(2)).doubleValue());
         }
         throw new PacketBuildException("Could not parse Vec3d: " + value);
     }
@@ -944,8 +943,8 @@ public final class PacketRecordCodec {
         if (type == UUID.class) {
             return "00000000-0000-0000-0000-000000000000";
         }
-        if (type == Hand.class) {
-            return Hand.MAIN_HAND.name();
+        if (type == InteractionHand.class) {
+            return InteractionHand.MAIN_HAND.name();
         }
         if (type == BlockPos.class) {
             return "0,0,0";
@@ -953,16 +952,16 @@ public final class PacketRecordCodec {
         if (type == Direction.class) {
             return Direction.UP.name();
         }
-        if (type == Vec3d.class) {
+        if (type == Vec3.class) {
             return "0.0,0.0,0.0";
         }
-        if (type == SlotActionType.class) {
-            return SlotActionType.PICKUP.name();
+        if (type == ClickType.class) {
+            return ClickType.PICKUP.name();
         }
         if (type == Identifier.class) {
             return "minecraft:stone";
         }
-        if (type == NetworkRecipeId.class) {
+        if (type == RecipeDisplayId.class) {
             return "0";
         }
         if (type == BlockHitResult.class) {
@@ -977,19 +976,19 @@ public final class PacketRecordCodec {
         if (type == Vec3i.class) {
             return "1,1,1";
         }
-        if (type == GameMode.class) {
-            return GameMode.SURVIVAL.name();
+        if (type == GameType.class) {
+            return GameType.SURVIVAL.name();
         }
         if (type == Difficulty.class) {
             return Difficulty.NORMAL.name();
         }
-        if (type == NbtElement.class) {
+        if (type == Tag.class) {
             return "{}";
         }
-        if (type == MessageSignatureData.class) {
+        if (type == MessageSignature.class) {
             return "null";
         }
-        if (type == LastSeenMessageList.Acknowledgment.class) {
+        if (type == LastSeenMessages.Update.class) {
             return PacketChatCodec.defaultAcknowledgmentText();
         }
         if (type.isArray() && type.getComponentType() == Byte.TYPE) {
@@ -1055,8 +1054,8 @@ public final class PacketRecordCodec {
     }
 
     private static String formatBlockHitResult(BlockHitResult hit) {
-        Vec3d pos = hit.getPos();
-        return hit.getBlockPos().getX() + "," + hit.getBlockPos().getY() + "," + hit.getBlockPos().getZ() + ";" + hit.getSide().name().toLowerCase(Locale.ROOT) + ";" + pos.x + "," + pos.y + "," + pos.z + ";" + hit.isInsideBlock();
+        Vec3 pos = hit.getLocation();
+        return hit.getBlockPos().getX() + "," + hit.getBlockPos().getY() + "," + hit.getBlockPos().getZ() + ";" + hit.getDirection().name().toLowerCase(Locale.ROOT) + ";" + pos.x + "," + pos.y + "," + pos.z + ";" + hit.isInside();
     }
 
     private static BlockHitResult parseBlockHitResult(String value) throws PacketBuildException {
@@ -1066,7 +1065,7 @@ public final class PacketRecordCodec {
         }
         BlockPos blockPos = PacketRecordCodec.parseBlockPos(parts[0].trim());
         Direction side = Direction.valueOf((String)parts[1].trim().toUpperCase(Locale.ROOT));
-        Vec3d hitPos = PacketRecordCodec.parseVec3d(parts[2].trim());
+        Vec3 hitPos = PacketRecordCodec.parseVec3d(parts[2].trim());
         boolean inside = Boolean.parseBoolean(parts[3].trim());
         return new BlockHitResult(hitPos, side, blockPos, inside);
     }
@@ -1075,7 +1074,7 @@ public final class PacketRecordCodec {
         if (stack == null || stack.isEmpty()) {
             return "minecraft:air";
         }
-        Identifier id = Registries.ITEM.getId(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (stack.getCount() <= 1) {
             return id.toString();
         }
@@ -1096,7 +1095,7 @@ public final class PacketRecordCodec {
             count = Integer.parseInt(tail);
             idPart = trimmed.substring(0, lastColon);
         }
-        item = Registries.ITEM.get(PacketRecordCodec.parseIdentifier(idPart));
+        item = BuiltInRegistries.ITEM.getValue(PacketRecordCodec.parseIdentifier(idPart));
         if (item == Items.AIR && !idPart.endsWith("air")) {
             throw new PacketBuildException("Unknown item: " + value);
         }
@@ -1104,15 +1103,15 @@ public final class PacketRecordCodec {
     }
 
     @Nullable
-    private static MessageSignatureData parseMessageSignature(String value) throws PacketBuildException {
+    private static MessageSignature parseMessageSignature(String value) throws PacketBuildException {
         String trimmed = value.trim();
         if (trimmed.isEmpty() || "null".equalsIgnoreCase(trimmed) || "unsigned".equalsIgnoreCase(trimmed)) {
             return null;
         }
-        return new MessageSignatureData(PacketRecordCodec.decodeHexBytes(trimmed));
+        return new MessageSignature(PacketRecordCodec.decodeHexBytes(trimmed));
     }
 
-    private static LastSeenMessageList.Acknowledgment parseChatAcknowledgment(String value) throws PacketBuildException {
+    private static LastSeenMessages.Update parseChatAcknowledgment(String value) throws PacketBuildException {
         String[] parts = value.split(";", 3);
         if (parts.length < 3) {
             throw new PacketBuildException("Acknowledgment expects offset;bits;checksum (e.g. 0;;1)");
@@ -1127,7 +1126,7 @@ public final class PacketRecordCodec {
             }
         }
         byte checksum = (byte)Integer.parseInt(parts[2].trim());
-        return new LastSeenMessageList.Acknowledgment(offset, acknowledged, checksum);
+        return new LastSeenMessages.Update(offset, acknowledged, checksum);
     }
 
     private static byte[] decodeHexBytes(String raw) throws PacketBuildException {
@@ -1143,9 +1142,9 @@ public final class PacketRecordCodec {
         return out;
     }
 
-    private static NbtElement parseNbt(String value) throws PacketBuildException {
+    private static Tag parseNbt(String value) throws PacketBuildException {
         try {
-            return StringNbtReader.readCompound((String)value);
+            return TagParser.parseCompoundFully((String)value);
         }
         catch (Exception e) {
             throw new PacketBuildException("Invalid NBT: " + e.getMessage());
@@ -1163,9 +1162,9 @@ public final class PacketRecordCodec {
         return sb.toString();
     }
 
-    private static RegistryEntry<StatusEffect> parseStatusEffectEntry(String raw) throws PacketBuildException {
+    private static Holder<MobEffect> parseStatusEffectEntry(String raw) throws PacketBuildException {
         Identifier id = PacketRecordCodec.parseIdentifier(raw);
-        return Registries.STATUS_EFFECT.getEntry(id).orElseThrow(() -> new PacketBuildException("Unknown status effect: " + raw));
+        return BuiltInRegistries.MOB_EFFECT.get(id).orElseThrow(() -> new PacketBuildException("Unknown status effect: " + raw));
     }
 
     private static Set<Object> decodeSet(@Nullable Type genericType, String raw) throws PacketBuildException {
@@ -1185,7 +1184,7 @@ public final class PacketRecordCodec {
         try {
             @SuppressWarnings("unchecked")
             Registry<Object> typed = (Registry<Object>) registry;
-            return Integer.toString(typed.getRawId(value));
+            return Integer.toString(typed.getId(value));
         }
         catch (RuntimeException ignored) {
             return null;
@@ -1202,14 +1201,14 @@ public final class PacketRecordCodec {
         try {
             if (trimmed.chars().allMatch(Character::isDigit) || trimmed.startsWith("-") && trimmed.length() > 1) {
                 int id = Integer.parseInt(trimmed);
-                Object value = registry.get(id);
+                Object value = registry.byId(id);
                 if (value == null) {
                     throw new PacketBuildException("Unknown registry id " + id + " for " + type.getSimpleName());
                 }
                 return value;
             }
             Identifier identifier = PacketRecordCodec.parseIdentifier(trimmed);
-            Object value = registry.get(identifier);
+            Object value = registry.getValue(identifier);
             if (value == null) {
                 throw new PacketBuildException("Unknown registry entry: " + trimmed);
             }
@@ -1229,7 +1228,7 @@ public final class PacketRecordCodec {
         if (cached != null) {
             return cached;
         }
-        for (Field field : Registries.class.getFields()) {
+        for (Field field : BuiltInRegistries.class.getFields()) {
             if (!Registry.class.isAssignableFrom(field.getType())) continue;
             try {
                 Registry registry = (Registry)field.get(null);

@@ -5,12 +5,6 @@ import com.dupeclient.client.module.fuzzer.economy.EconomyCommandDetector;
 import com.dupeclient.client.module.packet.FeatureHotkeyManager;
 import com.dupeclient.client.module.packet.command.CommandPacketSender;
 import com.dupeclient.client.module.security.SecurityManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -20,6 +14,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 public final class PayAllManager {
     public static final PayAllManager INSTANCE = new PayAllManager();
@@ -71,12 +70,12 @@ public final class PayAllManager {
         PayAllConfigManager.save(this.settings);
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null) {
             return;
         }
         tickPayment(client);
-        if (client.currentScreen == null && this.settings.excludeStaff && client.getWindow() != null) {
+        if (client.screen == null && this.settings.excludeStaff && client.getWindow() != null) {
             this.syncStaffExclusions(client);
         }
         if (client.getWindow() == null || InputFocusGuards.shouldBlockOverlayToggleHotkeys(client)) {
@@ -88,8 +87,8 @@ public final class PayAllManager {
         }
     }
 
-    private void tickPayment(MinecraftClient client) {
-        if (client.player == null || client.getNetworkHandler() == null) {
+    private void tickPayment(Minecraft client) {
+        if (client.player == null || client.getConnection() == null) {
             return;
         }
         if (phase == Phase.IDLE) {
@@ -143,7 +142,7 @@ public final class PayAllManager {
         this.moduleFeedback("Auto-exclude staff " + (enabled ? "on" : "off"));
     }
 
-    private void syncStaffExclusions(MinecraftClient client) {
+    private void syncStaffExclusions(Minecraft client) {
         if (!SecurityManager.INSTANCE.getSettings().staffDetectionEnabled) {
             return;
         }
@@ -181,37 +180,37 @@ public final class PayAllManager {
         if (!this.moduleChatFeedback) {
             return;
         }
-        sendHudLine(payAllPrefix().copy().append(Text.literal(message).formatted(Formatting.GRAY)));
+        sendHudLine(payAllPrefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 
     public void moduleFeedbackConfigToggle(String message) {
-        sendHudLine(payAllPrefix().copy().append(Text.literal(message).formatted(Formatting.GRAY)));
+        sendHudLine(payAllPrefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 
-    private static MutableText payAllPrefix() {
-        return Text.literal("[PayAll] ").formatted(Formatting.GOLD, Formatting.BOLD);
+    private static MutableComponent payAllPrefix() {
+        return Component.literal("[PayAll] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
     }
 
-    private void sendHudLine(Text line) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private void sendHudLine(Component line) {
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }
 
-    private void moduleFeedbackAsync(MinecraftClient client, String message) {
+    private void moduleFeedbackAsync(Minecraft client, String message) {
         if (!this.moduleChatFeedback || client == null) {
             return;
         }
-        MutableText line = payAllPrefix().copy().append(Text.literal(message).formatted(Formatting.GRAY));
+        MutableComponent line = payAllPrefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }
@@ -234,16 +233,16 @@ public final class PayAllManager {
         }
     }
 
-    public int getOnlineCount(MinecraftClient client) {
+    public int getOnlineCount(Minecraft client) {
         return resolveTargets(client).size();
     }
 
-    public List<String> getOnlineTabPlayerNames(MinecraftClient client) {
+    public List<String> getOnlineTabPlayerNames(Minecraft client) {
         List<String> names = new ArrayList<>();
-        if (client == null || client.getNetworkHandler() == null) {
+        if (client == null || client.getConnection() == null) {
             return names;
         }
-        for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+        for (PlayerInfo entry : client.getConnection().getOnlinePlayers()) {
             if (entry == null || entry.getProfile() == null) {
                 continue;
             }
@@ -332,11 +331,11 @@ public final class PayAllManager {
         }
     }
 
-    public List<String> getPayCommandOptions(MinecraftClient client) {
+    public List<String> getPayCommandOptions(Minecraft client) {
         return EconomyCommandDetector.payCommandOptions(client);
     }
 
-    public List<String> getBalanceCommandOptions(MinecraftClient client) {
+    public List<String> getBalanceCommandOptions(Minecraft client) {
         return EconomyCommandDetector.balanceCommandOptions(client);
     }
 
@@ -391,7 +390,7 @@ public final class PayAllManager {
         }
     }
 
-    public List<String> getIncludedTargetNames(MinecraftClient client) {
+    public List<String> getIncludedTargetNames(Minecraft client) {
         List<String> names = new ArrayList<>(resolveTargets(client));
         names.sort(String.CASE_INSENSITIVE_ORDER);
         return names;
@@ -427,8 +426,8 @@ public final class PayAllManager {
         }
     }
 
-    public boolean startPaying(MinecraftClient client, String amountSpec) {
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+    public boolean startPaying(Minecraft client, String amountSpec) {
+        if (client == null || client.player == null || client.getConnection() == null) {
             lastError = "Not connected.";
             return false;
         }
@@ -550,7 +549,7 @@ public final class PayAllManager {
     private void finishPayment(boolean cancelled) {
         if (!cancelled && phase == Phase.PAYING) {
             addLog("Payall finished.");
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             moduleFeedbackAsync(client, "PayAll finished.");
         } else if (cancelled) {
             addLog("Cancelled.");
@@ -565,7 +564,7 @@ public final class PayAllManager {
         pendingTargets = List.of();
     }
 
-    private List<String> resolveTargets(MinecraftClient client) {
+    private List<String> resolveTargets(Minecraft client) {
         Set<String> excluded;
         Set<String> manual;
         synchronized (stateLock) {
@@ -575,8 +574,8 @@ public final class PayAllManager {
         List<String> names = new ArrayList<>();
         if (!manual.isEmpty()) {
             names.addAll(manual);
-        } else if (client.getNetworkHandler() != null) {
-            for (PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+        } else if (client.getConnection() != null) {
+            for (PlayerInfo entry : client.getConnection().getOnlinePlayers()) {
                 if (entry.getProfile() == null) {
                     continue;
                 }

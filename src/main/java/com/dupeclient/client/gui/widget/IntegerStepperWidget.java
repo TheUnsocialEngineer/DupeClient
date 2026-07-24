@@ -1,12 +1,12 @@
 package com.dupeclient.client.gui.widget;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.IntConsumer;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.network.chat.Component;
 
 /**
  * Compact +/- integer control with a directly editable center field.
@@ -22,7 +22,7 @@ public final class IntegerStepperWidget {
     private final StylishButtonWidget plusButton;
 
     public IntegerStepperWidget(
-            TextRenderer textRenderer,
+            Font textRenderer,
             int x,
             int y,
             int width,
@@ -37,18 +37,18 @@ public final class IntegerStepperWidget {
         int valueX = x + buttonWidth + 3;
         int valueW = Math.max(24, width - (buttonWidth + 3) * 2);
 
-        minusButton = new StylishButtonWidget(x, y, buttonWidth, height, Text.literal("−"), () -> bump(-1, onChange));
-        valueField = new StylishTextFieldWidget(textRenderer, valueX, y, valueW, height, Text.empty());
+        minusButton = new StylishButtonWidget(x, y, buttonWidth, height, Component.literal("−"), () -> bump(-1, onChange));
+        valueField = new StylishTextFieldWidget(textRenderer, valueX, y, valueW, height, Component.empty());
         valueField.setMaxLength(11);
         valueField.setCentered(true);
-        valueField.setTextPredicate(IntegerStepperWidget::isPartialIntInput);
-        valueField.setText(Integer.toString(clamp(initial)));
-        valueField.setChangedListener(text -> {
+        valueField.setFilter(IntegerStepperWidget::isPartialIntInput);
+        valueField.setValue(Integer.toString(clamp(initial)));
+        valueField.setResponder(text -> {
             if (isCompleteInt(text)) {
                 int parsed = clamp(Integer.parseInt(text));
                 String shown = Integer.toString(parsed);
                 if (!shown.equals(text)) {
-                    valueField.setText(shown);
+                    valueField.setValue(shown);
                 }
                 if (onChange != null) {
                     onChange.accept(parsed);
@@ -56,10 +56,10 @@ public final class IntegerStepperWidget {
             }
         });
         plusButton = new StylishButtonWidget(
-                x + width - buttonWidth, y, buttonWidth, height, Text.literal("+"), () -> bump(1, onChange));
+                x + width - buttonWidth, y, buttonWidth, height, Component.literal("+"), () -> bump(1, onChange));
     }
 
-    public List<ClickableWidget> widgets() {
+    public List<AbstractWidget> widgets() {
         return List.of(minusButton, valueField, plusButton);
     }
 
@@ -68,7 +68,7 @@ public final class IntegerStepperWidget {
     }
 
     public int getValue() {
-        String text = valueField.getText().trim();
+        String text = valueField.getValue().trim();
         if (!isCompleteInt(text)) {
             return clamp(0);
         }
@@ -80,7 +80,7 @@ public final class IntegerStepperWidget {
     }
 
     public void setValue(int next) {
-        valueField.setText(Integer.toString(clamp(next)));
+        valueField.setValue(Integer.toString(clamp(next)));
     }
 
     private void bump(int delta, @Nullable IntConsumer onChange) {

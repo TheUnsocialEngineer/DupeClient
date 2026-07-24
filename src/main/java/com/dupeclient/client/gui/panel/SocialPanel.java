@@ -7,10 +7,10 @@ import com.dupeclient.client.core.session.SocialHubRules;
 import com.dupeclient.client.module.cape.DupeClientPresenceConfigManager;
 import com.dupeclient.client.module.cape.DupeClientPresenceSettings;
 import java.util.Locale;
-import net.minecraft.text.Text;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 public final class SocialPanel
@@ -19,7 +19,7 @@ extends Panel {
     private CaptureMode captureMode = CaptureMode.NONE;
 
     public SocialPanel(int x, int y) {
-        super("social", Text.literal("Social"), x, y, 268, 200);
+        super("social", Component.literal("Social"), x, y, 268, 200);
     }
 
     private static int contentHeight() {
@@ -27,22 +27,22 @@ extends Panel {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!SocialHubRules.socialUiAllowed()) {
             super.render(context, mouseX, mouseY, delta);
-            TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+            Font tr = Minecraft.getInstance().font;
             int cx = this.x + this.width / 2;
             int cy = this.y + this.height / 2 - 14;
-            context.drawCenteredTextWithShadow(tr, Text.literal("Social features are unavailable."), cx, cy, -7363656);
-            context.drawCenteredTextWithShadow(tr, Text.literal(SocialHubRules.blockReason()), cx, cy + 12, -10193781);
+            context.drawCenteredString(tr, Component.literal("Social features are unavailable."), cx, cy, -7363656);
+            context.drawCenteredString(tr, Component.literal(SocialHubRules.blockReason()), cx, cy + 12, -10193781);
             return;
         }
         super.render(context, mouseX, mouseY, delta);
         if (this.collapsed) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        TextRenderer tr = mc.textRenderer;
+        Minecraft mc = Minecraft.getInstance();
+        Font tr = mc.font;
         DupeClientPresenceSettings s = DupeClientPresenceConfigManager.get();
         int tx = this.x + 16;
         int ty = this.y + this.bodyTopOffset() + 8;
@@ -62,7 +62,7 @@ extends Panel {
         UiComponents.drawPillKeybind(tr, context, rx, lineY += 30, inner, 20, "Open Social hotkey", keyText, listen);
         this.height = this.bodyTopOffset() + 8 + sectionH + 12;
         if (this.captureMode != CaptureMode.NONE) {
-            context.drawTextWithShadow(tr, Text.literal("Press key for Social screen (ESC = unbind)"), rx, this.y + this.height - 11, -14217);
+            context.drawString(tr, Component.literal("Press key for Social screen (ESC = unbind)"), rx, this.y + this.height - 11, -14217);
         }
     }
 
@@ -105,7 +105,7 @@ extends Panel {
             return true;
         }
         if (SocialPanel.rect(mouseX, mouseY, rx, lineY += 30, inner, 22)) {
-            IngameUiRouter.openSocial(MinecraftClient.getInstance().currentScreen);
+            IngameUiRouter.openSocial(Minecraft.getInstance().screen);
             return true;
         }
         if (this.clickBindValue(mouseX, mouseY, rx, lineY += 30, inner)) {

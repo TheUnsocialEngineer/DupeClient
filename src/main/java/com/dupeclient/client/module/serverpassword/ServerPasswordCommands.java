@@ -3,8 +3,8 @@ package com.dupeclient.client.module.serverpassword;
 import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 public final class ServerPasswordCommands {
     private ServerPasswordCommands() {
@@ -14,7 +14,7 @@ public final class ServerPasswordCommands {
         dispatcher.register(ClientCommandManager.literal("vault")
                 .then(ClientCommandManager.literal("save").executes(ctx -> {
                     if (!ServerPasswordManager.INSTANCE.isUnlocked()) {
-                        ctx.getSource().sendFeedback(Text.literal("Unlock the vault first.").formatted(Formatting.RED));
+                        ctx.getSource().sendFeedback(Component.literal("Unlock the vault first.").withStyle(ChatFormatting.RED));
                         return 0;
                     }
                     ServerPasswordManager.INSTANCE.confirmPendingSave();
@@ -26,15 +26,15 @@ public final class ServerPasswordCommands {
                 }))
                 .then(ClientCommandManager.literal("lock").executes(ctx -> {
                     if (!ServerPasswordManager.INSTANCE.isVaultInitialized()) {
-                        ctx.getSource().sendFeedback(Text.literal("Vault is not initialized.").formatted(Formatting.RED));
+                        ctx.getSource().sendFeedback(Component.literal("Vault is not initialized.").withStyle(ChatFormatting.RED));
                         return 0;
                     }
                     ServerPasswordManager.INSTANCE.lock();
-                    ctx.getSource().sendFeedback(Text.literal("Vault locked.").formatted(Formatting.YELLOW));
+                    ctx.getSource().sendFeedback(Component.literal("Vault locked.").withStyle(ChatFormatting.YELLOW));
                     return 1;
                 }))
                 .executes(ctx -> {
-                    ctx.getSource().sendFeedback(Text.literal("Vault: /vault save | dismiss | lock").formatted(Formatting.GRAY));
+                    ctx.getSource().sendFeedback(Component.literal("Vault: /vault save | dismiss | lock").withStyle(ChatFormatting.GRAY));
                     return 1;
                 }));
     }

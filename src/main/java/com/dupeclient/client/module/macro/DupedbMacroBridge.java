@@ -3,12 +3,11 @@ package com.dupeclient.client.module.macro;
 import com.dupeclient.client.gui.MacroEditorScreen;
 import com.dupeclient.client.module.macro.graph.MacroGraphCompiler;
 import com.dupeclient.client.module.dupedb.DupedbManager;
-import net.minecraft.client.MinecraftClient;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import net.minecraft.client.Minecraft;
 
 public final class DupedbMacroBridge {
     private DupedbMacroBridge() {
@@ -62,7 +61,7 @@ public final class DupedbMacroBridge {
             return "";
         }
         MacroQuickPlay.markDirty();
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             mc.execute(() -> MacroEditorScreen.open(mc, id));
         }

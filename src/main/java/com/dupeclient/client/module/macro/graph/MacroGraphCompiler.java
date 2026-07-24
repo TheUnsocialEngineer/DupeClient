@@ -8,11 +8,6 @@ import com.dupeclient.client.module.macro.MacroPromptParser;
 import com.dupeclient.client.module.macro.MacroSlotActions;
 import com.dupeclient.client.module.macro.MacroStep;
 import com.dupeclient.client.module.macro.MacroStepType;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +19,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * Builds a linear run list from either legacy {@link MacroDefinition#steps} or a node graph.
@@ -1051,7 +1051,7 @@ public final class MacroGraphCompiler {
                     out.add("Wait look (block) node \"" + n.id + "\": set a block id (crosshair block must match).");
                 } else {
                     Identifier bid = MacroAutomation.parseItemId(n.blockCustomId);
-                    if (bid == null || Registries.BLOCK.get(bid) == null || Registries.BLOCK.get(bid) == Blocks.AIR) {
+                    if (bid == null || BuiltInRegistries.BLOCK.getValue(bid) == null || BuiltInRegistries.BLOCK.getValue(bid) == Blocks.AIR) {
                         out.add("Wait look (block) node \"" + n.id + "\": unknown block id \"" + n.blockCustomId + "\".");
                     }
                 }
@@ -1061,7 +1061,7 @@ public final class MacroGraphCompiler {
                     out.add("Wait look (entity) node \"" + n.id + "\": set an entity type id (crosshair entity must match).");
                 } else {
                     Identifier eid = MacroAutomation.parseItemId(n.entityTypeId);
-                    EntityType<?> et = eid == null ? null : Registries.ENTITY_TYPE.get(eid);
+                    EntityType<?> et = eid == null ? null : BuiltInRegistries.ENTITY_TYPE.getValue(eid);
                     if (et == null) {
                         out.add("Wait look (entity) node \"" + n.id + "\": unknown entity type id \"" + n.entityTypeId + "\".");
                     }

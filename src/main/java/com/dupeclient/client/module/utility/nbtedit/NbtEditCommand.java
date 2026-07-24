@@ -4,10 +4,10 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 
 public final class NbtEditCommand {
     private NbtEditCommand() {
@@ -20,12 +20,12 @@ public final class NbtEditCommand {
     }
 
     private static int open(CommandContext<FabricClientCommandSource> ctx) {
-        MinecraftClient client = ctx.getSource().getClient();
-        if (client.player == null || client.world == null) {
+        Minecraft client = ctx.getSource().getClient();
+        if (client.player == null || client.level == null) {
             feedback(ctx, "Not in world.");
             return 0;
         }
-        ItemStack held = client.player.getMainHandStack();
+        ItemStack held = client.player.getMainHandItem();
         if (held.isEmpty()) {
             feedback(ctx, "Hold an item in your main hand.");
             return 0;
@@ -37,7 +37,7 @@ public final class NbtEditCommand {
     }
 
     private static void feedback(CommandContext<FabricClientCommandSource> ctx, String message) {
-        ctx.getSource().sendFeedback(Text.literal("[NBT Edit] ").formatted(Formatting.GOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY)));
+        ctx.getSource().sendFeedback(Component.literal("[NBT Edit] ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 }

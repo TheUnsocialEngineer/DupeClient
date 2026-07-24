@@ -3,14 +3,6 @@ package com.dupeclient.client.module.hud;
 import com.dupeclient.client.DupeClient;
 import com.dupeclient.client.core.LookTargetUtil;
 import com.dupeclient.client.core.LookTargetUtil;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -22,6 +14,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 public final class HudManager {
     public static final HudManager INSTANCE = new HudManager();
@@ -147,7 +146,7 @@ public final class HudManager {
         HudConfigManager.save(out);
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null || client.getWindow() == null) {
             bindWasDown = false;
             return;
@@ -168,7 +167,7 @@ public final class HudManager {
             bindWasDown = false;
             return;
         }
-        long win = client.getWindow().getHandle();
+        long win = client.getWindow().handle();
         if (!modsSatisfied(win, settings.bindMods)) {
             bindWasDown = false;
             return;
@@ -181,18 +180,18 @@ public final class HudManager {
         bindWasDown = down;
     }
 
-    public void render(DrawContext context) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    public void render(GuiGraphics context) {
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null || client.options == null) {
             return;
         }
         if (!active) {
             return;
         }
-        if (settings.hideInMenus && client.currentScreen != null) {
+        if (settings.hideInMenus && client.screen != null) {
             return;
         }
-        if (client.options.hudHidden || client.getDebugHud().shouldShowDebugHud()) {
+        if (client.options.hideGui || client.getDebugOverlay().showDebugScreen()) {
             return;
         }
         for (HudElementState st : activeElements) {
@@ -213,13 +212,13 @@ public final class HudManager {
             // Match the editor visuals: soft box + white text, no color cycling.
             context.fill(x - 1, y - 1, x + size[0] + 1, y + size[1] + 1, 0x664B6AA8);
             context.fill(x, y, x + size[0], y + size[1], 0x33223555);
-            drawScaledText(context, client.textRenderer, text, x, y, 0xFFFFFFFF);
+            drawScaledText(context, client.font, text, x, y, 0xFFFFFFFF);
         }
     }
 
-    public int[] measureElement(HudElementState st, MinecraftClient client) {
+    public int[] measureElement(HudElementState st, Minecraft client) {
         HudElementDefinition def = st == null ? null : defs.get(st.id);
-        if (def == null || client == null || client.textRenderer == null) {
+        if (def == null || client == null || client.font == null) {
             measureScratch[0] = 0;
             measureScratch[1] = 0;
             return measureScratch;
@@ -229,8 +228,8 @@ public final class HudManager {
             text = "";
         }
         float sc = (float) settings.textScale;
-        measureScratch[0] = Math.round(client.textRenderer.getWidth(text) * sc);
-        measureScratch[1] = Math.round(client.textRenderer.fontHeight * sc);
+        measureScratch[0] = Math.round(client.font.width(text) * sc);
+        measureScratch[1] = Math.round(client.font.lineHeight * sc);
         return measureScratch;
     }
 
@@ -245,22 +244,22 @@ public final class HudManager {
         return sum / tpsSamples.size();
     }
 
-    private void drawScaledText(DrawContext context, TextRenderer tr, String text, int x, int y, int color) {
+    private void drawScaledText(GuiGraphics context, Font tr, String text, int x, int y, int color) {
         float scale = (float) settings.textScale;
-        context.getMatrices().pushMatrix();
-        context.getMatrices().translate(x, y);
-        context.getMatrices().scale(scale, scale);
-        context.drawTextWithShadow(tr, text, 0, 0, color);
-        context.getMatrices().popMatrix();
+        context.pose().pushMatrix();
+        context.pose().translate(x, y);
+        context.pose().scale(scale, scale);
+        context.drawString(tr, text, 0, 0, color);
+        context.pose().popMatrix();
     }
 
-    private static int anchoredX(HudElementState st, int widthPx, MinecraftClient client) {
-        int screenW = client.getWindow().getScaledWidth();
+    private static int anchoredX(HudElementState st, int widthPx, Minecraft client) {
+        int screenW = client.getWindow().getGuiScaledWidth();
         return st.x >= 0 ? st.x : screenW + st.x - widthPx;
     }
 
-    private static int anchoredY(HudElementState st, int heightPx, MinecraftClient client) {
-        int screenH = client.getWindow().getScaledHeight();
+    private static int anchoredY(HudElementState st, int heightPx, Minecraft client) {
+        int screenH = client.getWindow().getGuiScaledHeight();
         return st.y >= 0 ? st.y : screenH + st.y - heightPx;
     }
 
@@ -292,19 +291,19 @@ public final class HudManager {
         defs.put("watermark", new HudElementDefinition("watermark", "Watermark", 4, 4,
                 (client, hud) -> "DupeClient " + DupeClient.BUILD_TAG));
         defs.put("fps", new HudElementDefinition("fps", "FPS", 4, 16,
-                (client, hud) -> "FPS: " + client.getCurrentFps()));
+                (client, hud) -> "FPS: " + client.getFps()));
         defs.put("tps", new HudElementDefinition("tps", "TPS", 4, 28,
                 (client, hud) -> "TPS: " + String.format(Locale.US, "%.1f", hud.averageTps())));
         defs.put("ping", new HudElementDefinition("ping", "Ping", 4, 40,
                 (client, hud) -> {
-                    PlayerListEntry e = client.player == null || client.getNetworkHandler() == null
+                    PlayerInfo e = client.player == null || client.getConnection() == null
                             ? null
-                            : client.getNetworkHandler().getPlayerListEntry(client.player.getUuid());
+                            : client.getConnection().getPlayerInfo(client.player.getUUID());
                     return "Ping: " + (e == null ? "-" : e.getLatency()) + " ms";
                 }));
         defs.put("speed", new HudElementDefinition("speed", "Speed", 4, 52,
                 (client, hud) -> {
-                    Vec3d v = client.player == null ? Vec3d.ZERO : client.player.getVelocity();
+                    Vec3 v = client.player == null ? Vec3.ZERO : client.player.getDeltaMovement();
                     double bps = Math.sqrt(v.x * v.x + v.z * v.z) * 20.0;
                     return "Speed: " + String.format(Locale.US, "%.2f b/s", bps);
                 }));
@@ -316,7 +315,7 @@ public final class HudManager {
         defs.put("position", new HudElementDefinition("position", "Position", -4, -4,
                 (client, hud) -> {
                     if (client.player == null) return "Pos: -";
-                    BlockPos p = client.player.getBlockPos();
+                    BlockPos p = client.player.blockPosition();
                     return "Pos: " + p.getX() + " " + p.getY() + " " + p.getZ();
                 }));
         defs.put("opposite_position", new HudElementDefinition("opposite_position", "Opposite Position", -4, -16,
@@ -324,7 +323,7 @@ public final class HudManager {
                     if (client.player == null) return "Nether Pos: -";
                     double px = client.player.getX();
                     double pz = client.player.getZ();
-                    boolean inNether = client.world != null && World.NETHER.equals(client.world.getRegistryKey());
+                    boolean inNether = client.level != null && Level.NETHER.equals(client.level.dimension());
                     double k = inNether ? 8.0 : 0.125;
                     return "Nether Pos: " + (int) Math.floor(px * k) + " " + (int) Math.floor(pz * k);
                 }));
@@ -332,8 +331,8 @@ public final class HudManager {
                 (client, hud) -> {
                     if (client.player == null) return "Rot: -";
                     return "Rot: "
-                            + String.format(Locale.US, "%.1f", client.player.getYaw()) + " "
-                            + String.format(Locale.US, "%.1f", client.player.getPitch());
+                            + String.format(Locale.US, "%.1f", client.player.getYRot()) + " "
+                            + String.format(Locale.US, "%.1f", client.player.getXRot());
                 }));
     }
 

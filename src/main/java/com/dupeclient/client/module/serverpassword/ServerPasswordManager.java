@@ -1,19 +1,18 @@
 package com.dupeclient.client.module.serverpassword;
 
 import com.dupeclient.client.DupeClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 
 public final class ServerPasswordManager {
     public static final ServerPasswordManager INSTANCE = new ServerPasswordManager();
@@ -39,7 +38,7 @@ public final class ServerPasswordManager {
         settings = database.loadSettings();
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null || client.player == null || !isUnlocked()) {
             return;
         }
@@ -51,7 +50,7 @@ public final class ServerPasswordManager {
         }
     }
 
-    public void onSessionJoined(MinecraftClient client) {
+    public void onSessionJoined(Minecraft client) {
         registerAttemptedThisSession = false;
         sessionRegisterFormat = RegisterFormat.PASSWORD_REPEAT;
         loginDelayTicks = 0;
@@ -87,7 +86,7 @@ public final class ServerPasswordManager {
         AuthCommandDetector.parse(raw).ifPresent(this::handleDetectedAuthCommand);
     }
 
-    public void onIncomingChatLine(MinecraftClient client, String line) {
+    public void onIncomingChatLine(Minecraft client, String line) {
         if (client == null || line == null) {
             return;
         }
@@ -165,7 +164,7 @@ public final class ServerPasswordManager {
     }
 
     private String requireCurrentProfile() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         String profile = VaultInputValidator.requireProfileName(playerName(client));
         if (profile.isEmpty()) {
             throw new VaultInputException("No logged-in Minecraft profile");
@@ -277,10 +276,10 @@ public final class ServerPasswordManager {
                 VaultInputValidator.sanitizeUsername(save.username());
             }
             saveDetectedPassword(save);
-            notifyPlayer(Text.literal("Saved password for " + pendingSave.hostKey()).formatted(Formatting.GREEN));
+            notifyPlayer(Component.literal("Saved password for " + pendingSave.hostKey()).withStyle(ChatFormatting.GREEN));
         } catch (Exception ex) {
             DupeClient.LOGGER.error("Failed to save pending password", ex);
-            notifyPlayer(Text.literal("Failed to save password.").formatted(Formatting.RED));
+            notifyPlayer(Component.literal("Failed to save password.").withStyle(ChatFormatting.RED));
         } finally {
             pendingSave = null;
             pendingHostKey = null;
@@ -290,22 +289,22 @@ public final class ServerPasswordManager {
     public void dismissPendingSave() {
         pendingSave = null;
         pendingHostKey = null;
-        notifyPlayer(Text.literal("Password not saved.").formatted(Formatting.GRAY));
+        notifyPlayer(Component.literal("Password not saved.").withStyle(ChatFormatting.GRAY));
     }
 
-    public static String currentHostKey(MinecraftClient client) {
+    public static String currentHostKey(Minecraft client) {
         if (client == null) {
             return null;
         }
-        if (client.getCurrentServerEntry() != null && client.getCurrentServerEntry().address != null) {
-            String normalized = ServerPasswordKeys.normalize(client.getCurrentServerEntry().address);
+        if (client.getCurrentServer() != null && client.getCurrentServer().ip != null) {
+            String normalized = ServerPasswordKeys.normalize(client.getCurrentServer().ip);
             if (!normalized.isBlank()) {
                 return normalized;
             }
         }
-        if (client.getNetworkHandler() != null && client.getNetworkHandler().getConnection() != null
-                && client.getNetworkHandler().getConnection().getAddress() != null) {
-            String raw = client.getNetworkHandler().getConnection().getAddress().toString();
+        if (client.getConnection() != null && client.getConnection().getConnection() != null
+                && client.getConnection().getConnection().getRemoteAddress() != null) {
+            String raw = client.getConnection().getConnection().getRemoteAddress().toString();
             if (raw != null) {
                 raw = raw.replaceFirst("^/", "").trim();
                 String normalized = ServerPasswordKeys.normalize(raw);
@@ -317,15 +316,15 @@ public final class ServerPasswordManager {
         return null;
     }
 
-    public static String playerName(MinecraftClient client) {
-        if (client == null || client.getSession() == null) {
+    public static String playerName(Minecraft client) {
+        if (client == null || client.getUser() == null) {
             return "";
         }
-        return client.getSession().getUsername();
+        return client.getUser().getName();
     }
 
     private void handleDetectedAuthCommand(AuthCommandDetector.ParsedAuthCommand cmd) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
@@ -339,8 +338,8 @@ public final class ServerPasswordManager {
             sessionRegisterFormat = cmd.registerFormat();
         }
         if (!isUnlocked()) {
-            notifyPlayer(Text.literal("Unlock the password vault to save server passwords (credentials remembered for this session).")
-                    .formatted(Formatting.YELLOW));
+            notifyPlayer(Component.literal("Unlock the password vault to save server passwords (credentials remembered for this session).")
+                    .withStyle(ChatFormatting.YELLOW));
             return;
         }
         Optional<ServerPasswordEntry> existing = database.findByHost(requireSession(), host, requireCurrentProfile());
@@ -373,13 +372,13 @@ public final class ServerPasswordManager {
         }
         pendingHostKey = host;
         pendingSave = new PendingSave(host, username, cmd.password(), cmd.type());
-        MutableText save = Text.literal("[Save]").formatted(Formatting.GREEN, Formatting.BOLD)
-                .styled(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault save"))
-                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("Save this password to the vault"))));
-        MutableText dismiss = Text.literal("[Dismiss]").formatted(Formatting.RED)
-                .styled(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault dismiss"))
-                        .withHoverEvent(new HoverEvent.ShowText(Text.literal("Do not save"))));
-        notifyPlayer(Text.literal("Save " + cmd.commandLabel() + " password for " + host + "? ").append(save).append(Text.literal(" ")).append(dismiss));
+        MutableComponent save = Component.literal("[Save]").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
+                .withStyle(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault save"))
+                        .withHoverEvent(new HoverEvent.ShowText(Component.literal("Save this password to the vault"))));
+        MutableComponent dismiss = Component.literal("[Dismiss]").withStyle(ChatFormatting.RED)
+                .withStyle(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault dismiss"))
+                        .withHoverEvent(new HoverEvent.ShowText(Component.literal("Do not save"))));
+        notifyPlayer(Component.literal("Save " + cmd.commandLabel() + " password for " + host + "? ").append(save).append(Component.literal(" ")).append(dismiss));
     }
 
     private void saveDetectedPassword(PendingSave save) throws Exception {
@@ -414,9 +413,9 @@ public final class ServerPasswordManager {
         database.upsertEntry(requireSession(), entry);
     }
 
-    private void tryAutoLogin(MinecraftClient client) {
+    private void tryAutoLogin(Minecraft client) {
         String host = currentHostKey(client);
-        if (host == null || client.player == null || client.getNetworkHandler() == null) {
+        if (host == null || client.player == null || client.getConnection() == null) {
             return;
         }
         database.findByHost(requireSession(), host, requireCurrentProfile()).ifPresent(entry -> {
@@ -424,11 +423,11 @@ public final class ServerPasswordManager {
                 return;
             }
             sendAuthCommand(client, entry.loginCommand(), entry.username(), entry.password());
-            notifyPlayer(Text.literal("Auto-login sent for " + host).formatted(Formatting.DARK_AQUA));
+            notifyPlayer(Component.literal("Auto-login sent for " + host).withStyle(ChatFormatting.DARK_AQUA));
         });
     }
 
-    private void attemptAutoRegister(MinecraftClient client, String host) {
+    private void attemptAutoRegister(Minecraft client, String host) {
         if (!settings.autoGeneratePassword()) {
             return;
         }
@@ -452,15 +451,15 @@ public final class ServerPasswordManager {
         sendRegister(client, "register", format, identity, password);
         if (saved) {
             if (ServerAuthCommands.usesRegisterEmail(format)) {
-                notifyPlayer(Text.literal("Auto-register sent for " + host + " with " + identity + " (saved to vault).")
-                        .formatted(Formatting.GREEN));
+                notifyPlayer(Component.literal("Auto-register sent for " + host + " with " + identity + " (saved to vault).")
+                        .withStyle(ChatFormatting.GREEN));
             } else {
-                notifyPlayer(Text.literal("Auto-register sent for " + host + " (password saved to vault).")
-                        .formatted(Formatting.GREEN));
+                notifyPlayer(Component.literal("Auto-register sent for " + host + " (password saved to vault).")
+                        .withStyle(ChatFormatting.GREEN));
             }
         } else {
-            notifyPlayer(Text.literal("Auto-register sent for " + host + ". Unlock the vault to save the password.")
-                    .formatted(Formatting.YELLOW));
+            notifyPlayer(Component.literal("Auto-register sent for " + host + ". Unlock the vault to save the password.")
+                    .withStyle(ChatFormatting.YELLOW));
         }
     }
 
@@ -497,24 +496,24 @@ public final class ServerPasswordManager {
         database.upsertEntry(requireSession(), entry);
     }
 
-    public void sendAuthCommand(MinecraftClient client, String command, String username, String password) {
-        if (client == null || client.getNetworkHandler() == null) {
+    public void sendAuthCommand(Minecraft client, String command, String username, String password) {
+        if (client == null || client.getConnection() == null) {
             return;
         }
         try {
-            client.getNetworkHandler().sendChatCommand(
+            client.getConnection().sendCommand(
                     ServerAuthCommands.buildLogin(command, username, password).substring(1));
         } catch (VaultInputException ex) {
             DupeClient.LOGGER.warn("Blocked unsafe auth command: {}", ex.getMessage());
         }
     }
 
-    private void sendRegister(MinecraftClient client, String command, RegisterFormat format, String identity, String password) {
-        if (client == null || client.getNetworkHandler() == null) {
+    private void sendRegister(Minecraft client, String command, RegisterFormat format, String identity, String password) {
+        if (client == null || client.getConnection() == null) {
             return;
         }
         try {
-            client.getNetworkHandler().sendChatCommand(
+            client.getConnection().sendCommand(
                     ServerAuthCommands.buildRegister(command, format, identity, password).substring(1));
         } catch (VaultInputException ex) {
             DupeClient.LOGGER.warn("Blocked unsafe register command: {}", ex.getMessage());
@@ -547,7 +546,7 @@ public final class ServerPasswordManager {
     private static final Pattern ANNOUNCED_PASSWORD = Pattern.compile(
             "(?i)(?:tried auto registering with password|password(?:\\s+is)?|passwd(?:\\s+is)?)[:\\s]+\\**([\\w!@#$%^&*._-]{4,256})\\**");
 
-    private void trySaveFromAuthFeedback(MinecraftClient client, String line, String lower) {
+    private void trySaveFromAuthFeedback(Minecraft client, String line, String lower) {
         Optional<String> announced = extractAnnouncedPassword(line);
         announced.ifPresent(password -> {
             String host = currentHostKey(client);
@@ -605,14 +604,14 @@ public final class ServerPasswordManager {
             if (existing.isEmpty() && settings.promptOnAuth() && !autoCommit) {
                 pendingHostKey = host;
                 pendingSave = new PendingSave(host, username, password, type);
-                MutableText save = Text.literal("[Save]").formatted(Formatting.GREEN, Formatting.BOLD)
-                        .styled(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault save"))
-                                .withHoverEvent(new HoverEvent.ShowText(Text.literal("Save this password to the vault"))));
-                MutableText dismiss = Text.literal("[Dismiss]").formatted(Formatting.RED)
-                        .styled(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault dismiss"))
-                                .withHoverEvent(new HoverEvent.ShowText(Text.literal("Do not save"))));
-                notifyPlayer(Text.literal("Save " + type.name().toLowerCase(Locale.ROOT) + " password for " + host + "? ")
-                        .append(save).append(Text.literal(" ")).append(dismiss));
+                MutableComponent save = Component.literal("[Save]").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
+                        .withStyle(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault save"))
+                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Save this password to the vault"))));
+                MutableComponent dismiss = Component.literal("[Dismiss]").withStyle(ChatFormatting.RED)
+                        .withStyle(s -> s.withClickEvent(new ClickEvent.RunCommand("/vault dismiss"))
+                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Do not save"))));
+                notifyPlayer(Component.literal("Save " + type.name().toLowerCase(Locale.ROOT) + " password for " + host + "? ")
+                        .append(save).append(Component.literal(" ")).append(dismiss));
                 return;
             }
             if (type == AuthCommandDetector.AuthCommandType.REGISTER && autoCommit) {
@@ -622,8 +621,8 @@ public final class ServerPasswordManager {
             } else {
                 saveDetectedPassword(new PendingSave(host, username, password, type));
             }
-            notifyPlayer(Text.literal("Saved " + type.name().toLowerCase(Locale.ROOT) + " credentials for " + host)
-                    .formatted(Formatting.GREEN));
+            notifyPlayer(Component.literal("Saved " + type.name().toLowerCase(Locale.ROOT) + " credentials for " + host)
+                    .withStyle(ChatFormatting.GREEN));
             sessionAuth = null;
         } catch (Exception ex) {
             DupeClient.LOGGER.error("Failed to save credentials from auth feedback", ex);
@@ -694,7 +693,7 @@ public final class ServerPasswordManager {
                         sessionAuth.type()));
             }
             sessionAuth = null;
-            notifyPlayer(Text.literal("Saved remembered credentials for " + hostKey).formatted(Formatting.GREEN));
+            notifyPlayer(Component.literal("Saved remembered credentials for " + hostKey).withStyle(ChatFormatting.GREEN));
         } catch (Exception ex) {
             DupeClient.LOGGER.error("Failed to flush remembered auth credentials", ex);
         }
@@ -711,7 +710,7 @@ public final class ServerPasswordManager {
         }
     }
 
-    private static String resolveUsername(MinecraftClient client, String parsed) {
+    private static String resolveUsername(Minecraft client, String parsed) {
         if (parsed != null && !parsed.isBlank()) {
             return parsed.trim();
         }
@@ -725,10 +724,10 @@ public final class ServerPasswordManager {
         return session;
     }
 
-    private static void notifyPlayer(Text text) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private static void notifyPlayer(Component text) {
+        Minecraft client = Minecraft.getInstance();
         if (client != null && client.player != null) {
-            client.player.sendMessage(text, false);
+            client.player.displayClientMessage(text, false);
         }
     }
 

@@ -1,13 +1,12 @@
 package com.dupeclient.client.core.notify;
 
 import com.dupeclient.client.gui.modern.UiTokens;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public final class ClientNotificationHub {
     private static final Deque<Toast> TOASTS = new ArrayDeque<>();
@@ -52,7 +51,7 @@ public final class ClientNotificationHub {
         TOASTS.removeIf(t -> t.expiresAtMs() <= now);
     }
 
-    public static void render(DrawContext context, TextRenderer tr, int screenW) {
+    public static void render(GuiGraphics context, Font tr, int screenW) {
         if (TOASTS.isEmpty()) {
             return;
         }
@@ -62,17 +61,17 @@ public final class ClientNotificationHub {
             if (i >= MAX_TOASTS) {
                 break;
             }
-            int w = Math.min(screenW - 16, tr.getWidth(toast.message()) + 16);
+            int w = Math.min(screenW - 16, tr.width(toast.message()) + 16);
             int x = screenW - w - 8;
             context.fill(x - 2, y - 2, x + w + 2, y + 12, UiTokens.argb(0xCC, 0x0F172A));
-            context.drawTextWithShadow(tr, Text.literal(toast.message()), x + 6, y, toast.color());
+            context.drawString(tr, Component.literal(toast.message()), x + 6, y, toast.color());
             y += 14;
             i++;
         }
     }
 
     public static void notifyIfInGame(String message, int color) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null) {
             return;
         }

@@ -6,12 +6,12 @@ import com.dupeclient.client.module.cape.DupeClientPresenceSettings;
 import com.dupeclient.client.gui.modern.UiComponents;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.IngameUiRouter;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public final class WaypointsPanel extends Panel {
     private static final int BTN_H = 22;
@@ -19,26 +19,26 @@ public final class WaypointsPanel extends Panel {
     private CaptureMode captureMode = CaptureMode.NONE;
 
     public WaypointsPanel(int x, int y) {
-        super("waypoints", Text.literal("Waypoints"), x, y, 268, 160);
+        super("waypoints", Component.literal("Waypoints"), x, y, 268, 160);
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!SocialHubRules.socialUiAllowed()) {
             super.render(context, mouseX, mouseY, delta);
-            var tr = MinecraftClient.getInstance().textRenderer;
+            var tr = Minecraft.getInstance().font;
             int cx = x + width / 2;
             int cy = y + height / 2 - 14;
-            context.drawCenteredTextWithShadow(tr, Text.literal("Waypoints require social access."), cx, cy, 0xFF8FA3B8);
-            context.drawCenteredTextWithShadow(tr, Text.literal(SocialHubRules.blockReason()), cx, cy + 12, 0xFF64748B);
+            context.drawCenteredString(tr, Component.literal("Waypoints require social access."), cx, cy, 0xFF8FA3B8);
+            context.drawCenteredString(tr, Component.literal(SocialHubRules.blockReason()), cx, cy + 12, 0xFF64748B);
             return;
         }
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        var tr = mc.textRenderer;
+        Minecraft mc = Minecraft.getInstance();
+        var tr = mc.font;
         DupeClientPresenceSettings s = DupeClientPresenceConfigManager.get();
         int tx = x + UiTokens.BODY_INSET;
         int ty = y + bodyTopOffset() + UiTokens.UI_GAP;
@@ -69,7 +69,7 @@ public final class WaypointsPanel extends Panel {
 
         height = bodyTopOffset() + UiTokens.UI_GAP + sectionH + UiTokens.SP_3;
         if (captureMode != CaptureMode.NONE) {
-            context.drawTextWithShadow(tr, Text.literal("Press key for Waypoints (ESC = unbind)"), rx, y + height - 11, 0xFFFFC877);
+            context.drawString(tr, Component.literal("Press key for Waypoints (ESC = unbind)"), rx, y + height - 11, 0xFFFFC877);
         }
     }
 
@@ -112,7 +112,7 @@ public final class WaypointsPanel extends Panel {
         }
         lineY += UiTokens.ROW_STEP;
         if (rect(mouseX, mouseY, rx, lineY, inner, BTN_H)) {
-            IngameUiRouter.openWaypoints(MinecraftClient.getInstance().currentScreen);
+            IngameUiRouter.openWaypoints(Minecraft.getInstance().screen);
             return true;
         }
         lineY += BTN_H + UiTokens.SP_2;

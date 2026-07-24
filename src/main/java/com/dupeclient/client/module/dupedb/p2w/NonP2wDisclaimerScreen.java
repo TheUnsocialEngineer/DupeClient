@@ -1,17 +1,17 @@
 package com.dupeclient.client.module.dupedb.p2w;
 
 import com.dupeclient.client.module.dupedb.P2wServerPolicy;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
 
 /** Full-screen disclaimer for community-marked non-P2W servers; modules stay locked until disconnect. */
 public final class NonP2wDisclaimerScreen extends Screen {
     private final String server;
 
     public NonP2wDisclaimerScreen(String server) {
-        super(Text.literal("Non-P2W Server"));
+        super(Component.literal("Non-P2W Server"));
         this.server = server == null ? "" : server;
     }
 
@@ -20,40 +20,40 @@ public final class NonP2wDisclaimerScreen extends Screen {
         super.init();
         int cx = this.width / 2;
         int btnW = 200;
-        this.addDrawableChild(new StylishButtonWidget(cx - btnW / 2, this.height - 56, btnW, 20,
-                Text.literal("I understand — modules stay disabled"), () -> {
+        this.addRenderableWidget(new StylishButtonWidget(cx - btnW / 2, this.height - 56, btnW, 20,
+                Component.literal("I understand — modules stay disabled"), () -> {
                     P2wServerPolicy.INSTANCE.onPolicyUiDismissed(this.server);
-                    if (this.client != null) {
-                        this.client.setScreen(null);
+                    if (this.minecraft != null) {
+                        this.minecraft.setScreen(null);
                     }
                 }));
     }
 
     /** Solid overlay — vanilla blur is already applied once per frame by {@link Screen#render}. */
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta) {
         context.fill(0, 0, this.width, this.height, 0xE0101018);
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         drawDisclaimerText(context);
     }
 
-    private void drawDisclaimerText(DrawContext context) {
+    private void drawDisclaimerText(GuiGraphics context) {
         int cx = this.width / 2;
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Non-P2W Server"), cx, 48, 0xFF34D399);
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(this.server), cx, 68, 0xFFE5E7EB);
+        context.drawCenteredString(this.font, Component.literal("Non-P2W Server"), cx, 48, 0xFF34D399);
+        context.drawCenteredString(this.font, Component.literal(this.server), cx, 68, 0xFFE5E7EB);
         int y = 96;
-        for (Text line : new Text[]{
-                Text.literal("This server is marked non pay-to-win by the DupeClient community."),
-                Text.literal("DupeClient does not condone duping, exploiting, or crashing on this server."),
-                Text.literal("All exploit modules have been disabled and will remain locked"),
-                Text.literal("until you disconnect or leave this server."),
-                Text.literal("Re-enabling modules while connected is blocked.")
+        for (Component line : new Component[]{
+                Component.literal("This server is marked non pay-to-win by the DupeClient community."),
+                Component.literal("DupeClient does not condone duping, exploiting, or crashing on this server."),
+                Component.literal("All exploit modules have been disabled and will remain locked"),
+                Component.literal("until you disconnect or leave this server."),
+                Component.literal("Re-enabling modules while connected is blocked.")
         }) {
-            context.drawCenteredTextWithShadow(this.textRenderer, line, cx, y, 0xFFF3F4F6);
+            context.drawCenteredString(this.font, line, cx, y, 0xFFF3F4F6);
             y += 14;
         }
     }
@@ -64,7 +64,7 @@ public final class NonP2wDisclaimerScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 }

@@ -1,21 +1,21 @@
 package com.dupeclient.client.gui.widget;
 
 import com.dupeclient.client.gui.overlay.SearchableDropdown;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Consumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 
 /**
  * Midnight-styled searchable dropdown for use on full screens (e.g. NBT enchant picker).
  */
-public final class StylishSearchableDropdownWidget extends ClickableWidget {
+public final class StylishSearchableDropdownWidget extends AbstractWidget {
     private final SearchableDropdown dropdown;
     private final List<String> options;
     @Nullable
@@ -30,7 +30,7 @@ public final class StylishSearchableDropdownWidget extends ClickableWidget {
             List<String> options,
             String initialValue,
             @Nullable Consumer<String> onChange) {
-        super(x, y, width, height, Text.empty());
+        super(x, y, width, height, Component.empty());
         this.options = options;
         this.onChange = onChange;
         this.dropdown = new SearchableDropdown(placeholder, 6);
@@ -68,18 +68,18 @@ public final class StylishSearchableDropdownWidget extends ClickableWidget {
     }
 
     @Override
-    protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        var tr = MinecraftClient.getInstance().textRenderer;
+    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        var tr = Minecraft.getInstance().font;
         dropdown.render(context, tr, getX(), getY(), getWidth(), getHeight(), options, mouseX, mouseY);
     }
 
-    public void renderPopupLayer(DrawContext context) {
-        var tr = MinecraftClient.getInstance().textRenderer;
+    public void renderPopupLayer(GuiGraphics context) {
+        var tr = Minecraft.getInstance().font;
         dropdown.renderPopupLayer(context, tr, options, 0, 0);
     }
 
     @Override
-    public void onClick(Click click, boolean doubleClick) {
+    public void onClick(MouseButtonEvent click, boolean doubleClick) {
         handleMouseClick(click.x(), click.y(), click.button());
     }
 
@@ -107,7 +107,7 @@ public final class StylishSearchableDropdownWidget extends ClickableWidget {
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        appendDefaultNarrations(builder);
+    protected void updateWidgetNarration(NarrationElementOutput builder) {
+        defaultButtonNarrationText(builder);
     }
 }

@@ -4,13 +4,12 @@ import com.dupeclient.client.module.dupedb.P2wServerPolicy;
 import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.PacketUtilsSettings;
 import com.ui_utils.SharedVariables;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 
 /** Builds and sends fabricated inventory click packets (YungLight fabricator backend). */
 public final class PacketFabricator {
@@ -76,12 +75,12 @@ public final class PacketFabricator {
             lastStatus = "Modules locked on this server.";
             return SendResult.FAILED;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.player == null || client.getConnection() == null) {
             lastStatus = "Not in game.";
             return SendResult.FAILED;
         }
-        ScreenHandler handler = resolveHandler(client);
+        AbstractContainerMenu handler = resolveHandler(client);
         if (handler == null) {
             lastStatus = "No screen handler (open inventory or a container).";
             return SendResult.FAILED;
@@ -106,13 +105,13 @@ public final class PacketFabricator {
         if (repeats <= 0) {
             return SendResult.FAILED;
         }
-        List<ClickSlotC2SPacket> packets = buildSequence(client, handler, handlerSlots, repeats);
+        List<ServerboundContainerClickPacket> packets = buildSequence(client, handler, handlerSlots, repeats);
         if (packets.isEmpty()) {
             lastStatus = "Failed to build packet.";
             return SendResult.FAILED;
         }
         if (queue) {
-            for (ClickSlotC2SPacket packet : packets) {
+            for (ServerboundContainerClickPacket packet : packets) {
                 SharedVariables.delayedUIPackets.add(packet);
             }
             lastStatus = "Queued " + packets.size() + " packet(s).";
@@ -124,7 +123,7 @@ public final class PacketFabricator {
         }
         int flushed = flushDelayedUiPackets(client);
         if (packets.size() == 1) {
-            ClickSlotC2SPacket packet = ClickSlotPackets.refresh(packets.getFirst(), handler);
+            ServerboundContainerClickPacket packet = ClickSlotPackets.refresh(packets.getFirst(), handler);
             if (packet != null) {
                 PacketUtilsManager.INSTANCE.sendBypass(client, packet);
             }
@@ -141,27 +140,27 @@ public final class PacketFabricator {
         return SendResult.SENDING;
     }
 
-    public ClickSlotC2SPacket buildPacket(MinecraftClient client, ScreenHandler handler, int handlerSlot) {
+    public ServerboundContainerClickPacket buildPacket(Minecraft client, AbstractContainerMenu handler, int handlerSlot) {
         PacketUtilsSettings s = settings();
         FabricatorAction action = currentAction();
         FabricatorSlotAction slotAction = action.toSlotAction(s.fabricatorDropWholeStack, s.fabricatorClickButton);
         int button = action.resolveButton(s.fabricatorDropWholeStack, s.fabricatorClickButton);
-        SlotActionType type = slotAction.toVanilla();
-        ClickSlotC2SPacket packet = ClickSlotPackets.create(
-                handler.syncId,
-                handler.getRevision(),
+        ClickType type = slotAction.toVanilla();
+        ServerboundContainerClickPacket packet = ClickSlotPackets.create(
+                handler.containerId,
+                handler.getStateId(),
                 handlerSlot,
                 button,
                 type);
         return ClickSlotPackets.refresh(packet, handler);
     }
 
-    private List<ClickSlotC2SPacket> buildSequence(
-            MinecraftClient client, ScreenHandler handler, List<Integer> handlerSlots, int repeats) {
-        List<ClickSlotC2SPacket> packets = new ArrayList<>(repeats * handlerSlots.size());
+    private List<ServerboundContainerClickPacket> buildSequence(
+            Minecraft client, AbstractContainerMenu handler, List<Integer> handlerSlots, int repeats) {
+        List<ServerboundContainerClickPacket> packets = new ArrayList<>(repeats * handlerSlots.size());
         for (int i = 0; i < repeats; i++) {
             for (int handlerSlot : handlerSlots) {
-                ClickSlotC2SPacket built = buildPacket(client, handler, handlerSlot);
+                ServerboundContainerClickPacket built = buildPacket(client, handler, handlerSlot);
                 if (built == null) {
                     return List.of();
                 }
@@ -171,7 +170,7 @@ public final class PacketFabricator {
         return packets;
     }
 
-    private List<Integer> resolveTargetSlots(MinecraftClient client, ScreenHandler handler) {
+    private List<Integer> resolveTargetSlots(Minecraft client, AbstractContainerMenu handler) {
         PacketUtilsSettings s = settings();
         String slotText = s.fabricatorSlot == null ? "" : s.fabricatorSlot.trim();
         String itemName = s.fabricatorItemName == null ? "" : s.fabricatorItemName.trim();
@@ -227,12 +226,12 @@ public final class PacketFabricator {
         return List.of();
     }
 
-    private static boolean slotMatchesItem(ScreenHandler handler, int handlerSlot, String itemQuery) {
+    private static boolean slotMatchesItem(AbstractContainerMenu handler, int handlerSlot, String itemQuery) {
         if (!FabricatorInventorySlots.isValidHandlerSlot(handler, handlerSlot)) {
             return false;
         }
         FabricatorItemMatcher matcher = FabricatorItemMatcher.parse(itemQuery);
-        return matcher.score(handler.slots.get(handlerSlot).getStack(), handlerSlot) >= 0;
+        return matcher.score(handler.slots.get(handlerSlot).getItem(), handlerSlot) >= 0;
     }
 
     private int resolveRepeatCount() {
@@ -250,11 +249,11 @@ public final class PacketFabricator {
         return value;
     }
 
-    private static ScreenHandler resolveHandler(MinecraftClient client) {
+    private static AbstractContainerMenu resolveHandler(Minecraft client) {
         return FabricatorInventorySlots.activeHandler(client);
     }
 
-    private static int flushDelayedUiPackets(MinecraftClient client) {
+    private static int flushDelayedUiPackets(Minecraft client) {
         if (SharedVariables.delayedUIPackets.isEmpty()) {
             return 0;
         }

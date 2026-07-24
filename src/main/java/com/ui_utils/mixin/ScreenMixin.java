@@ -5,14 +5,14 @@ import com.ui_utils.UiUtilsScreens;
 import com.ui_utils.gui.ChatTextFieldWidget;
 import com.ui_utils.gui.CustomTextFieldWidget;
 import com.ui_utils.mixin.accessor.ScreenAccessor;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,7 +25,7 @@ public abstract class ScreenMixin {
     protected int height;
 
     @Shadow
-    public abstract <T extends Element & Drawable & Selectable> T addDrawableChild(T drawableElement);
+    public abstract <T extends GuiEventListener & Renderable & NarratableEntry> T addRenderableWidget(T drawableElement);
 
     @Inject(at = @At("TAIL"), method = "init")
     public void uiutils$onInit(CallbackInfo ci) {
@@ -33,23 +33,23 @@ public abstract class ScreenMixin {
         if (!UiUtilsScreens.shouldAttachWidgets(screen)) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        TextRenderer textRenderer = ((ScreenAccessor) this).getTextRenderer();
+        Minecraft mc = Minecraft.getInstance();
+        Font textRenderer = ((ScreenAccessor) this).getFont();
         MainClient.createWidgets(mc, screen);
 
-        CustomTextFieldWidget chatField = new ChatTextFieldWidget(textRenderer, 6, this.height - 18, 140, 12, Text.of("Chat..."));
-        chatField.setText("");
+        CustomTextFieldWidget chatField = new ChatTextFieldWidget(textRenderer, 6, this.height - 18, 140, 12, Component.nullToEmpty("Chat..."));
+        chatField.setValue("");
         chatField.setMaxLength(255);
-        this.addDrawableChild(chatField);
+        this.addRenderableWidget(chatField);
     }
 
     @Inject(at = @At("TAIL"), method = "render")
-    public void uiutils$onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    public void uiutils$onRender(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         Screen screen = (Screen) (Object) this;
         if (!UiUtilsScreens.shouldRenderSyncPanel(screen)) {
             return;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        MainClient.createText(mc, context, ((ScreenAccessor) this).getTextRenderer());
+        Minecraft mc = Minecraft.getInstance();
+        MainClient.createText(mc, context, ((ScreenAccessor) this).getFont());
     }
 }

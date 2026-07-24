@@ -8,11 +8,11 @@ import com.dupeclient.client.module.hud.HudElementState;
 import com.dupeclient.client.module.hud.HudManager;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.Click;
-import net.minecraft.text.Text;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 public final class HudEditorScreen
@@ -31,12 +31,12 @@ extends Screen {
     private int dragDy;
 
     public HudEditorScreen(Screen parent) {
-        super(Text.literal("HUD Editor"));
+        super(Component.literal("HUD Editor"));
         this.parent = parent;
     }
 
     protected void init() {
-        this.clearChildren();
+        this.clearWidgets();
     }
 
     private void closeContextMenu() {
@@ -64,7 +64,7 @@ extends Screen {
         int padX = 10;
         int w = 100;
         for (ContextMenuEntry e : this.contextMenuEntries) {
-            w = Math.max(w, this.textRenderer.getWidth(e.label()) + padX * 2);
+            w = Math.max(w, this.font.width(e.label()) + padX * 2);
         }
         int h = 4 + this.contextMenuEntries.size() * 14;
         int x = Math.max(4, Math.min(anchorX, this.width - w - 4));
@@ -80,7 +80,7 @@ extends Screen {
         return this.contextMenuOpen && mx >= (double)this.contextMenuX && mx < (double)(this.contextMenuX + this.contextMenuW) && my >= (double)this.contextMenuY && my < (double)(this.contextMenuY + this.contextMenuH);
     }
 
-    private void renderContextMenu(DrawContext context, int mouseX, int mouseY) {
+    private void renderContextMenu(GuiGraphics context, int mouseX, int mouseY) {
         if (!this.contextMenuOpen || this.contextMenuEntries.isEmpty()) {
             return;
         }
@@ -97,12 +97,12 @@ extends Screen {
             if (hot) {
                 context.fill(this.contextMenuX + 1, rowY, this.contextMenuX + this.contextMenuW - 1, rowY + 14, UiTokens.argb(170, -15293622));
             }
-            context.drawTextWithShadow(this.textRenderer, Text.literal(e.label()), this.contextMenuX + 8, rowY + 3, -460036);
+            context.drawString(this.font, Component.literal(e.label()), this.contextMenuX + 8, rowY + 3, -460036);
             rowY += 14;
         }
     }
 
-    public boolean mouseClicked(Click click, boolean doubleClick) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         if (IngameOverlayHost.onScreenOverlayMouseClicked(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -138,7 +138,7 @@ extends Screen {
         }
         if (click.button() == 0) {
             for (HudElementState st : HudManager.INSTANCE.elements()) {
-                int[] m = HudManager.INSTANCE.measureElement(st, this.client);
+                int[] m = HudManager.INSTANCE.measureElement(st, this.minecraft);
                 int x = this.anchoredX(st, m[0]);
                 int y = this.anchoredY(st, m[1]);
                 if (!(mx >= (double)x && mx <= (double)(x + m[0]) && my >= (double)y && my <= (double)(y + m[1]))) continue;
@@ -151,7 +151,7 @@ extends Screen {
         return false;
     }
 
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         if (IngameOverlayHost.onScreenOverlayMouseReleased(click.x(), click.y(), click.button())) {
             return true;
         }
@@ -159,12 +159,12 @@ extends Screen {
         return super.mouseReleased(click);
     }
 
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
         if (IngameOverlayHost.onScreenOverlayMouseDragged(click.x(), click.y(), click.button())) {
             return true;
         }
-        if (this.dragging != null && this.client != null) {
-            int[] m = HudManager.INSTANCE.measureElement(this.dragging, this.client);
+        if (this.dragging != null && this.minecraft != null) {
+            int[] m = HudManager.INSTANCE.measureElement(this.dragging, this.minecraft);
             int nx = (int)click.x() - this.dragDx;
             int ny = (int)click.y() - this.dragDy;
             nx = HudEditorScreen.applySnap(nx, this.width - m[0], HudManager.INSTANCE.settings().snappingRange);
@@ -177,18 +177,18 @@ extends Screen {
         return super.mouseDragged(click, deltaX, deltaY);
     }
 
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
         int hintY = 8;
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Right-click: add/remove HUD elements \u00b7 Esc: done \u00b7 drag labels to move"), this.width / 2, hintY, -7934036);
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Negative x/y anchor right/bottom."), this.width / 2, hintY + 12, -7035976);
+        context.drawCenteredString(this.font, Component.literal("Right-click: add/remove HUD elements \u00b7 Esc: done \u00b7 drag labels to move"), this.width / 2, hintY, -7934036);
+        context.drawCenteredString(this.font, Component.literal("Negative x/y anchor right/bottom."), this.width / 2, hintY + 12, -7035976);
         this.renderElementsOverlay(context);
         super.render(context, mouseX, mouseY, delta);
         this.renderContextMenu(context, mouseX, mouseY);
     }
 
-    private void renderElementsOverlay(DrawContext context) {
-        MinecraftClient mc = this.client;
+    private void renderElementsOverlay(GuiGraphics context) {
+        Minecraft mc = this.minecraft;
         if (mc == null) {
             return;
         }
@@ -206,7 +206,7 @@ extends Screen {
                 break;
             }
             if (def == null) continue;
-            context.drawTextWithShadow(this.textRenderer, def.textProvider().text(mc, HudManager.INSTANCE), x, y, -460036);
+            context.drawString(this.font, def.textProvider().text(mc, HudManager.INSTANCE), x, y, -460036);
         }
     }
 
@@ -229,10 +229,10 @@ extends Screen {
         return out;
     }
 
-    public void close() {
+    public void onClose() {
         this.closeContextMenu();
         HudManager.INSTANCE.save();
-        this.client.setScreen(this.parent);
+        this.minecraft.setScreen(this.parent);
     }
 
     private record ContextMenuEntry(String label, Runnable action) {

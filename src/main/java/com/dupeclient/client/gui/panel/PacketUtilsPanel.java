@@ -17,11 +17,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import net.minecraft.text.Text;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
 import org.joml.Matrix3x2fStack;
 import org.lwjgl.glfw.GLFW;
 
@@ -78,7 +78,7 @@ extends Panel {
     private static final int UI_UTILS_ROWS = 7;
 
     public PacketUtilsPanel(int x, int y) {
-        super("packet_utils", Text.literal("Packet Utils"), x, y, 336, 198);
+        super("packet_utils", Component.literal("Packet Utils"), x, y, 336, 198);
     }
 
     private static void ensureSortedNames() {
@@ -144,7 +144,7 @@ extends Panel {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         PacketUtilsSettings s = PacketUtilsManager.INSTANCE.getSettings();
         PacketUtilsPanel.ensureSortedNames();
         super.render(context, mouseX, mouseY, delta);
@@ -187,41 +187,41 @@ extends Panel {
             this.drawToggleRow(context, rx, fy += 30, rw, "Show overlay", s.fabricatorVisible, "pkt.fabVis", delta);
             this.drawBindRow(context, rx, fy += 30, rw, "Overlay toggle key", s.fabricatorToggleKey, CaptureMode.FABRICATOR_TOGGLE);
             this.drawBindRow(context, rx, fy += 30, rw, "Slot IDs toggle key", s.slotIdsToggleKey, CaptureMode.SLOT_IDS_TOGGLE);
-            context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal("Click row: Save preset / Load preset"), rx, fy += 34, -7035976);
+            context.drawString(Minecraft.getInstance().font, Component.literal("Click row: Save preset / Load preset"), rx, fy += 34, -7035976);
         }
         PacketSnifferManager sniffer = PacketSnifferManager.INSTANCE;
         PacketSnifferSettings sniff = sniffer.getSettings();
         int sniffHeight = this.snifferSectionHeight(this.snifferCollapsed);
         this.drawSectionBox(context, tx, ty += fabHeight + 5, sw, sniffHeight, "Packet Sniffer", this.snifferCollapsed);
         if (!this.snifferCollapsed) {
-            TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+            Font tr = Minecraft.getInstance().font;
             int sy = ty + 38;
             String counts = "C2S " + sniffer.c2sCount() + " \u00b7 S2C " + sniffer.s2cCount() + " \u00b7 configure in overlay Settings tab";
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(counts, rw)), rx, sy, -7035976);
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(counts, rw)), rx, sy, -7035976);
             this.drawToggleRow(context, rx, sy += 16, rw, "Enabled", sniff.enabled, "sniff.enabled", delta);
             this.drawToggleRow(context, rx, sy += 30, rw, "Show overlay", sniff.overlayVisible, "sniff.overlay", delta);
             this.drawBindRow(context, rx, sy += 30, rw, "Overlay toggle key", sniff.overlayToggleKey, CaptureMode.PACKET_SNIFFER_OVERLAY_TOGGLE);
         }
         this.height = this.bodyTopOffset() + 8 + 60 + 5 + delayHeight + 5 + uiHeight + 5 + fabHeight + 5 + sniffHeight + 8;
         if (this.captureMode != CaptureMode.NONE) {
-            context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal(("Press key for " + this.captureMode.label + " (ESC to unbind)")), this.x + 8, this.y + this.height - 12, -14217);
+            context.drawString(Minecraft.getInstance().font, Component.literal(("Press key for " + this.captureMode.label + " (ESC to unbind)")), this.x + 8, this.y + this.height - 12, -14217);
         }
     }
 
-    private void drawTab(DrawContext context, int bx, int by, int tw, String label, boolean active) {
-        UiComponents.drawSegmentTab(MinecraftClient.getInstance().textRenderer, context, bx, by, tw, 14, label, active);
+    private void drawTab(GuiGraphics context, int bx, int by, int tw, String label, boolean active) {
+        UiComponents.drawSegmentTab(Minecraft.getInstance().font, context, bx, by, tw, 14, label, active);
     }
 
-    private static void drawScaledPacketRow(DrawContext context, MinecraftClient mc, String name, int x, int y, float scale, int color) {
+    private static void drawScaledPacketRow(GuiGraphics context, Minecraft mc, String name, int x, int y, float scale, int color) {
         if (name == null || name.isEmpty() || scale <= 0.0f) {
             return;
         }
-        TextRenderer tr = mc.textRenderer;
-        Matrix3x2fStack matrices = context.getMatrices();
+        Font tr = mc.font;
+        Matrix3x2fStack matrices = context.pose();
         matrices.pushMatrix();
         matrices.translate((float)x, (float)y);
         matrices.scale(scale, scale);
-        context.drawTextWithShadow(tr, Text.literal(name), 0, 0, color);
+        context.drawString(tr, Component.literal(name), 0, 0, color);
         matrices.popMatrix();
     }
 
@@ -238,44 +238,44 @@ extends Panel {
         return out;
     }
 
-    private void drawSnifferListModeTabs(DrawContext context, int bx, int by, int w) {
+    private void drawSnifferListModeTabs(GuiGraphics context, int bx, int by, int w) {
         int half = (w - 6) / 2;
         this.drawTab(context, bx, by, half, "Log exclude", this.sniffListMode == SnifferListMode.LOG_EXCLUDE);
         this.drawTab(context, bx + half + 6, by, half, "Block", this.sniffListMode == SnifferListMode.BLOCK);
     }
 
-    private void drawSnifferSideTabs(DrawContext context, int bx, int by, int w) {
+    private void drawSnifferSideTabs(GuiGraphics context, int bx, int by, int w) {
         int half = (w - 6) / 2;
         this.drawTab(context, bx, by, half, "C2S", this.sniffSide == DelaySide.C2S);
         this.drawTab(context, bx + half + 6, by, half, "S2C", this.sniffSide == DelaySide.S2C);
     }
 
-    private void drawSnifferPickerDropdown(DrawContext context, int bx, int by, int w, PacketSnifferSettings sniff) {
+    private void drawSnifferPickerDropdown(GuiGraphics context, int bx, int by, int w, PacketSnifferSettings sniff) {
         sniff.ensureLists();
         UiComponents.drawSlotField(context, bx, by, w, 12, -938338270, -12957090);
         List<String> selected = this.currentSniffTargetList(sniff);
         String summary = selected.isEmpty() ? "no " + this.sniffSide.name() + " packets" : selected.size() + " " + this.sniffSide.name() + " packet(s)";
         String prefix = this.sniffListMode == SnifferListMode.LOG_EXCLUDE ? "Hide from log" : "Block";
         String text = (this.sniffPickerOpen ? prefix + " v " : prefix + " > ") + summary;
-        String trimmed = MinecraftClient.getInstance().textRenderer.trimToWidth(text, Math.max(8, w - 8));
-        context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal(trimmed), bx + 4, by + 2, -3483137);
+        String trimmed = Minecraft.getInstance().font.plainSubstrByWidth(text, Math.max(8, w - 8));
+        context.drawString(Minecraft.getInstance().font, Component.literal(trimmed), bx + 4, by + 2, -3483137);
     }
 
-    private void drawSnifferSearchRow(DrawContext context, int bx, int by, int w, int h) {
+    private void drawSnifferSearchRow(GuiGraphics context, int bx, int by, int w, int h) {
         int border = this.sniffSearchFocused ? -9789697 : -12957090;
         UiComponents.drawSlotField(context, bx, by, w, h, -804317397, border);
         context.fill(bx, by + h - 1, bx + w, by + h, border);
         String q = this.sniffSearch.isEmpty() ? "Search packets..." : this.sniffSearch;
         int col = this.sniffSearch.isEmpty() ? -8747362 : -2037249;
-        String shown = MinecraftClient.getInstance().textRenderer.trimToWidth(q, w - 12);
-        context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, Text.literal(shown), bx + 4, by + 2, col);
+        String shown = Minecraft.getInstance().font.plainSubstrByWidth(q, w - 12);
+        context.drawString(Minecraft.getInstance().font, Component.literal(shown), bx + 4, by + 2, col);
     }
 
     private void markSniffListsDirty() {
         this.sniffListsDirty = true;
     }
 
-    private void refreshSniffListsIfNeeded(PacketSnifferSettings sniff, MinecraftClient mc) {
+    private void refreshSniffListsIfNeeded(PacketSnifferSettings sniff, Minecraft mc) {
         if (!this.sniffListsDirty) {
             return;
         }
@@ -284,20 +284,20 @@ extends Panel {
         this.cachedSniffExcludedFiltered = PacketUtilsPanel.filterNames(this.excludedSniffPool(sniff), this.sniffSearch);
         int maxNamePx = 1;
         for (String n : this.cachedSniffExcludedFiltered) {
-            maxNamePx = Math.max(maxNamePx, mc.textRenderer.getWidth(n));
+            maxNamePx = Math.max(maxNamePx, mc.font.width(n));
         }
         for (String n : this.cachedSniffIncludedFiltered) {
-            maxNamePx = Math.max(maxNamePx, mc.textRenderer.getWidth(n));
+            maxNamePx = Math.max(maxNamePx, mc.font.width(n));
         }
         int colAvail = Math.min(this.sniffExcludedListW, this.sniffIncludedListW) - 8 - 3;
         this.cachedSniffListScale = Math.min(1.0f, (float)Math.max(4, colAvail) / (float)maxNamePx);
     }
 
-    private void drawSnifferTwoColumns(DrawContext context, int bx, int by, int innerW, PacketSnifferSettings sniff) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+    private void drawSnifferTwoColumns(GuiGraphics context, int bx, int by, int innerW, PacketSnifferSettings sniff) {
+        Minecraft mc = Minecraft.getInstance();
         int half = (innerW - 8) / 2;
-        context.drawTextWithShadow(mc.textRenderer, Text.literal("Available"), bx, by, -6310168);
-        context.drawTextWithShadow(mc.textRenderer, Text.literal("Selected"), bx + half + 8, by, -6310168);
+        context.drawString(mc.font, Component.literal("Available"), bx, by, -6310168);
+        context.drawString(mc.font, Component.literal("Selected"), bx + half + 8, by, -6310168);
         this.refreshSniffListsIfNeeded(sniff, mc);
         int maxInc = Math.max(0, this.cachedSniffIncludedFiltered.size() - 8);
         this.sniffIncludedScroll = Math.max(0, Math.min(this.sniffIncludedScroll, maxInc));
@@ -344,7 +344,7 @@ extends Panel {
     }
 
     private boolean clickSnifferListColumns(double mouseX, double mouseY, PacketSnifferSettings sniff) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         this.refreshSniffListsIfNeeded(sniff, mc);
         List<String> target = this.currentSniffTargetList(sniff);
         if (this.rect(mouseX, mouseY, this.sniffExcludedListX, this.sniffExcludedListY, this.sniffExcludedListW, this.sniffExcludedListH)) {
@@ -662,28 +662,28 @@ extends Panel {
         return this.captureMode != CaptureMode.NONE || this.sniffSearchFocused;
     }
 
-    private void drawSectionBox(DrawContext context, int x, int y, int w, int h, String title, boolean collapsed) {
-        UiComponents.drawSectionCard(MinecraftClient.getInstance().textRenderer, context, x, y, w, h, title, collapsed);
+    private void drawSectionBox(GuiGraphics context, int x, int y, int w, int h, String title, boolean collapsed) {
+        UiComponents.drawSectionCard(Minecraft.getInstance().font, context, x, y, w, h, title, collapsed);
     }
 
-    private void drawToggleRow(DrawContext context, int x, int y, int rowW, String label, boolean enabled, String smoothKey, float delta) {
-        UiComponents.drawOptionToggle(MinecraftClient.getInstance().textRenderer, context, x, y, rowW, label, enabled, this.smoothToggle(smoothKey, enabled, delta));
+    private void drawToggleRow(GuiGraphics context, int x, int y, int rowW, String label, boolean enabled, String smoothKey, float delta) {
+        UiComponents.drawOptionToggle(Minecraft.getInstance().font, context, x, y, rowW, label, enabled, this.smoothToggle(smoothKey, enabled, delta));
     }
 
-    private void drawSlider(DrawContext context, int x, int y, int w, double value, double min, double max, String label, SliderMode mode) {
+    private void drawSlider(GuiGraphics context, int x, int y, int w, double value, double min, double max, String label, SliderMode mode) {
         double t = (value - min) / (max - min);
-        UiComponents.drawValueSlider(MinecraftClient.getInstance().textRenderer, context, x, y, w, t, label, this.format1(value), this.sliderMode == mode);
+        UiComponents.drawValueSlider(Minecraft.getInstance().font, context, x, y, w, t, label, this.format1(value), this.sliderMode == mode);
     }
 
-    private void drawBindRow(DrawContext context, int x, int y, int w, String label, int keyCode, CaptureMode mode) {
+    private void drawBindRow(GuiGraphics context, int x, int y, int w, String label, int keyCode, CaptureMode mode) {
         boolean listening = this.captureMode == mode;
         String text = listening ? "Press key..." : this.keyName(keyCode);
-        UiComponents.drawPillKeybind(MinecraftClient.getInstance().textRenderer, context, x, y, w, 20, label, text, listening);
+        UiComponents.drawPillKeybind(Minecraft.getInstance().font, context, x, y, w, 20, label, text, listening);
     }
 
-    private void drawValueRow(DrawContext context, int x, int y, int w, String label, String value, String smoothKey, float delta) {
-        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-        context.drawTextWithShadow(tr, Text.literal(label), x, y + 6, -6184534);
+    private void drawValueRow(GuiGraphics context, int x, int y, int w, String label, String value, String smoothKey, float delta) {
+        Font tr = Minecraft.getInstance().font;
+        context.drawString(tr, Component.literal(label), x, y + 6, -6184534);
         int valueW = 72;
         int valueX = x + w - valueW;
         UiComponents.drawPillActionButton(tr, context, valueX, y, valueW, 20, value, UiComponents.PillActionStyle.SECONDARY_SLATE);

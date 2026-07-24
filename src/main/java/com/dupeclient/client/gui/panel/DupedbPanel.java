@@ -8,9 +8,9 @@ import com.dupeclient.client.module.dupedb.DupedbOverlay;
 import com.dupeclient.client.module.dupedb.DupedbSettings;
 import com.dupeclient.client.module.dupedb.P2wMarkManager;
 import com.dupeclient.client.module.dupedb.P2wServerPolicy;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public class DupedbPanel extends Panel {
     private static final int TOGGLE_H = UiTokens.ROW_STEP;
@@ -20,7 +20,7 @@ public class DupedbPanel extends Panel {
     private boolean capturingOverlayHotkey;
 
     public DupedbPanel(int x, int y) {
-        super("dupedb", Text.literal("DupeDB"), x, y, 280, 180);
+        super("dupedb", Component.literal("DupeDB"), x, y, 280, 180);
     }
 
     private static int cardHeight() {
@@ -35,12 +35,12 @@ public class DupedbPanel extends Panel {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
         }
-        TextRenderer tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        Font tr = net.minecraft.client.Minecraft.getInstance().font;
         DupedbSettings s = manager.getSettings();
         int tx = x + UiTokens.BODY_INSET;
         int ty = y + bodyTopOffset() + UiTokens.UI_GAP;
@@ -74,12 +74,12 @@ public class DupedbPanel extends Panel {
         PanelOverlayActions.drawStatusLine(tr, context, rx, y4, inner, status);
 
         int y5 = y4 + HINT_H + UiTokens.UI_GAP;
-        context.drawTextWithShadow(tr, Text.literal("Run a scan before submitting P2W marks."), rx, y5, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal("Run a scan before submitting P2W marks."), rx, y5, UiTokens.TEXT_DIM);
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (capturingOverlayHotkey) {
-            context.drawTextWithShadow(
+            context.drawString(
                     tr,
-                    Text.literal("Press key for overlay hotkey (ESC to unbind)"),
+                    Component.literal("Press key for overlay hotkey (ESC to unbind)"),
                     x + 8,
                     y + height - 12,
                     0xFFFFC857);

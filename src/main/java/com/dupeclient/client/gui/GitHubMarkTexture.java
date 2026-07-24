@@ -1,20 +1,19 @@
 package com.dupeclient.client.gui;
 
 import com.dupeclient.client.DupeClient;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.resource.Resource;
-import net.minecraft.util.Identifier;
-
+import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import java.io.InputStream;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.resources.Resource;
 
 /** Shared baked GitHub mark icon for attribution cards. */
 public final class GitHubMarkTexture {
     private static final String RESOURCE_PATH = "/assets/dupeclient/textures/gui/github_mark.png";
-    private static final Identifier RESOURCE = Identifier.of(DupeClient.MOD_ID, "textures/gui/github_mark.png");
-    private static final Identifier TEXTURE = Identifier.of(DupeClient.MOD_ID, "gui/github_mark");
+    private static final Identifier RESOURCE = Identifier.fromNamespaceAndPath(DupeClient.MOD_ID, "textures/gui/github_mark.png");
+    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(DupeClient.MOD_ID, "gui/github_mark");
     private static final int ICON_SIZE = 16;
 
     private static volatile boolean registered;
@@ -43,7 +42,7 @@ public final class GitHubMarkTexture {
         thread.start();
     }
 
-    public static void ensureLoaded(MinecraftClient client) {
+    public static void ensureLoaded(Minecraft client) {
         if (registered || client == null) {
             return;
         }
@@ -70,10 +69,10 @@ public final class GitHubMarkTexture {
             NativeImage icon = bakeIcon(source, ICON_SIZE);
             source.close();
             pendingIcon = icon;
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             if (client != null) {
                 client.execute(() -> {
-                    MinecraftClient live = MinecraftClient.getInstance();
+                    Minecraft live = Minecraft.getInstance();
                     if (live != null) {
                         registerPending(live);
                     }
@@ -84,7 +83,7 @@ public final class GitHubMarkTexture {
         }
     }
 
-    private static void registerPending(MinecraftClient client) {
+    private static void registerPending(Minecraft client) {
         if (registered) {
             return;
         }
@@ -93,13 +92,13 @@ public final class GitHubMarkTexture {
             return;
         }
         pendingIcon = null;
-        NativeImageBackedTexture backed = new NativeImageBackedTexture(() -> "dupeclient-github-mark", icon);
-        client.getTextureManager().registerTexture(TEXTURE, backed);
+        DynamicTexture backed = new DynamicTexture(() -> "dupeclient-github-mark", icon);
+        client.getTextureManager().register(TEXTURE, backed);
         backed.upload();
         registered = true;
     }
 
-    private static InputStream openResourceStream(MinecraftClient client) throws IOException {
+    private static InputStream openResourceStream(Minecraft client) throws IOException {
         InputStream fromClassLoader = DupeClient.class.getResourceAsStream(RESOURCE_PATH);
         if (fromClassLoader != null) {
             return fromClassLoader;
@@ -111,7 +110,7 @@ public final class GitHubMarkTexture {
         if (resource == null) {
             return null;
         }
-        return resource.getInputStream();
+        return resource.open();
     }
 
     private static NativeImage bakeIcon(NativeImage source, int size) {
@@ -122,7 +121,7 @@ public final class GitHubMarkTexture {
             for (int x = 0; x < size; x++) {
                 int sx = x * srcW / size;
                 int sy = y * srcH / size;
-                out.setColorArgb(x, y, blendOnWhite(source.getColorArgb(sx, sy)));
+                out.setPixel(x, y, blendOnWhite(source.getPixel(sx, sy)));
             }
         }
         return out;

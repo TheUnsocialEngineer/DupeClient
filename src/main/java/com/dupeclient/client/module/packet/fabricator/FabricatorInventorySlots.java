@@ -1,10 +1,10 @@
 package com.dupeclient.client.module.packet.fabricator;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
 
 /**
  * Converts between user-visible slot ids (0–40 player, 100+ container) and handler slot ids.
@@ -16,29 +16,29 @@ public final class FabricatorInventorySlots {
     private FabricatorInventorySlots() {
     }
 
-    /** Prefer the open {@link HandledScreen} handler (player inventory, chest, etc.). */
-    public static ScreenHandler activeHandler(MinecraftClient client) {
+    /** Prefer the open {@link AbstractContainerScreen} handler (player inventory, chest, etc.). */
+    public static AbstractContainerMenu activeHandler(Minecraft client) {
         if (client == null || client.player == null) {
             return null;
         }
-        if (client.currentScreen instanceof HandledScreen<?> handled) {
-            return handled.getScreenHandler();
+        if (client.screen instanceof AbstractContainerScreen<?> handled) {
+            return handled.getMenu();
         }
-        return client.player.currentScreenHandler;
+        return client.player.containerMenu;
     }
 
-    public static int toHandlerSlot(MinecraftClient client, int userVisibleSlot) {
-        ScreenHandler handler = activeHandler(client);
+    public static int toHandlerSlot(Minecraft client, int userVisibleSlot) {
+        AbstractContainerMenu handler = activeHandler(client);
         if (client == null || client.player == null || handler == null) {
             return -1;
         }
         if (userVisibleSlot < 0) {
             return -1;
         }
-        if (userVisibleSlot < client.player.getInventory().size()) {
+        if (userVisibleSlot < client.player.getInventory().getContainerSize()) {
             for (Slot slot : handler.slots) {
                 if (playerInventoryIndex(client.player, slot) == userVisibleSlot) {
-                    return slot.id;
+                    return slot.index;
                 }
             }
         }
@@ -49,7 +49,7 @@ public final class FabricatorInventorySlots {
                     continue;
                 }
                 if (extraOrdinal == 0) {
-                    return slot.id;
+                    return slot.index;
                 }
                 extraOrdinal--;
             }
@@ -57,8 +57,8 @@ public final class FabricatorInventorySlots {
         return -1;
     }
 
-    public static int toUserVisibleSlot(MinecraftClient client, int handlerSlotId) {
-        ScreenHandler handler = activeHandler(client);
+    public static int toUserVisibleSlot(Minecraft client, int handlerSlotId) {
+        AbstractContainerMenu handler = activeHandler(client);
         if (client == null || client.player == null || handler == null) {
             return handlerSlotId;
         }
@@ -75,7 +75,7 @@ public final class FabricatorInventorySlots {
             if (current == null || isPlayerInventorySlot(client.player, current)) {
                 continue;
             }
-            if (current.id == handlerSlotId) {
+            if (current.index == handlerSlotId) {
                 return FIRST_GUI_SLOT + extraOrdinal;
             }
             extraOrdinal++;
@@ -83,47 +83,47 @@ public final class FabricatorInventorySlots {
         return handlerSlotId;
     }
 
-    public static int resolveHandlerSlot(MinecraftClient client, int configuredSlot) {
+    public static int resolveHandlerSlot(Minecraft client, int configuredSlot) {
         return toHandlerSlot(client, configuredSlot);
     }
 
-    public static boolean isValidHandlerSlot(ScreenHandler handler, int slotId) {
+    public static boolean isValidHandlerSlot(AbstractContainerMenu handler, int slotId) {
         return handler != null && slotId >= 0 && slotId < handler.slots.size();
     }
 
-    public static boolean isPlayerInventorySlot(ClientPlayerEntity player, Slot slot) {
+    public static boolean isPlayerInventorySlot(LocalPlayer player, Slot slot) {
         return playerInventoryIndex(player, slot) >= 0;
     }
 
-    public static Integer findSlotByItem(MinecraftClient client, FabricatorItemMatcher matcher) {
+    public static Integer findSlotByItem(Minecraft client, FabricatorItemMatcher matcher) {
         if (client == null || client.player == null || !matcher.hasQuery()) {
             return null;
         }
-        ScreenHandler handler = activeHandler(client);
+        AbstractContainerMenu handler = activeHandler(client);
         if (handler == null) {
             return null;
         }
         Integer best = null;
         int bestScore = -1;
         for (Slot slot : handler.slots) {
-            if (slot == null || slot.getStack().isEmpty()) {
+            if (slot == null || slot.getItem().isEmpty()) {
                 continue;
             }
-            int visible = toUserVisibleSlot(client, slot.id);
-            int score = matcher.score(slot.getStack(), visible);
+            int visible = toUserVisibleSlot(client, slot.index);
+            int score = matcher.score(slot.getItem(), visible);
             if (score > bestScore) {
                 bestScore = score;
-                best = slot.id;
+                best = slot.index;
             }
         }
         return bestScore >= 0 ? best : null;
     }
 
-    private static int playerInventoryIndex(ClientPlayerEntity player, Slot slot) {
-        if (player == null || slot == null || slot.inventory != player.getInventory()) {
+    private static int playerInventoryIndex(LocalPlayer player, Slot slot) {
+        if (player == null || slot == null || slot.container != player.getInventory()) {
             return -1;
         }
-        int index = slot.getIndex();
-        return index >= 0 && index < player.getInventory().size() ? index : -1;
+        int index = slot.getContainerSlot();
+        return index >= 0 && index < player.getInventory().getContainerSize() ? index : -1;
     }
 }

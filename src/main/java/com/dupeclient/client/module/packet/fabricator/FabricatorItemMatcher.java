@@ -1,11 +1,10 @@
 package com.dupeclient.client.module.packet.fabricator;
 
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-
 import java.util.Locale;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
 
 /** Lightweight item matching for fabricator slot resolution. */
 public final class FabricatorItemMatcher {
@@ -28,7 +27,7 @@ public final class FabricatorItemMatcher {
             return -1;
         }
         String lower = query.toLowerCase(Locale.ROOT);
-        Identifier id = Registries.ITEM.getId(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (id != null) {
             String full = id.toString().toLowerCase(Locale.ROOT);
             String path = id.getPath().toLowerCase(Locale.ROOT);
@@ -40,11 +39,11 @@ public final class FabricatorItemMatcher {
                 return 200;
             }
         }
-        String name = stack.getName().getString().toLowerCase(Locale.ROOT);
+        String name = stack.getHoverName().getString().toLowerCase(Locale.ROOT);
         if (name.contains(lower)) {
             return 180;
         }
-        var custom = stack.get(DataComponentTypes.CUSTOM_NAME);
+        var custom = stack.get(DataComponents.CUSTOM_NAME);
         if (custom != null && custom.getString().toLowerCase(Locale.ROOT).contains(lower)) {
             return 170;
         }

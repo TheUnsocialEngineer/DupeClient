@@ -4,14 +4,13 @@ import com.dupeclient.client.gui.MacroEditorScreen;
 import com.dupeclient.client.module.macro.graph.MacroGraphCompiler;
 import com.dupeclient.client.module.packet.sniffer.PacketSnifferEntry;
 import com.dupeclient.client.module.packet.sniffer.PacketSnifferManager;
-import net.minecraft.client.MinecraftClient;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
 
 public final class MacroSnifferBridge {
     private static final Pattern SLOT_PATTERN = Pattern.compile("slot[=:]\\s*(\\-?\\d+)", Pattern.CASE_INSENSITIVE);
@@ -69,7 +68,7 @@ public final class MacroSnifferBridge {
             return "";
         }
         MacroQuickPlay.markDirty();
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
             mc.execute(() -> MacroEditorScreen.open(mc, id));
         }

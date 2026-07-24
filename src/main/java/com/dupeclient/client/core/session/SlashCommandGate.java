@@ -1,8 +1,8 @@
 package com.dupeclient.client.core.session;
 
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 public final class SlashCommandGate {
     private SlashCommandGate() {
@@ -12,8 +12,8 @@ public final class SlashCommandGate {
         if (HubModuleRules.exploitFeaturesAllowed()) {
             return false;
         }
-        source.sendFeedback(Text.literal("[DupeClient] ").formatted(Formatting.GOLD)
-                .append(Text.literal(HubModuleRules.blockReason()).formatted(Formatting.RED)));
+        source.sendFeedback(Component.literal("[DupeClient] ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(HubModuleRules.blockReason()).withStyle(ChatFormatting.RED)));
         return true;
     }
 
@@ -21,8 +21,8 @@ public final class SlashCommandGate {
         if (HubModuleRules.socialFeaturesAllowed()) {
             return false;
         }
-        source.sendFeedback(Text.literal("[DupeClient] ").formatted(Formatting.GOLD)
-                .append(Text.literal(HubModuleRules.blockReason()).formatted(Formatting.RED)));
+        source.sendFeedback(Component.literal("[DupeClient] ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(HubModuleRules.blockReason()).withStyle(ChatFormatting.RED)));
         return true;
     }
 }

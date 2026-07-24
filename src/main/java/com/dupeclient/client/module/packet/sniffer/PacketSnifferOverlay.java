@@ -8,10 +8,6 @@ import com.dupeclient.client.gui.overlay.AbstractDraggableOverlay;
 import com.dupeclient.client.gui.overlay.OverlayTextField;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlay;
 import com.dupeclient.client.module.packet.PacketUtils;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -22,6 +18,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 /**
  * SniffCraft-style sniffer layout: log + packet data side-by-side, stats footer, collapsible options.
@@ -232,20 +232,20 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
         int px = overlayX();
         int py = overlayY();
-        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        Font tr = Minecraft.getInstance().font;
         PacketSnifferSettings s = manager.getSettings();
 
         context.fill(px, py, px + PANEL_W, py + panelHeight(), 0xE018181B);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, 0xFF27272A);
-        context.drawTextWithShadow(tr, Text.literal("Packet Sniffer"), px + PAD, py + 3, UiTokens.TEXT);
+        context.drawString(tr, Component.literal("Packet Sniffer"), px + PAD, py + 3, UiTokens.TEXT);
         String counts = "C2S " + manager.c2sCount() + " · S2C " + manager.s2cCount();
-        context.drawTextWithShadow(tr, Text.literal(counts), px + PANEL_W - PAD - tr.getWidth(counts), py + 3, 0xFF86EFAC);
+        context.drawString(tr, Component.literal(counts), px + PANEL_W - PAD - tr.width(counts), py + 3, 0xFF86EFAC);
 
         int y = py + TITLE_H + GAP;
         y = renderToolbar(context, tr, px, y, s);
@@ -263,7 +263,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         }
     }
 
-    private int renderToolbar(DrawContext context, TextRenderer tr, int px, int y, PacketSnifferSettings s) {
+    private int renderToolbar(GuiGraphics context, Font tr, int px, int y, PacketSnifferSettings s) {
         hitBtnW = (PANEL_W - PAD * 2 - GAP * 7) / 8;
         hitPauseX = px + PAD;
         hitClearX = hitPauseX + hitBtnW + GAP;
@@ -291,7 +291,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         return y + BTN_H + GAP;
     }
 
-    private int renderFilterRow(DrawContext context, TextRenderer tr, int px, int y) {
+    private int renderFilterRow(GuiGraphics context, Font tr, int px, int y) {
         int tabW = 52;
         hitTabAllX = px + PAD;
         hitTabC2sX = hitTabAllX + tabW + GAP;
@@ -310,12 +310,12 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         context.fill(hitSearchX, hitSearchY, hitSearchX + hitSearchW, hitSearchY + SEARCH_H, searchBg);
         context.fill(hitSearchX, hitSearchY, hitSearchX + hitSearchW, hitSearchY + 1, searchBorder);
         String searchShown = search.isEmpty() && !searchFocused ? "Display filter (+inc -exc)…" : search.text();
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(searchShown, hitSearchW - 6)), hitSearchX + 3, hitSearchY + 2,
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(searchShown, hitSearchW - 6)), hitSearchX + 3, hitSearchY + 2,
                 search.isEmpty() && !searchFocused ? UiTokens.TEXT_DIM : 0xFFE5E7EB);
         return y + TAB_H + GAP;
     }
 
-    private int renderOptionsRow(DrawContext context, TextRenderer tr, int px, int y, PacketSnifferSettings s) {
+    private int renderOptionsRow(GuiGraphics context, Font tr, int px, int y, PacketSnifferSettings s) {
         int x = px + PAD;
         int chipW = 54;
         hitChipBlockX = x;
@@ -338,7 +338,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         return y + OPTIONS_ROW_H + GAP;
     }
 
-    private int renderExpandedOptions(DrawContext context, TextRenderer tr, int px, int y, PacketSnifferSettings s) {
+    private int renderExpandedOptions(GuiGraphics context, Font tr, int px, int y, PacketSnifferSettings s) {
         hitOptionsBodyY = y;
         hitOptionsBodyH = OPTIONS_EXPANDED_H;
         int innerW = PANEL_W - PAD * 2;
@@ -357,9 +357,9 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         settingsRowHits.add(new SettingsRowHit(SettingsAction.TOGGLE, x, rowY, half, SETTINGS_ROW_H, "Block chat notify"));
         settingsRowHits.add(new SettingsRowHit(SettingsAction.CLICK, x + half + GAP, rowY, half, SETTINGS_ROW_H, "Replay delay ms"));
         UiComponents.drawOptionToggle(tr, context, x, rowY, half, "Block chat notify", s.blockChatNotify, 1f);
-        context.drawTextWithShadow(tr, Text.literal("Replay delay"), x + half + GAP + 2, rowY + 3, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal("Replay delay"), x + half + GAP + 2, rowY + 3, UiTokens.TEXT_DIM);
         String delay = Integer.toString(s.replayDelayMs) + " ms";
-        context.drawTextWithShadow(tr, Text.literal(delay), x + half + GAP + half - tr.getWidth(delay) - 2, rowY + 3, 0xFFE5E7EB);
+        context.drawString(tr, Component.literal(delay), x + half + GAP + half - tr.width(delay) - 2, rowY + 3, 0xFFE5E7EB);
         rowY += SETTINGS_ROW_H + 2;
 
         settingsRowHits.add(new SettingsRowHit(SettingsAction.LIST_MODE_C2S, x, rowY, half, TAB_H));
@@ -418,12 +418,12 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
             for (int r = 0; r < PICKER_LIST_VISIBLE; r++) {
                 int excIdx = settingsExcludedScroll + r;
                 if (excIdx < excluded.size()) {
-                    context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(excluded.get(excIdx), hitSettingsExListW - 8)),
+                    context.drawString(tr, Component.literal(tr.plainSubstrByWidth(excluded.get(excIdx), hitSettingsExListW - 8)),
                             hitSettingsExListX + 4, hitSettingsExListY + 2 + r * PICKER_LIST_LINE, 0xFFFFB3B3);
                 }
                 int incIdx = settingsIncludedScroll + r;
                 if (incIdx < included.size()) {
-                    context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(included.get(incIdx), hitSettingsInListW - 8)),
+                    context.drawString(tr, Component.literal(tr.plainSubstrByWidth(included.get(incIdx), hitSettingsInListW - 8)),
                             hitSettingsInListX + 4, hitSettingsInListY + 2 + r * PICKER_LIST_LINE, 0xFF56E29A);
                 }
             }
@@ -435,14 +435,14 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         return y + OPTIONS_EXPANDED_H + GAP;
     }
 
-    private int renderMainSplit(DrawContext context, TextRenderer tr, int px, int y) {
+    private int renderMainSplit(GuiGraphics context, Font tr, int px, int y) {
         int innerW = PANEL_W - PAD * 2;
         int logW = innerW * LOG_COL_RATIO / 100;
         int dataW = innerW - logW - GAP;
         int x = px + PAD;
 
-        context.drawTextWithShadow(tr, Text.literal("Packet log"), x, y - 2, 0xFF9CA3AF);
-        context.drawTextWithShadow(tr, Text.literal("Packet data"), x + logW + GAP, y - 2, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal("Packet log"), x, y - 2, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal("Packet data"), x + logW + GAP, y - 2, 0xFF9CA3AF);
         y += 8;
 
         List<PacketSnifferEntry> filtered = filteredEntries();
@@ -467,7 +467,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
             if (selectedRow) {
                 context.fill(hitLogX + 1, hitLogY + i * LINE_H, hitLogX + logInnerW - 1, hitLogY + (i + 1) * LINE_H, 0x55374151);
             }
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(logListLine(entry), logInnerW - 4)),
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(logListLine(entry), logInnerW - 4)),
                     hitLogX + 2, hitLogY + i * LINE_H, lineColor(entry));
         }
         if (maxLogScroll > 0) {
@@ -489,16 +489,16 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         dataScrollOffset = Math.max(0, Math.min(maxDataScroll, dataScrollOffset));
         int dataInnerW = dataW - (maxDataScroll > 0 ? SCROLLBAR_W + 1 : 0);
         if (selected == null) {
-            context.drawTextWithShadow(tr, Text.literal("Select a packet"), hitDataX + 4, hitDataY + 4, UiTokens.TEXT_DIM);
+            context.drawString(tr, Component.literal("Select a packet"), hitDataX + 4, hitDataY + 4, UiTokens.TEXT_DIM);
         } else {
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(selected.name, dataInnerW - 4)),
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(selected.name, dataInnerW - 4)),
                     hitDataX + 4, hitDataY + 2, selected.isC2s() ? 0xFF86EFAC : 0xFF93C5FD);
             for (int i = 0; i < DATA_LINES; i++) {
                 int idx = dataScrollOffset + i;
                 if (idx >= dataLines.size()) {
                     break;
                 }
-                context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(dataLines.get(idx), dataInnerW - 4)),
+                context.drawString(tr, Component.literal(tr.plainSubstrByWidth(dataLines.get(idx), dataInnerW - 4)),
                         hitDataX + 4, hitDataY + 12 + i * LINE_H, 0xFFE5E7EB);
             }
         }
@@ -512,7 +512,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         return y + MAIN_H + GAP;
     }
 
-    private int renderStatsFooter(DrawContext context, TextRenderer tr, int px, int y) {
+    private int renderStatsFooter(GuiGraphics context, Font tr, int px, int y) {
         hitStatsX = px + PAD;
         hitStatsY = y;
         hitStatsW = PANEL_W - PAD * 2;
@@ -525,12 +525,12 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         context.fill(hitStatsX, hitStatsY, hitStatsX + hitStatsW, hitStatsY + hitStatsH, 0xFF0F172A);
         context.fill(hitStatsX, hitStatsY, hitStatsX + hitStatsW, hitStatsY + 1, 0xFF374151);
 
-        context.drawTextWithShadow(tr, Text.literal("Server → Client (" + manager.s2cCount() + ")"), s2cX + 4, y + 2, 0xFF93C5FD);
-        context.drawTextWithShadow(tr, Text.literal("Client → Server (" + manager.c2sCount() + ")"), c2sX + 4, y + 2, 0xFF86EFAC);
-        context.drawTextWithShadow(tr, Text.literal("Packet"), s2cX + 4, y + 13, 0xFF6B7280);
-        context.drawTextWithShadow(tr, Text.literal("Count"), s2cX + colW - 44, y + 13, 0xFF6B7280);
-        context.drawTextWithShadow(tr, Text.literal("Packet"), c2sX + 4, y + 13, 0xFF6B7280);
-        context.drawTextWithShadow(tr, Text.literal("Count"), c2sX + colW - 44, y + 13, 0xFF6B7280);
+        context.drawString(tr, Component.literal("Server → Client (" + manager.s2cCount() + ")"), s2cX + 4, y + 2, 0xFF93C5FD);
+        context.drawString(tr, Component.literal("Client → Server (" + manager.c2sCount() + ")"), c2sX + 4, y + 2, 0xFF86EFAC);
+        context.drawString(tr, Component.literal("Packet"), s2cX + 4, y + 13, 0xFF6B7280);
+        context.drawString(tr, Component.literal("Count"), s2cX + colW - 44, y + 13, 0xFF6B7280);
+        context.drawString(tr, Component.literal("Packet"), c2sX + 4, y + 13, 0xFF6B7280);
+        context.drawString(tr, Component.literal("Count"), c2sX + colW - 44, y + 13, 0xFF6B7280);
         context.fill(s2cX + 2, y + 22, s2cX + colW - 2, y + 23, 0xFF374151);
         context.fill(c2sX + 2, y + 22, c2sX + colW - 2, y + 23, 0xFF374151);
 
@@ -539,23 +539,23 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         return y + STATS_H + GAP;
     }
 
-    private void drawStatsTableColumn(DrawContext context, TextRenderer tr, int x, int y, int colW, PacketDirection direction) {
+    private void drawStatsTableColumn(GuiGraphics context, Font tr, int x, int y, int colW, PacketDirection direction) {
         int total = direction == PacketDirection.C2S ? manager.c2sCount() : manager.s2cCount();
         int color = direction == PacketDirection.C2S ? 0xFF86EFAC : 0xFF93C5FD;
-        context.drawTextWithShadow(tr, Text.literal("Total"), x, y, color);
-        context.drawTextWithShadow(tr, Text.literal(Integer.toString(total)), x + colW - 40, y, color);
+        context.drawString(tr, Component.literal("Total"), x, y, color);
+        context.drawString(tr, Component.literal(Integer.toString(total)), x + colW - 40, y, color);
         y += STATS_ROW_H;
 
         List<Map.Entry<String, Integer>> top = manager.topTypeCounts(direction, STATS_ROWS - 1);
         for (Map.Entry<String, Integer> entry : top) {
             String pct = total > 0 ? String.format(" (%.1f%%)", entry.getValue() * 100.0 / total) : "";
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(entry.getKey(), colW - 52)), x, y, color);
-            context.drawTextWithShadow(tr, Text.literal(entry.getValue() + pct), x + colW - tr.getWidth(entry.getValue() + pct) - 2, y, color);
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(entry.getKey(), colW - 52)), x, y, color);
+            context.drawString(tr, Component.literal(entry.getValue() + pct), x + colW - tr.width(entry.getValue() + pct) - 2, y, color);
             y += STATS_ROW_H;
         }
     }
 
-    private void renderStatusLine(DrawContext context, TextRenderer tr, int px, int y, PacketSnifferSettings s) {
+    private void renderStatusLine(GuiGraphics context, Font tr, int px, int y, PacketSnifferSettings s) {
         List<PacketSnifferEntry> filtered = filteredEntries();
         String line = (s.paused ? "Paused" : "Capturing") + " · " + manager.entryCount() + " in buffer";
         if (!search.isEmpty()) {
@@ -564,11 +564,11 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         if (selectedEntryId > 0) {
             line += " · #" + selectedEntryId;
         }
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(line, PANEL_W - PAD * 2)), px + PAD, y, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(line, PANEL_W - PAD * 2)), px + PAD, y, UiTokens.TEXT_DIM);
     }
 
     private void drawScrollbar(
-            DrawContext context,
+            GuiGraphics context,
             int trackX,
             int trackY,
             int trackH,
@@ -627,7 +627,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         return lines;
     }
 
-    private void renderContextMenu(DrawContext context, TextRenderer tr) {
+    private void renderContextMenu(GuiGraphics context, Font tr) {
         PacketSnifferEntry entry = contextMenuEntry();
         List<String> labels = contextMenuLabels(entry);
         int menuH = CTX_ITEM_H * labels.size() + 4;
@@ -641,7 +641,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
             if (i > 0) {
                 context.fill(mx + 4, my + i * CTX_ITEM_H + 1, mx + CTX_W - 4, my + i * CTX_ITEM_H + 2, 0xFF374151);
             }
-            context.drawTextWithShadow(tr, Text.literal(labels.get(i)), mx + 6, my + i * CTX_ITEM_H + 4, 0xFFE5E7EB);
+            context.drawString(tr, Component.literal(labels.get(i)), mx + 6, my + i * CTX_ITEM_H + 4, 0xFFE5E7EB);
         }
         contextMenuX = mx;
         contextMenuY = my;
@@ -814,8 +814,8 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
             switch (row) {
                 case 0 -> PacketReplayer.replay(entry);
                 case 1 -> {
-                    MinecraftClient client = MinecraftClient.getInstance();
-                    PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.currentScreen : null, entry);
+                    Minecraft client = Minecraft.getInstance();
+                    PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.screen : null, entry);
                 }
                 case 2 -> {
                     String id = MacroSnifferBridge.createMacroFromSelection(entry.id);
@@ -1068,23 +1068,23 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         return out;
     }
 
-    private void drawTab(DrawContext context, TextRenderer tr, int x, int y, int w, String label, boolean active) {
+    private void drawTab(GuiGraphics context, Font tr, int x, int y, int w, String label, boolean active) {
         int bg = active ? 0xFF374151 : 0xFF1F2937;
         context.fill(x, y, x + w, y + TAB_H, bg);
-        int tw = tr.getWidth(label);
-        context.drawTextWithShadow(tr, Text.literal(label), x + (w - tw) / 2, y + 3, active ? 0xFFE5E7EB : UiTokens.TEXT_DIM);
+        int tw = tr.width(label);
+        context.drawString(tr, Component.literal(label), x + (w - tw) / 2, y + 3, active ? 0xFFE5E7EB : UiTokens.TEXT_DIM);
     }
 
-    private void drawMiniBtn(DrawContext context, TextRenderer tr, int x, int y, int w, String label, boolean enabled) {
+    private void drawMiniBtn(GuiGraphics context, Font tr, int x, int y, int w, String label, boolean enabled) {
         context.fill(x, y, x + w, y + BTN_H, enabled ? 0xFF374151 : 0xFF1F2937);
-        int tw = tr.getWidth(label);
-        context.drawTextWithShadow(tr, Text.literal(label), x + (w - tw) / 2, y + 3, enabled ? 0xFFE5E7EB : 0xFF6B7280);
+        int tw = tr.width(label);
+        context.drawString(tr, Component.literal(label), x + (w - tw) / 2, y + 3, enabled ? 0xFFE5E7EB : 0xFF6B7280);
     }
 
-    private void drawChip(DrawContext context, TextRenderer tr, int x, int y, int w, String label, boolean on) {
+    private void drawChip(GuiGraphics context, Font tr, int x, int y, int w, String label, boolean on) {
         int bg = on ? 0xFF166534 : 0xFF1F2937;
         context.fill(x, y, x + w, y + OPTIONS_ROW_H, bg);
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(label, w - 4)), x + 3, y + 3, on ? 0xFFBBF7D0 : UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(label, w - 4)), x + 3, y + 3, on ? 0xFFBBF7D0 : UiTokens.TEXT_DIM);
     }
 
     private static final int SETTINGS_ROW_H = 14;
@@ -1173,8 +1173,8 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
             return true;
         }
         if (inRect(mouseX, mouseY, hitFabX, hitBtnY, hitBtnW, BTN_H)) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            PacketWorkbenchScreen.openFabrication(client != null ? client.currentScreen : null);
+            Minecraft client = Minecraft.getInstance();
+            PacketWorkbenchScreen.openFabrication(client != null ? client.screen : null);
             return true;
         }
         PacketSnifferEntry selected = selectedEntry();
@@ -1183,13 +1183,13 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
             return true;
         }
         if (inRect(mouseX, mouseY, hitEditX, hitActionY, hitActionW, BTN_H) && selected != null && selected.canFabricate()) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.currentScreen : null, selected);
+            Minecraft client = Minecraft.getInstance();
+            PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.screen : null, selected);
             return true;
         }
         if (inRect(mouseX, mouseY, hitOpenX, hitActionY, hitActionW, BTN_H) && selected != null) {
-            MinecraftClient client = MinecraftClient.getInstance();
-            PacketWorkbenchScreen.openCaptured(client != null ? client.currentScreen : null, selected);
+            Minecraft client = Minecraft.getInstance();
+            PacketWorkbenchScreen.openCaptured(client != null ? client.screen : null, selected);
             return true;
         }
         if (inRect(mouseX, mouseY, hitQueueX, hitActionY, hitActionW, BTN_H) && selected != null && selected.canReplay()) {

@@ -2,41 +2,41 @@ package com.dupeclient.client.mixin;
 
 import com.mojang.authlib.minecraft.UserApiService;
 import com.mojang.authlib.yggdrasil.ProfileResult;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.SocialInteractionsManager;
-import net.minecraft.client.resource.SplashTextResourceSupplier;
-import net.minecraft.client.session.ProfileKeys;
-import net.minecraft.client.session.Session;
-import net.minecraft.client.session.report.AbuseReportContext;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
+import net.minecraft.client.gui.screens.social.PlayerSocialManager;
+import net.minecraft.client.multiplayer.ProfileKeyPairManager;
+import net.minecraft.client.multiplayer.chat.report.ReportingContext;
+import net.minecraft.client.resources.SplashManager;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public interface MinecraftClientSessionAccessor {
     @Mutable
-    @Accessor("session")
-    void dupeClient$setSession(Session session);
+    @Accessor("user")
+    void dupeClient$setSession(User session);
 
     @Mutable
-    @Accessor("gameProfileFuture")
+    @Accessor("profileFuture")
     void dupeClient$setGameProfileFuture(CompletableFuture<ProfileResult> future);
 
     @Mutable
-    @Accessor("splashTextLoader")
-    void dupeClient$setSplashTextLoader(SplashTextResourceSupplier splashTextLoader);
+    @Accessor("splashManager")
+    void dupeClient$setSplashTextLoader(SplashManager splashTextLoader);
 
     @Mutable
-    @Accessor("socialInteractionsManager")
-    void dupeClient$setSocialInteractionsManager(SocialInteractionsManager socialInteractionsManager);
+    @Accessor("playerSocialManager")
+    void dupeClient$setSocialInteractionsManager(PlayerSocialManager socialInteractionsManager);
 
     @Mutable
-    @Accessor("profileKeys")
-    void dupeClient$setProfileKeys(ProfileKeys profileKeys);
+    @Accessor("profileKeyPairManager")
+    void dupeClient$setProfileKeys(ProfileKeyPairManager profileKeys);
 
     @Mutable
-    @Accessor("abuseReportContext")
-    void dupeClient$setAbuseReportContext(AbuseReportContext abuseReportContext);
+    @Accessor("reportingContext")
+    void dupeClient$setAbuseReportContext(ReportingContext abuseReportContext);
 }

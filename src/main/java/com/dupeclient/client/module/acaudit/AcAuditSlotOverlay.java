@@ -1,35 +1,35 @@
 package com.dupeclient.client.module.acaudit;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 public final class AcAuditSlotOverlay {
     private AcAuditSlotOverlay() {
     }
 
-    public static void render(HandledScreen<?> screen, DrawContext context, int guiX, int guiY, int backgroundHeight, Slot focusedSlot) {
+    public static void render(AbstractContainerScreen<?> screen, GuiGraphics context, int guiX, int guiY, int backgroundHeight, Slot focusedSlot) {
         AcAuditSettings settings = AcAuditManager.INSTANCE.getSettings();
         if (!settings.enabled || !settings.rawSlotOverlayEnabled) {
             return;
         }
-        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        Font tr = Minecraft.getInstance().font;
         int color = settings.slotOverlayColor;
         boolean shadow = settings.slotOverlayShadow;
-        ScreenHandler handler = screen.getScreenHandler();
+        AbstractContainerMenu handler = screen.getMenu();
 
         for (Slot slot : handler.slots) {
-            context.drawText(tr, String.valueOf(slot.id), guiX + slot.x, guiY + slot.y, color, shadow);
+            context.drawString(tr, String.valueOf(slot.index), guiX + slot.x, guiY + slot.y, color, shadow);
         }
 
         if (settings.slotOverlayShowSyncId) {
-            context.drawText(tr,
-                    "syncId " + handler.syncId + "  rev " + handler.getRevision(),
+            context.drawString(tr,
+                    "syncId " + handler.containerId + "  rev " + handler.getStateId(),
                     guiX,
                     guiY - 10,
                     color,
@@ -37,10 +37,10 @@ public final class AcAuditSlotOverlay {
         }
 
         if (settings.slotOverlayShowHoveredItem && focusedSlot != null) {
-            ItemStack stack = focusedSlot.getStack();
-            String line = "slot " + focusedSlot.id + ": "
-                    + (stack.isEmpty() ? "(empty)" : Registries.ITEM.getId(stack.getItem()) + " x" + stack.getCount());
-            context.drawText(tr, line, guiX, guiY + backgroundHeight + 2, color, shadow);
+            ItemStack stack = focusedSlot.getItem();
+            String line = "slot " + focusedSlot.index + ": "
+                    + (stack.isEmpty() ? "(empty)" : BuiltInRegistries.ITEM.getKey(stack.getItem()) + " x" + stack.getCount());
+            context.drawString(tr, line, guiX, guiY + backgroundHeight + 2, color, shadow);
         }
     }
 }

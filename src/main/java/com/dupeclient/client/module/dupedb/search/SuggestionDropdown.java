@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
 
 final class SuggestionDropdown {
    private static final int MAX_VISIBLE = 10;
    private static final int ROW_H = 12;
    private static final int MIN_WIDTH = 120;
-   private final TextFieldWidget field;
-   private final TextRenderer tr;
+   private final EditBox field;
+   private final Font tr;
    private final Supplier<List<SuggestionDropdown.Item>> source;
    private List<SuggestionDropdown.Item> filtered = new ArrayList<>();
    private int highlight;
@@ -24,13 +24,13 @@ final class SuggestionDropdown {
    private int popupW;
    private int visibleCount;
 
-   SuggestionDropdown(TextFieldWidget field, TextRenderer tr, Supplier<List<SuggestionDropdown.Item>> source) {
+   SuggestionDropdown(EditBox field, Font tr, Supplier<List<SuggestionDropdown.Item>> source) {
       this.field = field;
       this.tr = tr;
       this.source = source;
    }
 
-   TextFieldWidget field() {
+   EditBox field() {
       return this.field;
    }
 
@@ -43,7 +43,7 @@ final class SuggestionDropdown {
    }
 
    void refresh() {
-      String query = this.field.getText() == null ? "" : this.field.getText().trim().toLowerCase(Locale.ROOT);
+      String query = this.field.getValue() == null ? "" : this.field.getValue().trim().toLowerCase(Locale.ROOT);
       List<SuggestionDropdown.Item> base = this.source.get();
       List<SuggestionDropdown.Item> next = new ArrayList<>();
       if (query.isEmpty()) {
@@ -106,7 +106,7 @@ final class SuggestionDropdown {
    }
 
    private void apply(SuggestionDropdown.Item it) {
-      this.field.setText(it.value());
+      this.field.setValue(it.value());
       this.field.setFocused(false);
       this.lastQuery = null;
    }
@@ -158,7 +158,7 @@ final class SuggestionDropdown {
       }
    }
 
-   void render(DrawContext ctx) {
+   void render(GuiGraphics ctx) {
       this.refresh();
       if (this.filtered.isEmpty()) {
          this.visibleCount = 0;
@@ -188,10 +188,10 @@ final class SuggestionDropdown {
             }
 
             String countText = this.formatCount(it.count());
-            int countW = this.tr.getWidth(countText);
+            int countW = this.tr.width(countText);
             String label = this.trimToWidth(it.label(), Math.max(0, w - countW - 12));
-            ctx.drawText(this.tr, label, x + 4, ry + 2, -1642753, false);
-            ctx.drawText(this.tr, countText, x + w - countW - 4, ry + 2, -6442794, false);
+            ctx.drawString(this.tr, label, x + 4, ry + 2, -1642753, false);
+            ctx.drawString(this.tr, countText, x + w - countW - 4, ry + 2, -6442794, false);
          }
 
          if (this.filtered.size() > count) {
@@ -213,9 +213,9 @@ final class SuggestionDropdown {
    private String trimToWidth(String value, int maxWidth) {
       if (value == null) {
          return "";
-      } else if (maxWidth > 0 && this.tr.getWidth(value) > maxWidth) {
+      } else if (maxWidth > 0 && this.tr.width(value) > maxWidth) {
          String ellipsis = "...";
-         String trimmed = this.tr.trimToWidth(value, Math.max(0, maxWidth - this.tr.getWidth(ellipsis)));
+         String trimmed = this.tr.plainSubstrByWidth(value, Math.max(0, maxWidth - this.tr.width(ellipsis)));
          return trimmed + ellipsis;
       } else {
          return value;

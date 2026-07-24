@@ -4,16 +4,15 @@ import com.dupeclient.client.core.InputFocusGuards;
 import com.dupeclient.client.core.notify.ClientNotificationHub;
 import com.dupeclient.client.core.session.HubModuleRules;
 import com.dupeclient.client.module.packet.FeatureHotkeyManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 public final class McpToolsManager {
     public static final McpToolsManager INSTANCE = new McpToolsManager();
@@ -113,7 +112,7 @@ public final class McpToolsManager {
     }
 
     /** Fills host/port from the server the client is currently connected to. */
-    public boolean applyCurrentServerToHost(MinecraftClient client) {
+    public boolean applyCurrentServerToHost(Minecraft client) {
         McpToolsServerAddress address = McpToolsServerAddress.fromConnectedClient(client);
         if (address == null) {
             moduleFeedback("Not connected to a multiplayer server.");
@@ -143,7 +142,7 @@ public final class McpToolsManager {
         return McpToolsBotLogFilter.normalize(line);
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null) {
             return;
         }
@@ -461,7 +460,7 @@ public final class McpToolsManager {
         sendBotDotTo(controlTargets(), "mine", new String[]{blockId}, true, false);
     }
 
-    public boolean sendBotsToLocalPlayer(MinecraftClient client) {
+    public boolean sendBotsToLocalPlayer(Minecraft client) {
         if (client == null || client.player == null) {
             moduleFeedback("Join a world first.");
             return false;
@@ -656,11 +655,11 @@ public final class McpToolsManager {
         if (!moduleChatFeedback) {
             return;
         }
-        sendHudLine(prefix().copy().append(Text.literal(message).formatted(Formatting.GRAY)));
+        sendHudLine(prefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 
     public void moduleFeedbackConfigToggle(String message) {
-        sendHudLine(prefix().copy().append(Text.literal(message).formatted(Formatting.GRAY)));
+        sendHudLine(prefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 
     public void onStaffLock() {
@@ -689,18 +688,18 @@ public final class McpToolsManager {
         }
     }
 
-    private static MutableText prefix() {
-        return Text.literal("[MCPTools] ").formatted(Formatting.GOLD, Formatting.BOLD);
+    private static MutableComponent prefix() {
+        return Component.literal("[MCPTools] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
     }
 
-    private void sendHudLine(Text line) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private void sendHudLine(Component line) {
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }

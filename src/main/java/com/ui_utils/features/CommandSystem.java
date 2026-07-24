@@ -8,17 +8,17 @@ import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.text.Text;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.session.Session;
-import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
 
 public class CommandSystem {
     private static final String P = "\u00a77[\u00a7c*\u00a77] ";
@@ -100,18 +100,18 @@ public class CommandSystem {
     }
 
     private static String closeCommand(String args) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> mc.setScreen(null));
         return "\u00a77[\u00a7c*\u00a77] Screen closed";
     }
 
     private static String desyncCommand(String args) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null || mc.player == null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null || mc.player == null) {
             return "\u00a77[\u00a7c*\u00a77] \u00a7cNot connected";
         }
-        int syncId = mc.player.currentScreenHandler.syncId;
-        mc.getNetworkHandler().sendPacket((Packet)new CloseHandledScreenC2SPacket(syncId));
+        int syncId = mc.player.containerMenu.containerId;
+        mc.getConnection().send((Packet)new ServerboundContainerClosePacket(syncId));
         return "\u00a77[\u00a7c*\u00a77] Desync sent \u00a77(syncId: \u00a7c" + syncId + "\u00a77)";
     }
 
@@ -119,15 +119,15 @@ public class CommandSystem {
         if (args.isEmpty()) {
             return "\u00a77[\u00a7c*\u00a77] \u00a7cUsage: chat <message>";
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return "\u00a77[\u00a7c*\u00a77] \u00a7cNot in game";
         }
         mc.execute(() -> {
             if (args.startsWith("/")) {
-                mc.player.networkHandler.sendChatCommand(args.substring(1));
+                mc.player.connection.sendCommand(args.substring(1));
             } else {
-                mc.player.networkHandler.sendChatMessage(args);
+                mc.player.connection.sendChat(args);
             }
         });
         return "\u00a77[\u00a7c*\u00a77] Sent: \u00a7c" + args;
@@ -137,18 +137,18 @@ public class CommandSystem {
         if (args.isEmpty()) {
             return "\u00a77[\u00a7c*\u00a77] \u00a7cUsage: joinserver <ip>";
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         String serverIp = args.split("\\s+")[0];
-        ServerAddress address = ServerAddress.parse(serverIp);
-        ServerInfo serverInfo = new ServerInfo("Server", serverIp, ServerInfo.ServerType.OTHER);
+        ServerAddress address = ServerAddress.parseString(serverIp);
+        ServerData serverInfo = new ServerData("Server", serverIp, ServerData.Type.OTHER);
         mc.execute(() -> {
             try {
-                if (mc.world != null) {
+                if (mc.level != null) {
                     try {
-                        mc.world.getClass().getMethod("disconnect", new Class[0]).invoke((Object)mc.world, new Object[0]);
+                        mc.level.getClass().getMethod("disconnect", new Class[0]).invoke((Object)mc.level, new Object[0]);
                     }
                     catch (NoSuchMethodException e) {
-                        mc.world.getClass().getMethod("disconnect", Text.class).invoke((Object)mc.world, Text.empty());
+                        mc.level.getClass().getMethod("disconnect", Component.class).invoke((Object)mc.level, Component.empty());
                     }
                 }
                 try {
@@ -161,7 +161,7 @@ public class CommandSystem {
             catch (Exception e) {
                 e.printStackTrace();
             }
-            ConnectScreen.connect((Screen)new MultiplayerScreen((Screen)new TitleScreen()), (MinecraftClient)mc, (ServerAddress)address, (ServerInfo)serverInfo, (boolean)false, null);
+            ConnectScreen.startConnecting((Screen)new JoinMultiplayerScreen((Screen)new TitleScreen()), (Minecraft)mc, (ServerAddress)address, (ServerData)serverInfo, (boolean)false, null);
         });
         return "\u00a77[\u00a7c*\u00a77] Joining: \u00a7c" + serverIp;
     }
@@ -173,17 +173,17 @@ public class CommandSystem {
         }
         String action = parts[0].toLowerCase();
         String slot = parts.length > 1 ? parts[1] : "";
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         return switch (action) {
             case "save" -> {
                 if (slot.isEmpty()) {
                     yield "\u00a77[\u00a7c*\u00a77] \u00a7cUsage: screen save <slot>";
                 }
-                if (mc.currentScreen == null || mc.player == null) {
+                if (mc.screen == null || mc.player == null) {
                     yield "\u00a77[\u00a7c*\u00a77] \u00a7cNo screen to save";
                 }
-                SharedVariables.savedScreens.put(slot, mc.currentScreen);
-                SharedVariables.savedScreenHandlers.put(slot, mc.player.currentScreenHandler);
+                SharedVariables.savedScreens.put(slot, mc.screen);
+                SharedVariables.savedScreenHandlers.put(slot, mc.player.containerMenu);
                 yield "\u00a77[\u00a7c*\u00a77] Saved to: \u00a7c" + slot;
             }
             case "load" -> {
@@ -197,7 +197,7 @@ public class CommandSystem {
                 mc.execute(() -> {
                     mc.setScreen(screen);
                     if (mc.player != null && SharedVariables.savedScreenHandlers.containsKey(slot)) {
-                        mc.player.currentScreenHandler = SharedVariables.savedScreenHandlers.get(slot);
+                        mc.player.containerMenu = SharedVariables.savedScreenHandlers.get(slot);
                     }
                 });
                 yield "\u00a77[\u00a7c*\u00a77] Loaded: \u00a7c" + slot;
@@ -236,12 +236,12 @@ public class CommandSystem {
             return "\u00a77[\u00a7c*\u00a77] \u00a7cUsage: account <dump|set> [args]";
         }
         String action = parts[0].toLowerCase();
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         switch (action) {
             case "dump": {
-                Session session = mc.getSession();
-                return "\u00a77[\u00a7c*\u00a77] Username: \u00a7c" + session.getUsername()
-                        + "\n\u00a77[\u00a7c*\u00a77] UUID: \u00a7c" + session.getUuidOrNull();
+                User session = mc.getUser();
+                return "\u00a77[\u00a7c*\u00a77] Username: \u00a7c" + session.getName()
+                        + "\n\u00a77[\u00a7c*\u00a77] UUID: \u00a7c" + session.getProfileId();
             }
             case "set": {
                 if (parts.length < 3) {
@@ -250,8 +250,8 @@ public class CommandSystem {
                 String type = parts[1].toLowerCase();
                 String value = parts[2];
                 try {
-                    Session oldSession = mc.getSession();
-                    Session newSession;
+                    User oldSession = mc.getUser();
+                    User newSession;
                     if (type.equals("username")) {
                         newSession = SessionUtils.copyWith(oldSession, value, null);
                     } else if (type.equals("uuid")) {
@@ -259,7 +259,7 @@ public class CommandSystem {
                     } else {
                         return "\u00a77[\u00a7c*\u00a77] \u00a7cUnknown type: \u00a77" + type + " \u00a7c(use username or uuid)";
                     }
-                    Field sessionField = MinecraftClient.class.getDeclaredField("session");
+                    Field sessionField = Minecraft.class.getDeclaredField("session");
                     sessionField.setAccessible(true);
                     sessionField.set(mc, newSession);
                     return "\u00a77[\u00a7c*\u00a77] Set \u00a7c" + type + " \u00a77= \u00a7c" + value;

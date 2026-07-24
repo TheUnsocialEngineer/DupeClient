@@ -3,12 +3,12 @@ package com.dupeclient.client.module.packet.sniffer;
 import com.dupeclient.client.mixin.ClientConnectionInvoker;
 import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.fabricator.ClickSlotPackets;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.ClientConnection;
-import net.minecraft.network.listener.ClientPlayPacketListener;
-import net.minecraft.network.listener.PacketListener;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.Connection;
+import net.minecraft.network.PacketListener;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 
 public final class PacketReplayer {
     private PacketReplayer() {
@@ -23,21 +23,21 @@ public final class PacketReplayer {
             PacketSnifferManager.INSTANCE.feedback("Only C2S packets can be replayed");
             return false;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.player == null || client.getConnection() == null) {
             PacketSnifferManager.INSTANCE.feedback("Join a world to replay packets");
             return false;
         }
         return sendC2s(client, entry.packet);
     }
 
-    public static boolean sendC2s(MinecraftClient client, Packet<?> packet) {
+    public static boolean sendC2s(Minecraft client, Packet<?> packet) {
         if (client == null || packet == null) {
             return false;
         }
         Packet<?> toSend = packet;
-        if (packet instanceof ClickSlotC2SPacket click && client.player != null && client.player.currentScreenHandler != null) {
-            ClickSlotC2SPacket refreshed = ClickSlotPackets.refresh(click, client.player.currentScreenHandler);
+        if (packet instanceof ServerboundContainerClickPacket click && client.player != null && client.player.containerMenu != null) {
+            ServerboundContainerClickPacket refreshed = ClickSlotPackets.refresh(click, client.player.containerMenu);
             if (refreshed != null) {
                 toSend = refreshed;
             }
@@ -48,21 +48,21 @@ public final class PacketReplayer {
         return true;
     }
 
-    public static boolean sendEdited(MinecraftClient client, Packet<?> packet) {
+    public static boolean sendEdited(Minecraft client, Packet<?> packet) {
         return sendC2s(client, packet);
     }
 
-    public static boolean injectS2c(MinecraftClient client, Packet<?> packet) {
-        if (client == null || client.getNetworkHandler() == null || packet == null) {
+    public static boolean injectS2c(Minecraft client, Packet<?> packet) {
+        if (client == null || client.getConnection() == null || packet == null) {
             return false;
         }
-        ClientConnection connection = client.getNetworkHandler().getConnection();
-        if (connection == null || !connection.isOpen()) {
+        Connection connection = client.getConnection().getConnection();
+        if (connection == null || !connection.isConnected()) {
             PacketSnifferManager.INSTANCE.feedback("Connection not open");
             return false;
         }
         PacketListener listener = connection.getPacketListener();
-        if (!(listener instanceof ClientPlayPacketListener playListener)) {
+        if (!(listener instanceof ClientGamePacketListener playListener)) {
             PacketSnifferManager.INSTANCE.feedback("S2C inject only supported in play phase");
             return false;
         }

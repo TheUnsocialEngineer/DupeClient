@@ -6,13 +6,13 @@ import com.dupeclient.client.mixin.MinecraftClientSessionAccessor;
 import com.dupeclient.client.mixin.MinecraftClientUserApiAccessor;
 import com.dupeclient.client.module.security.SecurityManager;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.SocialInteractionsManager;
-import net.minecraft.client.resource.SplashTextResourceSupplier;
-import net.minecraft.client.session.ProfileKeys;
-import net.minecraft.client.session.Session;
-import net.minecraft.client.session.report.AbuseReportContext;
-import net.minecraft.client.session.report.ReporterEnvironment;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
+import net.minecraft.client.gui.screens.social.PlayerSocialManager;
+import net.minecraft.client.multiplayer.ProfileKeyPairManager;
+import net.minecraft.client.multiplayer.chat.report.ReportEnvironment;
+import net.minecraft.client.multiplayer.chat.report.ReportingContext;
+import net.minecraft.client.resources.SplashManager;
 import net.minecraft.util.Util;
 
 import java.util.Optional;
@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public final class SessionManager {
-    public static Session originalSession;
+    public static User originalSession;
     public static Boolean isSessionValid;
     public static boolean hasValidationStarted;
 
@@ -28,9 +28,9 @@ public final class SessionManager {
     }
 
     public static void initialize() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client != null && originalSession == null) {
-            originalSession = client.getSession();
+            originalSession = client.getUser();
         }
     }
 
@@ -39,7 +39,7 @@ public final class SessionManager {
             initialize();
         }
         if (originalSession != null) {
-            SecurityManager.INSTANCE.onSessionUsernameChanged(originalSession.getUsername());
+            SecurityManager.INSTANCE.onSessionUsernameChanged(originalSession.getName());
             setSession(originalSession);
         }
     }
@@ -48,15 +48,15 @@ public final class SessionManager {
         return isSessionValid != null && isSessionValid;
     }
 
-    public static Session getSession() {
-        return MinecraftClient.getInstance().getSession();
+    public static User getSession() {
+        return Minecraft.getInstance().getUser();
     }
 
     public static String getUsername() {
-        return MinecraftClient.getInstance().getSession().getUsername();
+        return Minecraft.getInstance().getUser().getName();
     }
 
-    public static Session createSession(String username, String uuidString, String ssid) {
+    public static User createSession(String username, String uuidString, String ssid) {
         if (uuidString.length() == 32) {
             uuidString = uuidString.substring(0, 8) + "-"
                     + uuidString.substring(8, 12) + "-"
@@ -65,8 +65,8 @@ public final class SessionManager {
                     + uuidString.substring(20, 32);
         }
         SecurityManager.INSTANCE.onSessionUsernameChanged(username);
-        Session current = MinecraftClient.getInstance().getSession();
-        return new Session(
+        User current = Minecraft.getInstance().getUser();
+        return new User(
                 username,
                 UUID.fromString(uuidString),
                 ssid,
@@ -74,27 +74,27 @@ public final class SessionManager {
                 current.getClientId());
     }
 
-    public static void setSession(Session session) {
+    public static void setSession(User session) {
         isSessionValid = null;
         hasValidationStarted = false;
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         MinecraftClientSessionAccessor accessor = (MinecraftClientSessionAccessor) client;
         accessor.dupeClient$setSession(session);
         accessor.dupeClient$setGameProfileFuture(CompletableFuture.supplyAsync(
-                () -> client.getApiServices().sessionService().fetchProfile(session.getUuidOrNull(), true),
-                Util.getDownloadWorkerExecutor()));
-        accessor.dupeClient$setSplashTextLoader(new SplashTextResourceSupplier(session));
-        UserApiService userApiService = new YggdrasilAuthenticationService(client.getNetworkProxy())
+                () -> client.services().sessionService().fetchProfile(session.getProfileId(), true),
+                Util.nonCriticalIoPool()));
+        accessor.dupeClient$setSplashTextLoader(new SplashManager(session));
+        UserApiService userApiService = new YggdrasilAuthenticationService(client.getProxy())
                 .createUserApiService(session.getAccessToken());
         MinecraftClientUserApiAccessor userApi = (MinecraftClientUserApiAccessor) client;
         userApi.dupeClient$setUserApiService(userApiService);
-        accessor.dupeClient$setSocialInteractionsManager(new SocialInteractionsManager(client, userApiService));
-        accessor.dupeClient$setProfileKeys(ProfileKeys.create(
+        accessor.dupeClient$setSocialInteractionsManager(new PlayerSocialManager(client, userApiService));
+        accessor.dupeClient$setProfileKeys(ProfileKeyPairManager.create(
                 userApiService, session, FabricLoader.getInstance().getGameDir()));
-        accessor.dupeClient$setAbuseReportContext(AbuseReportContext.create(
-                ReporterEnvironment.ofIntegratedServer(), userApiService));
-        OfflineAccountManager.onSessionSwapped(session.getUsername());
+        accessor.dupeClient$setAbuseReportContext(ReportingContext.create(
+                ReportEnvironment.local(), userApiService));
+        OfflineAccountManager.onSessionSwapped(session.getName());
     }
 
     public static boolean isUsingOriginalSession() {

@@ -9,27 +9,27 @@ import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.PacketUtilsSettings;
 import com.dupeclient.client.module.packet.fabricator.PacketFabricator;
 import com.dupeclient.client.core.LookTargetUtil;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.Item;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Client macro runner (graph-compiled linear steps). {@link MacroEngine} delegates here.
@@ -54,7 +54,7 @@ public final class MacroRuntime {
     private int moveBlockTargetCheb;
     private int keyHoldTicksRemaining;
     @Nullable
-    private KeyBinding keyHoldBinding;
+    private KeyMapping keyHoldBinding;
     @Nullable
     private BlockPos blockInteractTarget;
     private int blockInteractNavigateTicks;
@@ -62,9 +62,9 @@ public final class MacroRuntime {
     private int guiItemRemaining;
     private int guiItemCooldown;
     @Nullable
-    private KeyBinding moveAuxBinding;
+    private KeyMapping moveAuxBinding;
     @Nullable
-    private KeyBinding moveAux2Binding;
+    private KeyMapping moveAux2Binding;
     private int waitLookStreak;
     private int waitLookBudget;
 
@@ -90,7 +90,7 @@ public final class MacroRuntime {
         return activeMacroId;
     }
 
-    public void start(MinecraftClient client, String id) {
+    public void start(Minecraft client, String id) {
         stop(client, false);
         try {
             MacroDefinition def = MacroStorage.load(id);
@@ -111,11 +111,11 @@ public final class MacroRuntime {
         }
     }
 
-    public void stop(MinecraftClient client) {
+    public void stop(Minecraft client) {
         stop(client, true);
     }
 
-    private void stop(MinecraftClient client, boolean announce) {
+    private void stop(Minecraft client, boolean announce) {
         boolean wasRunning = running;
         cleanupMovementKeys(client);
         if (wasRunning) {
@@ -133,11 +133,11 @@ public final class MacroRuntime {
         clearSessionFields();
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (!running) {
             return;
         }
-        if (client == null || client.player == null || client.world == null) {
+        if (client == null || client.player == null || client.level == null) {
             stop(client, false);
             return;
         }
@@ -169,7 +169,7 @@ public final class MacroRuntime {
                 yield true;
             }
             case CLOSE_GUI -> {
-                client.player.closeHandledScreen();
+                client.player.closeContainer();
                 yield true;
             }
             case UI_UTILS_TOGGLE_DELAY -> {
@@ -209,21 +209,21 @@ public final class MacroRuntime {
             }
             case MOVE_FORWARD -> tickMoveForward(client, step);
             case LOOK_TURN -> {
-                client.player.setYaw(client.player.getYaw() + step.ticks);
-                client.player.setBodyYaw(client.player.getYaw());
-                client.player.setHeadYaw(client.player.getYaw());
+                client.player.setYRot(client.player.getYRot() + step.ticks);
+                client.player.setYBodyRot(client.player.getYRot());
+                client.player.setYHeadRot(client.player.getYRot());
                 yield true;
             }
             case LOOK_PITCH -> {
-                float p = MathHelper.clamp(client.player.getPitch() + step.ticks, -90f, 90f);
-                client.player.setPitch(p);
+                float p = Mth.clamp(client.player.getXRot() + step.ticks, -90f, 90f);
+                client.player.setXRot(p);
                 yield true;
             }
             case GUI_ITEM -> tickGuiItem(client, step);
             case CLICK_SLOT -> {
-                if (client.currentScreen instanceof HandledScreen<?> hs) {
-                    ScreenHandler handler = hs.getScreenHandler();
-                    SlotActionType action = MacroSlotActions.toVanilla(step.clickSlotAction);
+                if (client.screen instanceof AbstractContainerScreen<?> hs) {
+                    AbstractContainerMenu handler = hs.getMenu();
+                    ClickType action = MacroSlotActions.toVanilla(step.clickSlotAction);
                     MacroAutomation.clickSlot(client, handler, step.clickSlotId, action, step.clickSlotButton);
                 }
                 yield true;
@@ -239,11 +239,11 @@ public final class MacroRuntime {
                 yield true;
             }
             case HOTBAR_SELECT -> {
-                client.player.getInventory().setSelectedSlot(MathHelper.clamp(step.hotbarSlot, 0, 8));
+                client.player.getInventory().setSelectedSlot(Mth.clamp(step.hotbarSlot, 0, 8));
                 yield true;
             }
             case DROP_ITEM -> {
-                client.player.getInventory().dropSelectedItem(step.dropFullStack);
+                client.player.getInventory().removeFromSelected(step.dropFullStack);
                 yield true;
             }
             case WAIT_LOOK_BLOCK -> tickWaitLookBlock(client, step);
@@ -257,13 +257,13 @@ public final class MacroRuntime {
         }
     }
 
-    private void endIfDone(MinecraftClient client) {
+    private void endIfDone(Minecraft client) {
         if (running && stepIndex >= compiledRun.steps().size()) {
             stop(client, true);
         }
     }
 
-    private void onStepEnter(MinecraftClient client, MacroStep step) {
+    private void onStepEnter(Minecraft client, MacroStep step) {
         MacroStepType type = MacroStepType.fromString(step.type);
         waitTicksRemaining = Math.max(0, step.ticks);
         moveForwardHeld = false;
@@ -284,27 +284,27 @@ public final class MacroRuntime {
         if (type == MacroStepType.MOVE_FORWARD) {
             if (!"PLAYER".equals(MacroGraphTypes.normalizeWalkFacing(step.walkFacing))) {
                 float yaw = yawCardinalDegrees(step.walkFacing);
-                ClientPlayerEntity p = client.player;
-                p.setYaw(yaw);
-                p.setBodyYaw(yaw);
-                p.setHeadYaw(yaw);
+                LocalPlayer p = client.player;
+                p.setYRot(yaw);
+                p.setYBodyRot(yaw);
+                p.setYHeadRot(yaw);
             }
             if ("BLOCKS".equalsIgnoreCase(step.moveMeasure == null ? "" : step.moveMeasure.trim())) {
-                moveBlockStart = client.player.getBlockPos();
+                moveBlockStart = client.player.blockPosition();
                 moveBlockTargetCheb = Math.max(1, step.moveDistanceBlocks);
             } else {
                 moveTicksRemaining = Math.max(1, step.ticks);
             }
             moveForwardHeld = true;
             if (client.options != null) {
-                client.options.forwardKey.setPressed(true);
+                client.options.keyUp.setDown(true);
             }
             applyMoveAuxBindings(client, step);
         } else if (type == MacroStepType.KEY_HOLD) {
             keyHoldBinding = MacroHoldKeys.binding(client, step.holdKeyId);
             keyHoldTicksRemaining = Math.max(1, step.ticks);
             if (keyHoldBinding != null) {
-                keyHoldBinding.setPressed(true);
+                keyHoldBinding.setDown(true);
             }
         } else if (type == MacroStepType.GUI_ITEM) {
             guiItemRemaining = step.guiItemCount < 0 ? -1 : Math.max(1, step.guiItemCount);
@@ -320,27 +320,27 @@ public final class MacroRuntime {
         }
     }
 
-    private void finishStep(MinecraftClient client, MacroStepType type) {
+    private void finishStep(Minecraft client, MacroStepType type) {
         if (type == MacroStepType.MOVE_FORWARD) {
             moveForwardHeld = false;
             if (client.options != null) {
-                client.options.forwardKey.setPressed(false);
+                client.options.keyUp.setDown(false);
             }
             releaseMoveAuxBindings();
         } else if (type == MacroStepType.KEY_HOLD) {
             if (keyHoldBinding != null) {
-                keyHoldBinding.setPressed(false);
+                keyHoldBinding.setDown(false);
             }
             keyHoldBinding = null;
         }
     }
 
-    private void cleanupMovementKeys(@Nullable MinecraftClient client) {
+    private void cleanupMovementKeys(@Nullable Minecraft client) {
         if (client != null && client.options != null) {
-            client.options.forwardKey.setPressed(false);
+            client.options.keyUp.setDown(false);
         }
         if (keyHoldBinding != null) {
-            keyHoldBinding.setPressed(false);
+            keyHoldBinding.setDown(false);
             keyHoldBinding = null;
         }
         releaseMoveAuxBindings();
@@ -365,47 +365,47 @@ public final class MacroRuntime {
 
     private void releaseMoveAuxBindings() {
         if (moveAuxBinding != null) {
-            moveAuxBinding.setPressed(false);
+            moveAuxBinding.setDown(false);
             moveAuxBinding = null;
         }
         if (moveAux2Binding != null) {
-            moveAux2Binding.setPressed(false);
+            moveAux2Binding.setDown(false);
             moveAux2Binding = null;
         }
     }
 
-    private void applyMoveAuxBindings(MinecraftClient client, MacroStep step) {
+    private void applyMoveAuxBindings(Minecraft client, MacroStep step) {
         releaseMoveAuxBindings();
         if (client.options == null) {
             return;
         }
         String a1 = step.moveAuxHoldKeyId == null ? "" : step.moveAuxHoldKeyId.trim();
         if (!a1.isEmpty()) {
-            KeyBinding kb = MacroHoldKeys.binding(client, a1);
-            if (kb != null && kb != client.options.forwardKey) {
+            KeyMapping kb = MacroHoldKeys.binding(client, a1);
+            if (kb != null && kb != client.options.keyUp) {
                 moveAuxBinding = kb;
-                kb.setPressed(true);
+                kb.setDown(true);
             }
         }
         String a2 = step.moveAuxHoldKey2Id == null ? "" : step.moveAuxHoldKey2Id.trim();
         if (!a2.isEmpty()) {
-            KeyBinding kb = MacroHoldKeys.binding(client, a2);
-            if (kb != null && kb != client.options.forwardKey && kb != moveAuxBinding) {
+            KeyMapping kb = MacroHoldKeys.binding(client, a2);
+            if (kb != null && kb != client.options.keyUp && kb != moveAuxBinding) {
                 moveAux2Binding = kb;
-                kb.setPressed(true);
+                kb.setDown(true);
             }
         }
     }
 
-    private void refreshMoveAuxPressed(MinecraftClient client) {
+    private void refreshMoveAuxPressed(Minecraft client) {
         if (client.options == null) {
             return;
         }
         if (moveAuxBinding != null) {
-            moveAuxBinding.setPressed(true);
+            moveAuxBinding.setDown(true);
         }
         if (moveAux2Binding != null) {
-            moveAux2Binding.setPressed(true);
+            moveAux2Binding.setDown(true);
         }
     }
 
@@ -417,32 +417,32 @@ public final class MacroRuntime {
         return false;
     }
 
-    private void tickSendChat(MinecraftClient client, MacroStep step) {
+    private void tickSendChat(Minecraft client, MacroStep step) {
         String msg = step.text == null ? "" : step.text.trim();
-        if (msg.isEmpty() || client.player == null || client.getNetworkHandler() == null) {
+        if (msg.isEmpty() || client.player == null || client.getConnection() == null) {
             return;
         }
         if (msg.startsWith("/")) {
-            client.getNetworkHandler().sendChatCommand(msg.substring(1));
+            client.getConnection().sendCommand(msg.substring(1));
         } else {
-            client.getNetworkHandler().sendChatMessage(msg);
+            client.getConnection().sendChat(msg);
         }
     }
 
-    private boolean tickMoveForward(MinecraftClient client, MacroStep step) {
+    private boolean tickMoveForward(Minecraft client, MacroStep step) {
         if (client.player == null || client.options == null) {
             return true;
         }
         if (!moveForwardHeld) {
             moveForwardHeld = true;
-            client.options.forwardKey.setPressed(true);
+            client.options.keyUp.setDown(true);
         }
         refreshMoveAuxPressed(client);
         if ("BLOCKS".equalsIgnoreCase(step.moveMeasure == null ? "" : step.moveMeasure.trim())) {
             if (moveBlockStart == null) {
-                moveBlockStart = client.player.getBlockPos();
+                moveBlockStart = client.player.blockPosition();
             }
-            BlockPos cur = client.player.getBlockPos();
+            BlockPos cur = client.player.blockPosition();
             int cheb = Math.max(
                     Math.abs(cur.getX() - moveBlockStart.getX()),
                     Math.abs(cur.getZ() - moveBlockStart.getZ()));
@@ -455,7 +455,7 @@ public final class MacroRuntime {
     private boolean tickKeyHold() {
         if (keyHoldTicksRemaining <= 1) {
             if (keyHoldBinding != null) {
-                keyHoldBinding.setPressed(false);
+                keyHoldBinding.setDown(false);
             }
             return true;
         }
@@ -463,12 +463,12 @@ public final class MacroRuntime {
         return false;
     }
 
-    private boolean tickGuiItem(MinecraftClient client, MacroStep step) {
-        if (!(client.currentScreen instanceof HandledScreen<?> handled)) {
+    private boolean tickGuiItem(Minecraft client, MacroStep step) {
+        if (!(client.screen instanceof AbstractContainerScreen<?> handled)) {
             return false;
         }
-        ScreenHandler handler = handled.getScreenHandler();
-        if (handler == null || client.player == null || client.interactionManager == null) {
+        AbstractContainerMenu handler = handled.getMenu();
+        if (handler == null || client.player == null || client.gameMode == null) {
             return false;
         }
         if (!MacroAutomation.hasNonPlayerInventorySlots(handler, client.player)) {
@@ -476,7 +476,7 @@ public final class MacroRuntime {
         }
         Item item = MacroAutomation.resolveItem(step.guiItemId);
         boolean anyItem = MacroAutomation.isAnyItem(step.guiItemId);
-        if (!anyItem && (item == null || item == net.minecraft.item.Items.AIR)) {
+        if (!anyItem && (item == null || item == net.minecraft.world.item.Items.AIR)) {
             return true;
         }
         if (guiItemCooldown > 0) {
@@ -503,7 +503,7 @@ public final class MacroRuntime {
      *
      * @return {@code true} when this macro step is finished (advance).
      */
-    private boolean guiItemTryOneQuickMove(MinecraftClient client, MacroStep step, ScreenHandler handler, Item item, boolean anyItem) {
+    private boolean guiItemTryOneQuickMove(Minecraft client, MacroStep step, AbstractContainerMenu handler, Item item, boolean anyItem) {
         boolean takeFromContainer = "TAKE".equalsIgnoreCase(step.guiItemMode == null ? "" : step.guiItemMode.trim());
         if (guiItemRemaining < 0) {
             Slot slot = anyItem
@@ -529,9 +529,9 @@ public final class MacroRuntime {
         if (pick == null) {
             return true;
         }
-        int before = pick.getStack().getCount();
+        int before = pick.getItem().getCount();
         MacroAutomation.quickMoveSlot(client, handler, pick);
-        int moved = Math.max(0, before - pick.getStack().getCount());
+        int moved = Math.max(0, before - pick.getItem().getCount());
         if (moved <= 0) {
             return true;
         }
@@ -539,17 +539,17 @@ public final class MacroRuntime {
         return guiItemRemaining <= 0;
     }
 
-    private boolean tickBlockInteract(MinecraftClient client, MacroStep step) {
+    private boolean tickBlockInteract(Minecraft client, MacroStep step) {
         if (blockInteractTarget == null) {
             return true;
         }
-        ClientPlayerEntity player = client.player;
-        World world = client.world;
-        if (player == null || world == null || client.interactionManager == null) {
+        LocalPlayer player = client.player;
+        Level world = client.level;
+        if (player == null || world == null || client.gameMode == null) {
             return true;
         }
-        double reach = player.getBlockInteractionRange() + 0.5;
-        if (player.squaredDistanceTo(Vec3d.ofCenter(blockInteractTarget)) <= reach * reach) {
+        double reach = player.blockInteractionRange() + 0.5;
+        if (player.distanceToSqr(Vec3.atCenterOf(blockInteractTarget)) <= reach * reach) {
             return MacroAutomation.tryInteractBlock(client, blockInteractTarget);
         }
         blockInteractNavigateTicks++;
@@ -559,35 +559,35 @@ public final class MacroRuntime {
         return blockInteractNavigateTicks >= Math.max(1, step.blockNavigateMaxTicks);
     }
 
-    private boolean tickWaitLookBlock(MinecraftClient client, MacroStep step) {
+    private boolean tickWaitLookBlock(Minecraft client, MacroStep step) {
         Identifier want = parseIdWithMinecraftDefault(step.blockCustomId);
         if (want == null) {
             return false;
         }
-        if (!Registries.BLOCK.containsId(want)) {
+        if (!BuiltInRegistries.BLOCK.containsKey(want)) {
             return false;
         }
-        Block wantBlock = Registries.BLOCK.get(want);
+        Block wantBlock = BuiltInRegistries.BLOCK.getValue(want);
         if (wantBlock == Blocks.AIR) {
             return false;
         }
         LookTargetUtil.LookTarget pick = LookTargetUtil.pick(client);
         boolean match = pick != null
                 && pick.block() != null
-                && client.world != null
-                && client.world.getBlockState(pick.block().getBlockPos()).isOf(wantBlock);
+                && client.level != null
+                && client.level.getBlockState(pick.block().getBlockPos()).is(wantBlock);
         return advanceWaitLook(match, step.ticks);
     }
 
-    private boolean tickWaitLookEntity(MinecraftClient client, MacroStep step) {
+    private boolean tickWaitLookEntity(Minecraft client, MacroStep step) {
         Identifier wantType = parseIdWithMinecraftDefault(step.entityTypeId);
         if (wantType == null) {
             return false;
         }
-        if (!Registries.ENTITY_TYPE.containsId(wantType)) {
+        if (!BuiltInRegistries.ENTITY_TYPE.containsKey(wantType)) {
             return false;
         }
-        EntityType<?> wantEt = Registries.ENTITY_TYPE.get(wantType);
+        EntityType<?> wantEt = BuiltInRegistries.ENTITY_TYPE.getValue(wantType);
         LookTargetUtil.LookTarget pick = LookTargetUtil.pick(client);
         boolean match = pick != null
                 && pick.entity() != null

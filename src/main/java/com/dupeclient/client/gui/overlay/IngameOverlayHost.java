@@ -12,13 +12,13 @@ import com.dupeclient.client.module.mcptools.McpToolsOverlay;
 import com.dupeclient.client.module.utility.ChatGamesOverlay;
 import java.util.Comparator;
 import java.util.List;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.world.LevelLoadingScreen;
-import net.minecraft.client.gui.screen.ProgressScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
-import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.gui.screens.ProgressScreen;
+import net.minecraft.client.gui.screens.Screen;
 import org.jetbrains.annotations.Nullable;
 
 public final class IngameOverlayHost {
@@ -108,7 +108,7 @@ public final class IngameOverlayHost {
                 || screen instanceof ProgressScreen;
     }
 
-    public static void renderAll(DrawContext context, int mouseX, int mouseY, float delta) {
+    public static void renderAll(GuiGraphics context, int mouseX, int mouseY, float delta) {
         IngameOverlayHost.renderClickslotFabricator(context, mouseX, mouseY, delta);
         for (IngameModuleOverlay overlay : OVERLAYS) {
             if (overlay == PacketFabricatorOverlay.INSTANCE || !overlay.isActive()) continue;
@@ -116,7 +116,7 @@ public final class IngameOverlayHost {
         }
     }
 
-    public static void renderClickslotFabricator(DrawContext context, int mouseX, int mouseY, float delta) {
+    public static void renderClickslotFabricator(GuiGraphics context, int mouseX, int mouseY, float delta) {
         PacketFabricatorOverlay fabricator = PacketFabricatorOverlay.INSTANCE;
         if (!fabricator.isModuleEnabled() || !fabricator.isVisible()) {
             return;
@@ -129,30 +129,30 @@ public final class IngameOverlayHost {
         return fabricator.isModuleEnabled() && fabricator.isVisible();
     }
 
-    public static void renderOnHud(DrawContext context, RenderTickCounter tickCounter) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    public static void renderOnHud(GuiGraphics context, DeltaTracker tickCounter) {
+        Minecraft client = Minecraft.getInstance();
         if (!IngameOverlayHost.shouldRenderOnHud(client)) {
             return;
         }
         int mouseX = (int)OverlayMouse.scaledX(client);
         int mouseY = (int)OverlayMouse.scaledY(client);
-        float delta = tickCounter.getTickProgress(false);
+        float delta = tickCounter.getGameTimeDeltaPartialTick(false);
         IngameOverlayHost.renderAll(context, mouseX, mouseY, delta);
     }
 
-    public static boolean shouldRenderOnHud(MinecraftClient client) {
-        if (client == null || client.player == null || client.currentScreen != null) {
+    public static boolean shouldRenderOnHud(Minecraft client) {
+        if (client == null || client.player == null || client.screen != null) {
             return false;
         }
         return IngameOverlayHost.hasAnyActive() || IngameOverlayHost.isClickslotFabricatorActive();
     }
 
-    public static boolean shouldRouteHudMouse(MinecraftClient client) {
+    public static boolean shouldRouteHudMouse(Minecraft client) {
         return IngameOverlayHost.shouldRouteOverlayMouse(client);
     }
 
-    public static boolean shouldRouteOverlayMouse(MinecraftClient client) {
-        if (client == null || client.currentScreen != null) {
+    public static boolean shouldRouteOverlayMouse(Minecraft client) {
+        if (client == null || client.screen != null) {
             return false;
         }
         return IngameOverlayHost.hasAnyActive() || IngameOverlayHost.isClickslotFabricatorActive();
@@ -322,7 +322,7 @@ public final class IngameOverlayHost {
         if (target == null || !target.isActive()) {
             return false;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return false;
         }
@@ -353,9 +353,9 @@ public final class IngameOverlayHost {
         return IngameOverlayHost.onFocusedOverlayCharTyped(codePoint);
     }
 
-    public static boolean shouldBlockGameInput(MinecraftClient client) {
+    public static boolean shouldBlockGameInput(Minecraft client) {
         double my;
-        if (client == null || client.currentScreen != null) {
+        if (client == null || client.screen != null) {
             return false;
         }
         IngameModuleOverlay top = IngameOverlayHost.topBlockingActive();

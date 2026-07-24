@@ -2,12 +2,12 @@ package com.dupeclient.client.module.macro;
 
 import com.dupeclient.client.core.InputFocusGuards;
 import com.dupeclient.client.core.session.HubModuleRules;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.InputUtil;
+import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
 
 /**
  * Global run hotkeys stored on {@link MacroDefinition}: when no screen is open, pressing the key starts the macro,
@@ -32,7 +32,7 @@ public final class MacroQuickPlay {
         dirty = true;
     }
 
-    public static void tick(MinecraftClient client) {
+    public static void tick(Minecraft client) {
         if (client == null || client.getWindow() == null) {
             return;
         }
@@ -42,7 +42,7 @@ public final class MacroQuickPlay {
         if (InputFocusGuards.shouldBlockGlobalHotkeys(client)) {
             return;
         }
-        if (client.currentScreen != null) {
+        if (client.screen != null) {
             return;
         }
         if (dirty || --rescanCooldown <= 0) {
@@ -50,7 +50,7 @@ public final class MacroQuickPlay {
             rebuild();
             dirty = false;
         }
-        long win = client.getWindow().getHandle();
+        long win = client.getWindow().handle();
         for (Map.Entry<Long, String> e : packedToMacroId.entrySet()) {
             long packed = e.getKey();
             if (packed < 0) {
@@ -62,7 +62,7 @@ public final class MacroQuickPlay {
                 continue;
             }
             boolean down = modsWanted == 0
-                    ? InputUtil.isKeyPressed(client.getWindow(), key)
+                    ? InputConstants.isKeyDown(client.getWindow(), key)
                     : GLFW.glfwGetKey(win, key) == GLFW.GLFW_PRESS;
             boolean was = edgeWasDown.getOrDefault(packed, false);
             if (down && !was) {

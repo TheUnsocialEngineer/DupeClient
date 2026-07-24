@@ -3,14 +3,13 @@ package com.dupeclient.client.module.fuzzer.economy;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
-import net.minecraft.client.MinecraftClient;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
+import net.minecraft.client.Minecraft;
 
 /** Detects economy-related slash commands from Brigadier and static presets. */
 public final class EconomyCommandDetector {
@@ -48,14 +47,14 @@ public final class EconomyCommandDetector {
     private EconomyCommandDetector() {
     }
 
-    public static List<String> payCommandOptions(MinecraftClient client) {
+    public static List<String> payCommandOptions(Minecraft client) {
         Set<String> found = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         found.addAll(PAY_PRESETS);
         found.addAll(detectPaths(client, PAY_PATH_KEYWORDS, 3));
         return new ArrayList<>(found);
     }
 
-    public static List<String> balanceCommandOptions(MinecraftClient client) {
+    public static List<String> balanceCommandOptions(Minecraft client) {
         Set<String> found = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         found.addAll(BALANCE_PRESETS);
         found.addAll(detectPaths(client, BALANCE_PATH_KEYWORDS, 3));
@@ -153,13 +152,13 @@ public final class EconomyCommandDetector {
         };
     }
 
-    private static List<String> detectPaths(MinecraftClient client, Set<String> keywords, int maxDepth) {
+    private static List<String> detectPaths(Minecraft client, Set<String> keywords, int maxDepth) {
         Set<String> paths = new LinkedHashSet<>();
-        if (client == null || client.getNetworkHandler() == null) {
+        if (client == null || client.getConnection() == null) {
             return List.of();
         }
         try {
-            CommandDispatcher<?> dispatcher = client.getNetworkHandler().getCommandDispatcher();
+            CommandDispatcher<?> dispatcher = client.getConnection().getCommands();
             if (dispatcher == null) {
                 return List.of();
             }

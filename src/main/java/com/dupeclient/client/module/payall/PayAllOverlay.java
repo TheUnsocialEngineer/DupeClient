@@ -8,16 +8,16 @@ import com.dupeclient.client.gui.overlay.OverlayTextField;
 import com.dupeclient.client.gui.overlay.SearchableDropdown;
 import com.dupeclient.client.module.fuzzer.economy.EconomyCommandDetector;
 import com.dupeclient.client.module.security.SecurityManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 /**
  * In-game draggable PayAll control panel (amount mode, targets, exclude staff, commands, log).
@@ -262,7 +262,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
@@ -271,10 +271,10 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         int py = oy();
         context.fill(px, py, px + PANEL_W, py + l.panelH, PANEL_BG);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, TITLE_BG);
-        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-        context.drawTextWithShadow(tr, Text.literal("PayAll"), px + 6, py + 2, TITLE_FG);
+        Font tr = Minecraft.getInstance().font;
+        context.drawString(tr, Component.literal("PayAll"), px + 6, py + 2, TITLE_FG);
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         UiComponents.drawInfoCard(tr, context, l.tx, l.cardTop, l.cardW, l.cardH, "PayAll");
         UiComponents.drawOptionToggle(
                 tr, context, l.innerX, l.chatY, l.rowW, "Chat feedback",
@@ -289,7 +289,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
                 tr, context, modeBtnX, amountFieldY, modeBtnW, INPUT_H,
                 manager.getAmountMode().display(), UiComponents.PillActionStyle.PRIMARY_MINT);
 
-        double tDelay = MathHelper.clamp(manager.getDelayMs() / 5000.0, 0.0, 1.0);
+        double tDelay = Mth.clamp(manager.getDelayMs() / 5000.0, 0.0, 1.0);
         UiComponents.drawValueSlider(
                 tr, context, l.innerX, l.delayY, l.rowW, tDelay, "Delay",
                 manager.getDelayMs() + "ms", sliderMode == SliderMode.DELAY);
@@ -308,7 +308,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
                 "Cancel", UiComponents.PillActionStyle.SECONDARY_SLATE);
 
         drawTrimmedText(context, "Progress " + format1(manager.getProgress() * 100.0) + "%", l.innerX, l.progressY, l.rowW, TEXT_PRIMARY);
-        context.drawTextWithShadow(tr, Text.literal("Online targets: " + manager.getOnlineCount(mc)), l.innerX, l.targetsY, TEXT_ONLINE);
+        context.drawString(tr, Component.literal("Online targets: " + manager.getOnlineCount(mc)), l.innerX, l.targetsY, TEXT_ONLINE);
 
         int staffOnline = SecurityManager.INSTANCE.countOnlineStaff(mc);
         String summary = "Manual " + manager.getManualCount()
@@ -377,8 +377,8 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         excludeDropdown.renderPopupLayer(context, tr, tabPlayers, mouseX, mouseY);
     }
 
-    private void drawTargetsPicker(DrawContext context, int sx, int sy, int sw, MinecraftClient mc) {
-        TextRenderer tr = mc.textRenderer;
+    private void drawTargetsPicker(GuiGraphics context, int sx, int sy, int sw, Minecraft mc) {
+        Font tr = mc.font;
         UiComponents.drawInfoCard(tr, context, sx, sy, sw, PICKER_H, "Targets");
         int ix = sx + 6;
         int iy = sy + 38;
@@ -416,16 +416,16 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         for (int r = 0; r < LIST_VISIBLE; r++) {
             int idx = includedScroll + r;
             if (idx < inc.size()) {
-                String row = tr.trimToWidth(inc.get(idx), inListW - 8);
-                context.drawTextWithShadow(tr, Text.literal(row), inListX + 4, inListY + 2 + r * LIST_ROW, TEXT_PRIMARY);
+                String row = tr.plainSubstrByWidth(inc.get(idx), inListW - 8);
+                context.drawString(tr, Component.literal(row), inListX + 4, inListY + 2 + r * LIST_ROW, TEXT_PRIMARY);
             }
             int j = excludedScroll + r;
             if (j < exc.size()) {
-                String row = tr.trimToWidth(exc.get(j), exListW - 8);
-                context.drawTextWithShadow(tr, Text.literal(row), exListX + 4, exListY + 2 + r * LIST_ROW, TEXT_EXCLUDED);
+                String row = tr.plainSubstrByWidth(exc.get(j), exListW - 8);
+                context.drawString(tr, Component.literal(row), exListX + 4, exListY + 2 + r * LIST_ROW, TEXT_EXCLUDED);
             }
         }
-        context.drawTextWithShadow(tr, Text.literal("Click name → exclude / include"), ix, listY + inListH + 2, TEXT_MUTED);
+        context.drawString(tr, Component.literal("Click name → exclude / include"), ix, listY + inListH + 2, TEXT_MUTED);
     }
 
     private static List<String> filterBySearch(List<String> names, String query) {
@@ -464,7 +464,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
             return true;
         }
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         List<String> tabPlayers = manager.getOnlineTabPlayerNames(mc);
         // Player pickers first so open lists win over controls beneath them.
         if (manualDropdown.mouseClicked(mouseX, mouseY, button, tabPlayers, manager::addManualPlayer)) {
@@ -636,7 +636,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         if (amount == 0.0) {
             return false;
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         List<String> tabPlayers = manager.getOnlineTabPlayerNames(mc);
         boolean overPanel = containsPoint(mouseX, mouseY);
 
@@ -770,7 +770,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
 
     private double sliderValue(double mouseX, int x, int w, double min, double max) {
         double t = (mouseX - x) / (double) w;
-        t = MathHelper.clamp(t, 0.0, 1.0);
+        t = Mth.clamp(t, 0.0, 1.0);
         return min + (max - min) * t;
     }
 
@@ -778,13 +778,13 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         return String.format(Locale.ROOT, "%.1f", value);
     }
 
-    private void drawTrimmedText(DrawContext context, String value, int x, int y, int maxWidth, int color) {
-        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-        String trimmed = tr.trimToWidth(value, Math.max(6, maxWidth));
-        context.drawTextWithShadow(tr, Text.literal(trimmed), x, y, color);
+    private void drawTrimmedText(GuiGraphics context, String value, int x, int y, int maxWidth, int color) {
+        Font tr = Minecraft.getInstance().font;
+        String trimmed = tr.plainSubstrByWidth(value, Math.max(6, maxWidth));
+        context.drawString(tr, Component.literal(trimmed), x, y, color);
     }
 
-    private void cyclePayCommand(MinecraftClient mc) {
+    private void cyclePayCommand(Minecraft mc) {
         List<String> options = manager.getPayCommandOptions(mc);
         if (options.isEmpty()) {
             return;
@@ -795,7 +795,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         commandInput.setText(manager.getPayCommand());
     }
 
-    private void cycleBalanceCommand(MinecraftClient mc) {
+    private void cycleBalanceCommand(Minecraft mc) {
         List<String> options = manager.getBalanceCommandOptions(mc);
         if (options.isEmpty()) {
             return;

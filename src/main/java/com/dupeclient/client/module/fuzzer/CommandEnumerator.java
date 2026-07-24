@@ -4,8 +4,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
-import net.minecraft.client.MinecraftClient;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -14,6 +12,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
 
 /** Collects slash-command templates from the server Brigadier tree, including argument slots. */
 public final class CommandEnumerator {
@@ -24,7 +23,7 @@ public final class CommandEnumerator {
     private CommandEnumerator() {
     }
 
-    public static List<String> allCommandPaths(MinecraftClient client) {
+    public static List<String> allCommandPaths(Minecraft client) {
         Set<String> raw = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         collectPaths(client, raw);
         raw.addAll(CommandArgDiscovery.INSTANCE.pathsForClient(client));
@@ -32,18 +31,18 @@ public final class CommandEnumerator {
     }
 
     /** Brigadier-only paths (used as discovery seeds). */
-    public static List<String> brigadierPaths(MinecraftClient client) {
+    public static List<String> brigadierPaths(Minecraft client) {
         Set<String> raw = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         collectPaths(client, raw);
         return new ArrayList<>(raw);
     }
 
-    private static void collectPaths(MinecraftClient client, Set<String> out) {
-        if (client == null || client.getNetworkHandler() == null) {
+    private static void collectPaths(Minecraft client, Set<String> out) {
+        if (client == null || client.getConnection() == null) {
             return;
         }
         try {
-            CommandDispatcher<?> dispatcher = client.getNetworkHandler().getCommandDispatcher();
+            CommandDispatcher<?> dispatcher = client.getConnection().getCommands();
             if (dispatcher == null) {
                 return;
             }

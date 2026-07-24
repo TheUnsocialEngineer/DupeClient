@@ -4,9 +4,9 @@ import com.dupeclient.client.core.session.SessionBootstrap;
 import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
 import java.net.URI;
@@ -22,12 +22,12 @@ public final class StartupBlockedScreen extends Screen {
     private int contentScroll;
 
     public StartupBlockedScreen() {
-        super(Text.literal("DupeClient Startup Check Failed"));
+        super(Component.literal("DupeClient Startup Check Failed"));
     }
 
     @Override
     protected void init() {
-        clearChildren();
+        clearWidgets();
         int panelW = Math.min(520, this.width - 32);
         int x = (this.width - panelW) / 2;
         int y = Math.max(UiTokens.SP_4, (this.height - 360) / 2) - contentScroll;
@@ -36,31 +36,31 @@ public final class StartupBlockedScreen extends Screen {
 
         y += 188;
 
-        addDrawableChild(new StylishButtonWidget(x, y, panelW, btnH, Text.literal("Open flagged jar (placeholder)"),
+        addRenderableWidget(new StylishButtonWidget(x, y, panelW, btnH, Component.literal("Open flagged jar (placeholder)"),
                 () -> openPath(SessionBootstrap.INSTANCE.selfJarPath())));
         y += btnH + gap;
-        addDrawableChild(new StylishButtonWidget(x, y, panelW, btnH, Text.literal("Open baseline file (placeholder)"),
+        addRenderableWidget(new StylishButtonWidget(x, y, panelW, btnH, Component.literal("Open baseline file (placeholder)"),
                 () -> openPath(SessionBootstrap.INSTANCE.baselineHashPath())));
         y += btnH + gap;
-        addDrawableChild(new StylishButtonWidget(x, y, panelW, btnH, Text.literal("Open config folder (placeholder)"),
+        addRenderableWidget(new StylishButtonWidget(x, y, panelW, btnH, Component.literal("Open config folder (placeholder)"),
                 () -> openPath(SessionBootstrap.INSTANCE.configRootPath())));
 
         y += btnH + UiTokens.SP_4;
         int third = (panelW - gap * 2) / 3;
-        addDrawableChild(new StylishButtonWidget(x, y, third, btnH, Text.literal("jlab.threat.rip"),
+        addRenderableWidget(new StylishButtonWidget(x, y, third, btnH, Component.literal("jlab.threat.rip"),
                 () -> openUrl(THREAT_RIP)));
-        addDrawableChild(new StylishButtonWidget(x + third + gap, y, third, btnH, Text.literal("VirusTotal"),
+        addRenderableWidget(new StylishButtonWidget(x + third + gap, y, third, btnH, Component.literal("VirusTotal"),
                 () -> openUrl(VIRUS_TOTAL)));
-        addDrawableChild(new StylishButtonWidget(x + (third + gap) * 2, y, third, btnH, Text.literal("RatterScanner"),
+        addRenderableWidget(new StylishButtonWidget(x + (third + gap) * 2, y, third, btnH, Component.literal("RatterScanner"),
                 () -> openUrl(RATTER_SCANNER)));
 
         y += btnH + UiTokens.SP_4;
-        addDrawableChild(new StylishButtonWidget(x, y, panelW, btnH, Text.literal("Quit Game"),
-                () -> this.client.scheduleStop()));
+        addRenderableWidget(new StylishButtonWidget(x, y, panelW, btnH, Component.literal("Quit Game"),
+                () -> this.minecraft.stop()));
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         renderBackground(context, mouseX, mouseY, delta);
         super.render(context, mouseX, mouseY, delta);
 
@@ -68,16 +68,16 @@ public final class StartupBlockedScreen extends Screen {
         int x = (this.width - panelW) / 2;
         int y = Math.max(UiTokens.SP_4, (this.height - 360) / 2) - contentScroll;
 
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("STARTUP CHECK FAILED"), this.width / 2, y, 0xFFFF6B6B);
+        context.drawCenteredString(this.font, Component.literal("STARTUP CHECK FAILED"), this.width / 2, y, 0xFFFF6B6B);
         y += 16;
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("DupeClient cannot run until this is resolved."), this.width / 2, y, UiTokens.SLATE_200);
+        context.drawCenteredString(this.font, Component.literal("DupeClient cannot run until this is resolved."), this.width / 2, y, UiTokens.SLATE_200);
         y += 18;
 
         String reason = SessionBootstrap.INSTANCE.lastReason();
         drawWrapped(context, "Reason: " + reason, x, y, panelW, 0xFFFFB4B4);
         y += wrappedHeight(reason, panelW) + UiTokens.SP_3;
 
-        context.drawTextWithShadow(this.textRenderer, Text.literal("Related files:"), x, y, UiTokens.SLATE_200);
+        context.drawString(this.font, Component.literal("Related files:"), x, y, UiTokens.SLATE_200);
         y += 12;
         for (String fileLine : fileLines()) {
             drawWrapped(context, "• " + fileLine, x + UiTokens.SP_2, y, panelW - UiTokens.SP_2, 0xFF94A3B8);
@@ -85,11 +85,11 @@ public final class StartupBlockedScreen extends Screen {
         }
 
         y += UiTokens.SP_2;
-        context.drawTextWithShadow(this.textRenderer, Text.literal("Verify the mod jar is clean:"), x, y, UiTokens.SLATE_200);
+        context.drawString(this.font, Component.literal("Verify the mod jar is clean:"), x, y, UiTokens.SLATE_200);
     }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
         int overlay = UiTokens.argb(0xCC, 0x3A0A0A);
         context.fill(0, 0, this.width, this.height, overlay);
@@ -102,11 +102,11 @@ public final class StartupBlockedScreen extends Screen {
     }
 
     @Override
-    public void close() {
+    public void onClose() {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
@@ -126,20 +126,20 @@ public final class StartupBlockedScreen extends Screen {
         return lines;
     }
 
-    private void drawWrapped(DrawContext context, String text, int x, int y, int maxWidth, int color) {
-        for (var line : this.textRenderer.wrapLines(Text.literal(text), maxWidth)) {
-            context.drawTextWithShadow(this.textRenderer, line, x, y, color);
+    private void drawWrapped(GuiGraphics context, String text, int x, int y, int maxWidth, int color) {
+        for (var line : this.font.split(Component.literal(text), maxWidth)) {
+            context.drawString(this.font, line, x, y, color);
             y += 10;
         }
     }
 
     private int wrappedHeight(String text, int maxWidth) {
-        return this.textRenderer.wrapLines(Text.literal(text), maxWidth).size() * 10;
+        return this.font.split(Component.literal(text), maxWidth).size() * 10;
     }
 
     private static void openUrl(URI uri) {
         try {
-            Util.getOperatingSystem().open(uri);
+            Util.getPlatform().openUri(uri);
         } catch (Exception ignored) {
         }
     }
@@ -151,13 +151,13 @@ public final class StartupBlockedScreen extends Screen {
         try {
             Path target = path.toAbsolutePath();
             if (java.nio.file.Files.isRegularFile(target)) {
-                Util.getOperatingSystem().open(target.getParent());
+                Util.getPlatform().openPath(target.getParent());
             } else if (java.nio.file.Files.isDirectory(target)) {
-                Util.getOperatingSystem().open(target);
+                Util.getPlatform().openPath(target);
             } else {
                 Path parent = target.getParent();
                 if (parent != null) {
-                    Util.getOperatingSystem().open(parent);
+                    Util.getPlatform().openPath(parent);
                 }
             }
         } catch (Exception ignored) {

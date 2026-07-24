@@ -4,14 +4,12 @@ import com.dupeclient.client.module.acaudit.AcAuditManager;
 import com.dupeclient.client.module.dupedb.DupedbManager;
 import com.dupeclient.client.module.dupedb.P2wMarkManager;
 import com.dupeclient.client.module.dupedb.P2wServerPolicy;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 public final class ServerProfileCard {
     private static final long AUTO_HIDE_MS = 12_000L;
@@ -60,7 +58,7 @@ public final class ServerProfileCard {
         }
     }
 
-    public static void render(DrawContext context, TextRenderer tr) {
+    public static void render(GuiGraphics context, Font tr) {
         if (!visible || LINES.isEmpty()) {
             return;
         }
@@ -75,8 +73,8 @@ public final class ServerProfileCard {
         context.fill(x - 2, y - 2, x + w, y + h, 0xAA000000);
         int lineY = y;
         for (int i = 0; i < LINES.size(); i++) {
-            Formatting fmt = i == 0 ? Formatting.AQUA : Formatting.GRAY;
-            context.drawTextWithShadow(tr, Text.literal(LINES.get(i)).formatted(fmt), x, lineY, 0xFFFFFF);
+            ChatFormatting fmt = i == 0 ? ChatFormatting.AQUA : ChatFormatting.GRAY;
+            context.drawString(tr, Component.literal(LINES.get(i)).withStyle(fmt), x, lineY, 0xFFFFFF);
             lineY += 10;
         }
     }

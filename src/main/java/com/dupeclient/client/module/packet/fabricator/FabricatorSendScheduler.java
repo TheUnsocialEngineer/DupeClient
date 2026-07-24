@@ -2,13 +2,12 @@ package com.dupeclient.client.module.packet.fabricator;
 
 import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.PacketUtilsSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.screen.ScreenHandler;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 
 /** Sends fabricated click-slot packets over multiple ticks with pause/stop. */
 public final class FabricatorSendScheduler {
@@ -20,7 +19,7 @@ public final class FabricatorSendScheduler {
         PAUSED
     }
 
-    private final Deque<ClickSlotC2SPacket> pending = new ArrayDeque<>();
+    private final Deque<ServerboundContainerClickPacket> pending = new ArrayDeque<>();
     private State state = State.IDLE;
     private int sentCount;
     private int totalCount;
@@ -49,14 +48,14 @@ public final class FabricatorSendScheduler {
         return state == State.RUNNING || state == State.PAUSED;
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (state != State.RUNNING || pending.isEmpty()) {
             if (state == State.RUNNING && pending.isEmpty()) {
                 finish("Sent " + sentCount + " packet(s).");
             }
             return;
         }
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+        if (client == null || client.player == null || client.getConnection() == null) {
             stop("Stopped: left game.");
             return;
         }
@@ -68,7 +67,7 @@ public final class FabricatorSendScheduler {
             return;
         }
 
-        ScreenHandler handler = resolveHandler(client);
+        AbstractContainerMenu handler = resolveHandler(client);
         if (handler == null) {
             stop("Stopped: no screen handler.");
             return;
@@ -80,11 +79,11 @@ public final class FabricatorSendScheduler {
             if (delayMs > 0 && batch > 0 && System.currentTimeMillis() - lastSendAtMs < delayMs) {
                 break;
             }
-            ClickSlotC2SPacket packet = pending.pollFirst();
+            ServerboundContainerClickPacket packet = pending.pollFirst();
             if (packet == null) {
                 break;
             }
-            ClickSlotC2SPacket refreshed = ClickSlotPackets.refresh(packet, handler);
+            ServerboundContainerClickPacket refreshed = ClickSlotPackets.refresh(packet, handler);
             if (refreshed == null) {
                 stop("Stopped: failed to refresh packet.");
                 return;
@@ -100,7 +99,7 @@ public final class FabricatorSendScheduler {
         }
     }
 
-    public boolean start(MinecraftClient client, List<ClickSlotC2SPacket> packets) {
+    public boolean start(Minecraft client, List<ServerboundContainerClickPacket> packets) {
         if (packets == null || packets.isEmpty()) {
             return false;
         }
@@ -126,7 +125,7 @@ public final class FabricatorSendScheduler {
         PacketUtilsManager.INSTANCE.moduleFeedback("Fabricator send paused (" + sentCount + "/" + totalCount + ").");
     }
 
-    public void resume(MinecraftClient client) {
+    public void resume(Minecraft client) {
         if (state != State.PAUSED || pending.isEmpty()) {
             return;
         }
@@ -154,7 +153,7 @@ public final class FabricatorSendScheduler {
         }
     }
 
-    public void togglePause(MinecraftClient client) {
+    public void togglePause(Minecraft client) {
         if (state == State.RUNNING) {
             pause();
         } else if (state == State.PAUSED) {
@@ -182,7 +181,7 @@ public final class FabricatorSendScheduler {
         }
     }
 
-    private static ScreenHandler resolveHandler(MinecraftClient client) {
+    private static AbstractContainerMenu resolveHandler(Minecraft client) {
         return FabricatorInventorySlots.activeHandler(client);
     }
 }

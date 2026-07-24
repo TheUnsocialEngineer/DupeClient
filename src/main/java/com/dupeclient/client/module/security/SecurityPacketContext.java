@@ -1,6 +1,6 @@
 package com.dupeclient.client.module.security;
 
-import net.minecraft.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 
 /**
  * OpSec-style {@code PacketContext}: marks when the client is inside inbound packet handling so content can be
@@ -36,7 +36,7 @@ public final class SecurityPacketContext {
     public static void setPacketName(Object packet) {
         if (packet instanceof Packet<?> p) {
             try {
-                PACKET_NAME.set(p.getPacketType().id().toString());
+                PACKET_NAME.set(p.type().id().toString());
             } catch (Exception e) {
                 PACKET_NAME.set("unknown");
             }

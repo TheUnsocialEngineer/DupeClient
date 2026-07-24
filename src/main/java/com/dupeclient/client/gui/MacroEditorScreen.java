@@ -37,23 +37,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.gui.Click;
-import net.minecraft.util.Formatting;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.text.Text;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.lwjgl.glfw.GLFW;
-import net.minecraft.util.Identifier;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.ConfirmScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.registry.Registries;
 import org.jetbrains.annotations.Nullable;
 
 public class MacroEditorScreen
@@ -168,7 +167,7 @@ extends Screen implements KeyboardConsumingScreen {
     private String saveOverlayDetail = "";
 
     public MacroEditorScreen(Screen parent, @Nullable String loadIdOrNull) {
-        super(Text.literal("Macro editor"));
+        super(Component.literal("Macro editor"));
         this.parent = parent;
         this.loadIdOrNull = loadIdOrNull;
         this.autoSaveEnabled = MacroStorage.loadMacroEditorPreferences().autosaveEnabled;
@@ -182,11 +181,11 @@ extends Screen implements KeyboardConsumingScreen {
         return Math.clamp((long)((int)((float)this.width * 0.25f)), 132, 240);
     }
 
-    public static void open(MinecraftClient client, @Nullable String loadMacroIdOrNull) {
+    public static void open(Minecraft client, @Nullable String loadMacroIdOrNull) {
         if (client == null) {
             return;
         }
-        Screen cur = client.currentScreen;
+        Screen cur = client.screen;
         if (cur instanceof MacroEditorScreen) {
             return;
         }
@@ -221,75 +220,75 @@ extends Screen implements KeyboardConsumingScreen {
             this.applyInspectorToSelection();
         }
         this.syncDefFromGraph();
-        this.clearChildren();
+        this.clearWidgets();
         int headerY = 10;
         int topH = 20;
         int topGap = 6;
         int right = this.width - 8;
         int topActionsW = 456;
-        this.addDrawableChild(new StylishButtonWidget(right - 68, headerY, 68, topH, Text.literal("Done"), this::tryClose));
-        this.macroSaveButton = new StylishButtonWidget(right - 142, headerY, 68, topH, Text.literal("Save"), this::startSaveMacro);
-        this.addDrawableChild(this.macroSaveButton);
-        this.autoSaveButton = new StylishButtonWidget(right - 236, headerY, 88, topH, Text.literal((this.autoSaveEnabled ? "Autosave: on" : "Autosave: off")), () -> {
+        this.addRenderableWidget(new StylishButtonWidget(right - 68, headerY, 68, topH, Component.literal("Done"), this::tryClose));
+        this.macroSaveButton = new StylishButtonWidget(right - 142, headerY, 68, topH, Component.literal("Save"), this::startSaveMacro);
+        this.addRenderableWidget(this.macroSaveButton);
+        this.autoSaveButton = new StylishButtonWidget(right - 236, headerY, 88, topH, Component.literal((this.autoSaveEnabled ? "Autosave: on" : "Autosave: off")), () -> {
             boolean bl = this.autoSaveEnabled = !this.autoSaveEnabled;
             if (this.autoSaveButton != null) {
-                this.autoSaveButton.setMessage(Text.literal((this.autoSaveEnabled ? "Autosave: on" : "Autosave: off")));
+                this.autoSaveButton.setMessage(Component.literal((this.autoSaveEnabled ? "Autosave: on" : "Autosave: off")));
             }
             MacroStorage.saveMacroEditorPreferences(new MacroStorage.MacroEditorPreferences(this.autoSaveEnabled));
             if (this.autoSaveEnabled) {
                 this.autoSaveCountdownTicks = 5;
             }
         });
-        this.addDrawableChild(this.autoSaveButton);
-        this.addDrawableChild(new StylishButtonWidget(right - 332, headerY, 88, topH, Text.literal("Prompt ✦"), () -> {
-            if (this.client != null) {
-                MacroPromptScreen.open(this.client, this);
+        this.addRenderableWidget(this.autoSaveButton);
+        this.addRenderableWidget(new StylishButtonWidget(right - 332, headerY, 88, topH, Component.literal("Prompt ✦"), () -> {
+            if (this.minecraft != null) {
+                MacroPromptScreen.open(this.minecraft, this);
             }
         }));
-        this.addDrawableChild(new StylishButtonWidget(right - topActionsW, headerY, 56, topH, Text.literal("Import"), () -> {
-            if (this.client != null) {
-                MacroShareScreen.open(this.client, this, this.def == null ? null : this.def.id);
+        this.addRenderableWidget(new StylishButtonWidget(right - topActionsW, headerY, 56, topH, Component.literal("Import"), () -> {
+            if (this.minecraft != null) {
+                MacroShareScreen.open(this.minecraft, this, this.def == null ? null : this.def.id);
             }
         }));
-        this.addDrawableChild(new StylishButtonWidget(right - topActionsW + 56 + topGap, headerY, 56, topH, Text.literal("Export"), this::exportCurrentMacro));
-        int titleW = this.textRenderer.getWidth(this.title.getString());
+        this.addRenderableWidget(new StylishButtonWidget(right - topActionsW + 56 + topGap, headerY, 56, topH, Component.literal("Export"), this::exportCurrentMacro));
+        int titleW = this.font.width(this.title.getString());
         int idX = 12 + titleW + 12;
         int idW = Math.min(128, Math.max(88, (right - topActionsW - idX - 120) / 3));
         int nameX = idX + idW + 6;
         int nameW = Math.max(96, right - topActionsW - 8 - nameX);
-        this.idField = StylishTextFieldWidget.create(this.textRenderer, idX, headerY, idW, topH, Text.literal("id"));
+        this.idField = StylishTextFieldWidget.create(this.font, idX, headerY, idW, topH, Component.literal("id"));
         this.idField.setMaxLength(64);
-        this.idField.setPlaceholder(Text.literal("macro id"));
-        this.idField.setText(this.def.id);
-        this.addDrawableChild(this.idField);
-        this.nameField = StylishTextFieldWidget.create(this.textRenderer, nameX, headerY, nameW, topH, Text.literal("name"));
+        this.idField.setHint(Component.literal("macro id"));
+        this.idField.setValue(this.def.id);
+        this.addRenderableWidget(this.idField);
+        this.nameField = StylishTextFieldWidget.create(this.font, nameX, headerY, nameW, topH, Component.literal("name"));
         this.nameField.setMaxLength(128);
-        this.nameField.setPlaceholder(Text.literal("display name"));
-        this.nameField.setText(this.def.displayName == null ? "" : this.def.displayName);
-        this.addDrawableChild(this.nameField);
+        this.nameField.setHint(Component.literal("display name"));
+        this.nameField.setValue(this.def.displayName == null ? "" : this.def.displayName);
+        this.addRenderableWidget(this.nameField);
         int ix = this.width - this.inspectorW() + 8;
-        this.facingButton = new StylishButtonWidget(ix, 92, this.inspectorW() - 16, 12, Text.literal("Facing: S"), this::cycleFacing);
+        this.facingButton = new StylishButtonWidget(ix, 92, this.inspectorW() - 16, 12, Component.literal("Facing: S"), this::cycleFacing);
         this.facingButton.visible = false;
-        this.addDrawableChild(this.facingButton);
-        this.walkMeasureButton = new StylishButtonWidget(ix, 108, this.inspectorW() - 16, 12, Text.literal("Walk: ticks"), this::cycleWalkMeasure);
+        this.addRenderableWidget(this.facingButton);
+        this.walkMeasureButton = new StylishButtonWidget(ix, 108, this.inspectorW() - 16, 12, Component.literal("Walk: ticks"), this::cycleWalkMeasure);
         this.walkMeasureButton.visible = false;
-        this.addDrawableChild(this.walkMeasureButton);
-        this.guiItemModeButton = new StylishButtonWidget(ix, 124, this.inspectorW() - 16, 12, Text.literal("Into/Out: put"), this::cycleGuiItemMode);
+        this.addRenderableWidget(this.walkMeasureButton);
+        this.guiItemModeButton = new StylishButtonWidget(ix, 124, this.inspectorW() - 16, 12, Component.literal("Into/Out: put"), this::cycleGuiItemMode);
         this.guiItemModeButton.visible = false;
-        this.addDrawableChild(this.guiItemModeButton);
-        this.guiItemFilterButton = new StylishButtonWidget(ix, 138, this.inspectorW() - 16, 12, Text.literal("Filter: specific"), this::cycleGuiItemFilter);
+        this.addRenderableWidget(this.guiItemModeButton);
+        this.guiItemFilterButton = new StylishButtonWidget(ix, 138, this.inspectorW() - 16, 12, Component.literal("Filter: specific"), this::cycleGuiItemFilter);
         this.guiItemFilterButton.visible = false;
-        this.addDrawableChild(this.guiItemFilterButton);
-        this.guiItemAmountAllButton = new StylishButtonWidget(ix, 152, this.inspectorW() - 16, 12, Text.literal("Amount: count"), this::cycleGuiItemAmountMode);
+        this.addRenderableWidget(this.guiItemFilterButton);
+        this.guiItemAmountAllButton = new StylishButtonWidget(ix, 152, this.inspectorW() - 16, 12, Component.literal("Amount: count"), this::cycleGuiItemAmountMode);
         this.guiItemAmountAllButton.visible = false;
-        this.addDrawableChild(this.guiItemAmountAllButton);
-        this.clickSlotActionButton = new StylishButtonWidget(ix, 124, this.inspectorW() - 16, 12, Text.literal("Action: QUICK_MOVE"), this::cycleClickSlotAction);
+        this.addRenderableWidget(this.guiItemAmountAllButton);
+        this.clickSlotActionButton = new StylishButtonWidget(ix, 124, this.inspectorW() - 16, 12, Component.literal("Action: QUICK_MOVE"), this::cycleClickSlotAction);
         this.clickSlotActionButton.visible = false;
-        this.addDrawableChild(this.clickSlotActionButton);
-        this.pressKeyCaptureButton = new StylishButtonWidget(ix, 124, this.inspectorW() - 16, 12, Text.literal("Key: SPACE"), this::startPressKeyCapture);
+        this.addRenderableWidget(this.clickSlotActionButton);
+        this.pressKeyCaptureButton = new StylishButtonWidget(ix, 124, this.inspectorW() - 16, 12, Component.literal("Key: SPACE"), this::startPressKeyCapture);
         this.pressKeyCaptureButton.visible = false;
-        this.addDrawableChild(this.pressKeyCaptureButton);
-        this.blockPresetCycle = MacroCyclingStringWidgets.blockPreset(ix, 124, this.inspectorW() - 16, 16, Text.literal("Target block"), (button, value) -> {
+        this.addRenderableWidget(this.pressKeyCaptureButton);
+        this.blockPresetCycle = MacroCyclingStringWidgets.blockPreset(ix, 124, this.inspectorW() - 16, 16, Component.literal("Target block"), (button, value) -> {
             MacroGraphNode n;
             if (this.applyingInspectorLoad) {
                 return;
@@ -308,53 +307,53 @@ extends Screen implements KeyboardConsumingScreen {
             this.loadInspectorFromSelection();
         });
         this.blockPresetCycle.visible = false;
-        this.addDrawableChild(this.blockPresetCycle);
-        this.inspBlockSearchRadius = StylishTextFieldWidget.create(this.textRenderer, ix, 192, this.inspectorW() - 16, 18, Text.literal("search"));
+        this.addRenderableWidget(this.blockPresetCycle);
+        this.inspBlockSearchRadius = StylishTextFieldWidget.create(this.font, ix, 192, this.inspectorW() - 16, 18, Component.literal("search"));
         this.inspBlockSearchRadius.setMaxLength(2);
-        this.inspBlockSearchRadius.setChangedListener(s -> {
+        this.inspBlockSearchRadius.setResponder(s -> {
             if (!this.applyingInspectorLoad) {
                 this.applyInspectorToSelection();
             }
         });
         this.inspBlockSearchRadius.visible = false;
-        this.addDrawableChild(this.inspBlockSearchRadius);
-        this.inspTicks = StylishTextFieldWidget.create(this.textRenderer, ix, 192, this.inspectorW() - 16, 18, Text.literal("value"));
+        this.addRenderableWidget(this.inspBlockSearchRadius);
+        this.inspTicks = StylishTextFieldWidget.create(this.font, ix, 192, this.inspectorW() - 16, 18, Component.literal("value"));
         this.inspTicks.setMaxLength(8);
         this.inspTicks.setEditable(true);
-        this.inspTicks.setChangedListener(s -> {
+        this.inspTicks.setResponder(s -> {
             if (!this.applyingInspectorLoad) {
                 this.applyInspectorToSelection();
             }
         });
-        this.addDrawableChild(this.inspTicks);
-        this.inspGuiItemDelayTicks = StylishTextFieldWidget.create(this.textRenderer, ix, 192, this.inspectorW() - 16, 18, Text.literal("gui delay"));
+        this.addRenderableWidget(this.inspTicks);
+        this.inspGuiItemDelayTicks = StylishTextFieldWidget.create(this.font, ix, 192, this.inspectorW() - 16, 18, Component.literal("gui delay"));
         this.inspGuiItemDelayTicks.setMaxLength(3);
-        this.inspGuiItemDelayTicks.setPlaceholder(Text.literal("delay ticks (0=burst)"));
-        this.inspGuiItemDelayTicks.setChangedListener(s -> {
+        this.inspGuiItemDelayTicks.setHint(Component.literal("delay ticks (0=burst)"));
+        this.inspGuiItemDelayTicks.setResponder(s -> {
             if (!this.applyingInspectorLoad) {
                 this.applyInspectorToSelection();
             }
         });
         this.inspGuiItemDelayTicks.visible = false;
-        this.addDrawableChild(this.inspGuiItemDelayTicks);
-        this.inspText = StylishTextFieldWidget.create(this.textRenderer, ix, 214, this.inspectorW() - 16, 52, Text.literal("text"));
+        this.addRenderableWidget(this.inspGuiItemDelayTicks);
+        this.inspText = StylishTextFieldWidget.create(this.font, ix, 214, this.inspectorW() - 16, 52, Component.literal("text"));
         this.inspText.setMaxLength(512);
-        this.inspText.setChangedListener(s -> {
+        this.inspText.setResponder(s -> {
             if (!this.applyingInspectorLoad) {
                 this.applyInspectorToSelection();
             }
         });
-        this.addDrawableChild(this.inspText);
-        this.itemPickerFilter = StylishTextFieldWidget.create(this.textRenderer, 0, 0, 120, 16, Text.literal("filter"));
+        this.addRenderableWidget(this.inspText);
+        this.itemPickerFilter = StylishTextFieldWidget.create(this.font, 0, 0, 120, 16, Component.literal("filter"));
         this.itemPickerFilter.setMaxLength(128);
         this.itemPickerFilter.setVisible(false);
-        this.itemPickerFilter.setPlaceholder(Text.literal("type to filter\u2026"));
-        this.itemPickerFilter.setChangedListener(s -> {
+        this.itemPickerFilter.setHint(Component.literal("type to filter\u2026"));
+        this.itemPickerFilter.setResponder(s -> {
             this.registryPickerScroll = 0;
         });
-        this.addDrawableChild(this.itemPickerFilter);
+        this.addRenderableWidget(this.itemPickerFilter);
         List<String> hk = Arrays.asList(MacroHoldKeys.IDS);
-        this.holdKeyCycle = MacroCyclingStringWidgets.holdKeyCycle(ix, 200, this.inspectorW() - 16, 16, hk, Text.literal("Hold key"), (button, value) -> {
+        this.holdKeyCycle = MacroCyclingStringWidgets.holdKeyCycle(ix, 200, this.inspectorW() - 16, 16, hk, Component.literal("Hold key"), (button, value) -> {
             MacroGraphNode n;
             if (this.applyingInspectorLoad) {
                 return;
@@ -367,12 +366,12 @@ extends Screen implements KeyboardConsumingScreen {
             }
         });
         this.holdKeyCycle.visible = false;
-        this.addDrawableChild(this.holdKeyCycle);
+        this.addRenderableWidget(this.holdKeyCycle);
         ArrayList<String> slots = new ArrayList<String>();
         for (int si = 0; si <= 8; ++si) {
             slots.add(String.valueOf(si));
         }
-        this.hotbarSlotCycle = MacroCyclingStringWidgets.hotbarSlotCycle(ix, 220, this.inspectorW() - 16, 16, slots, Text.literal("Hotbar slot"), (button, value) -> {
+        this.hotbarSlotCycle = MacroCyclingStringWidgets.hotbarSlotCycle(ix, 220, this.inspectorW() - 16, 16, slots, Component.literal("Hotbar slot"), (button, value) -> {
             MacroGraphNode n;
             if (this.applyingInspectorLoad) {
                 return;
@@ -391,40 +390,40 @@ extends Screen implements KeyboardConsumingScreen {
             this.refreshCompileDiagnostics();
         });
         this.hotbarSlotCycle.visible = false;
-        this.addDrawableChild(this.hotbarSlotCycle);
-        this.hotbarSlotByItemButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Text.literal("Pick slot by item\u2026"), this::openHotbarSlotByItemPicker);
+        this.addRenderableWidget(this.hotbarSlotCycle);
+        this.hotbarSlotByItemButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Component.literal("Pick slot by item\u2026"), this::openHotbarSlotByItemPicker);
         this.hotbarSlotByItemButton.visible = false;
-        this.addDrawableChild(this.hotbarSlotByItemButton);
-        this.blockRegistryPickButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Text.literal("Browse blocks\u2026"), this::openBlockRegistryPicker);
+        this.addRenderableWidget(this.hotbarSlotByItemButton);
+        this.blockRegistryPickButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Component.literal("Browse blocks\u2026"), this::openBlockRegistryPicker);
         this.blockRegistryPickButton.visible = false;
-        this.addDrawableChild(this.blockRegistryPickButton);
-        this.entityTypePickButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Text.literal("Browse entity types\u2026"), this::openEntityTypePicker);
+        this.addRenderableWidget(this.blockRegistryPickButton);
+        this.entityTypePickButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Component.literal("Browse entity types\u2026"), this::openEntityTypePicker);
         this.entityTypePickButton.visible = false;
-        this.addDrawableChild(this.entityTypePickButton);
-        this.inspEntityType = StylishTextFieldWidget.create(this.textRenderer, ix, 200, this.inspectorW() - 16, 18, Text.literal("entity type"));
+        this.addRenderableWidget(this.entityTypePickButton);
+        this.inspEntityType = StylishTextFieldWidget.create(this.font, ix, 200, this.inspectorW() - 16, 18, Component.literal("entity type"));
         this.inspEntityType.setMaxLength(256);
-        this.inspEntityType.setPlaceholder(Text.literal("minecraft:zombie"));
-        this.inspEntityType.setChangedListener(s -> {
+        this.inspEntityType.setHint(Component.literal("minecraft:zombie"));
+        this.inspEntityType.setResponder(s -> {
             if (!this.applyingInspectorLoad) {
                 this.applyInspectorToSelection();
             }
         });
         this.inspEntityType.visible = false;
-        this.addDrawableChild(this.inspEntityType);
-        this.guiItemPickButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Text.literal("Browse items\u2026"), this::openItemPicker);
+        this.addRenderableWidget(this.inspEntityType);
+        this.guiItemPickButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Component.literal("Browse items\u2026"), this::openItemPicker);
         this.guiItemPickButton.visible = false;
-        this.addDrawableChild(this.guiItemPickButton);
-        this.dropFullStackButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Text.literal("Drop: one"), () -> {
+        this.addRenderableWidget(this.guiItemPickButton);
+        this.dropFullStackButton = new StylishButtonWidget(ix, 200, this.inspectorW() - 16, 14, Component.literal("Drop: one"), () -> {
             MacroGraphNode n;
             MacroGraphNode macroGraphNode = n = this.soleSelectedId() == null ? null : this.findNode(this.soleSelectedId());
             if (n != null && "DROP_ITEM".equals(MacroEditorScreen.trimType(n.type))) {
                 n.dropFullStack = !n.dropFullStack;
-                this.dropFullStackButton.setMessage(Text.literal((n.dropFullStack ? "Drop: stack" : "Drop: one")));
+                this.dropFullStackButton.setMessage(Component.literal((n.dropFullStack ? "Drop: stack" : "Drop: one")));
                 this.syncDefFromGraph();
             }
         });
         this.dropFullStackButton.visible = false;
-        this.addDrawableChild(this.dropFullStackButton);
+        this.addRenderableWidget(this.dropFullStackButton);
         this.layoutInspectorWidgets();
         this.refreshLibraryIds();
         this.loadInspectorFromSelection();
@@ -563,7 +562,7 @@ extends Screen implements KeyboardConsumingScreen {
     }
 
     private void confirmDeleteMacroFromLibrary(String macroFileId) {
-        MinecraftClient c = this.client;
+        Minecraft c = this.minecraft;
         if (c == null) {
             return;
         }
@@ -591,7 +590,7 @@ extends Screen implements KeyboardConsumingScreen {
             catch (Exception e) {
                 MacroEditorScreen.toast(e.getMessage() == null ? "Delete failed" : e.getMessage());
             }
-        }, Text.literal("Delete macro?"), Text.literal(("Removes " + MacroStorage.filenameId(targetId) + ".json from disk. This cannot be undone."))));
+        }, Component.literal("Delete macro?"), Component.literal(("Removes " + MacroStorage.filenameId(targetId) + ".json from disk. This cannot be undone."))));
     }
 
     private static MacroDefinition blankDef(String id) {
@@ -680,10 +679,10 @@ extends Screen implements KeyboardConsumingScreen {
 
     private void captureHeader() {
         if (this.idField != null) {
-            this.def.id = this.idField.getText().trim();
+            this.def.id = this.idField.getValue().trim();
         }
         if (this.nameField != null) {
-            this.def.displayName = this.nameField.getText().trim();
+            this.def.displayName = this.nameField.getValue().trim();
         }
     }
 
@@ -719,7 +718,7 @@ extends Screen implements KeyboardConsumingScreen {
         return (int)((double)CANVAS_TOP + (this.panY + wy) * this.canvasZoom);
     }
 
-    private void fillWorldRect(DrawContext context, double wx0, double wy0, double wx1, double wy1, int color) {
+    private void fillWorldRect(GuiGraphics context, double wx0, double wy0, double wx1, double wy1, int color) {
         int sx0 = this.toScreenX(wx0);
         int sy0 = this.toScreenY(wy0);
         int sx1 = this.toScreenX(wx1);
@@ -818,7 +817,7 @@ extends Screen implements KeyboardConsumingScreen {
         double[] maxY = new double[1];
         double span = this.memberStackWorldYSpan(g, minY, maxY);
         double t = (worldYAlongMembers - minY[0]) / span;
-        t = MathHelper.clamp((double)t, (double)0.06, (double)0.94);
+        t = Mth.clamp((double)t, (double)0.06, (double)0.94);
         return chip[1] + t * (chip[3] - chip[1]);
     }
 
@@ -982,8 +981,8 @@ extends Screen implements KeyboardConsumingScreen {
     }
 
     private void openGroupStyleEditor(MacroGraphGroup g) {
-        if (this.client != null && g != null) {
-            this.client.setScreen((Screen)new MacroGroupStyleEditScreen(g));
+        if (this.minecraft != null && g != null) {
+            this.minecraft.setScreen((Screen)new MacroGroupStyleEditScreen(g));
         }
     }
 
@@ -1027,7 +1026,7 @@ extends Screen implements KeyboardConsumingScreen {
         int padX = 10;
         int w = 80;
         for (ContextMenuEntry e : this.contextMenuEntries) {
-            w = Math.max(w, this.textRenderer.getWidth(e.label()) + padX * 2);
+            w = Math.max(w, this.font.width(e.label()) + padX * 2);
         }
         int h = 4 + this.contextMenuEntries.size() * 14;
         int x = anchorX;
@@ -1041,7 +1040,7 @@ extends Screen implements KeyboardConsumingScreen {
         this.contextMenuOpen = true;
     }
 
-    private void renderContextMenu(DrawContext context, int mouseX, int mouseY) {
+    private void renderContextMenu(GuiGraphics context, int mouseX, int mouseY) {
         if (!this.contextMenuOpen || this.contextMenuEntries.isEmpty()) {
             return;
         }
@@ -1058,7 +1057,7 @@ extends Screen implements KeyboardConsumingScreen {
             if (hot) {
                 context.fill(this.contextMenuX + 1, rowY, this.contextMenuX + this.contextMenuW - 1, rowY + 14, -1440071576);
             }
-            context.drawTextWithShadow(this.textRenderer, Text.literal(e.label()), this.contextMenuX + 8, rowY + 3, -1380097);
+            context.drawString(this.font, Component.literal(e.label()), this.contextMenuX + 8, rowY + 3, -1380097);
             rowY += 14;
         }
     }
@@ -1071,13 +1070,13 @@ extends Screen implements KeyboardConsumingScreen {
         return !this.isRegistryPickerOpen() && !(this.getFocused() instanceof StylishTextFieldWidget);
     }
 
-    private static boolean isMultiSelectModifierClick(Click click) {
+    private static boolean isMultiSelectModifierClick(MouseButtonEvent click) {
         int m = click.buttonInfo().modifiers();
         return (m & 0xB) != 0;
     }
 
     private void confirmDeleteGroup(MacroGraphGroup target) {
-        MinecraftClient c = this.client;
+        Minecraft c = this.minecraft;
         if (c == null || target == null) {
             return;
         }
@@ -1089,7 +1088,7 @@ extends Screen implements KeyboardConsumingScreen {
                 self.syncDefFromGraph();
                 self.loadInspectorFromSelection();
             }
-        }, Text.literal("Delete group?"), Text.literal("Removes the colored frame only; nodes stay on the canvas.")));
+        }, Component.literal("Delete group?"), Component.literal("Removes the colored frame only; nodes stay on the canvas.")));
     }
 
     private void newGroupFromSelection() {
@@ -1255,18 +1254,18 @@ extends Screen implements KeyboardConsumingScreen {
     }
 
     private static List<String> sortedItemIdsForPicker() {
-        return Registries.ITEM.getIds().stream().map(Identifier::toString).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
+        return BuiltInRegistries.ITEM.keySet().stream().map(Identifier::toString).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
     }
 
     private static List<String> sortedBlockIdsForPicker() {
-        return Registries.BLOCK.getIds().stream().map(Identifier::toString).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
+        return BuiltInRegistries.BLOCK.keySet().stream().map(Identifier::toString).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
     }
 
     private static List<String> sortedEntityTypeIdsForPicker() {
-        return Registries.ENTITY_TYPE.getIds().stream().map(Identifier::toString).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
+        return BuiltInRegistries.ENTITY_TYPE.keySet().stream().map(Identifier::toString).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
     }
 
-    private static int findHotbarSlotForItem(@Nullable MinecraftClient client, String itemIdString) {
+    private static int findHotbarSlotForItem(@Nullable Minecraft client, String itemIdString) {
         if (client == null || client.player == null || itemIdString == null || itemIdString.isBlank()) {
             return -1;
         }
@@ -1274,14 +1273,14 @@ extends Screen implements KeyboardConsumingScreen {
         if (id == null) {
             return -1;
         }
-        Optional opt = Registries.ITEM.getOptionalValue(id);
+        Optional opt = BuiltInRegistries.ITEM.getOptional(id);
         if (opt.isEmpty() || opt.get() == Items.AIR) {
             return -1;
         }
         Item want = (Item)opt.get();
         for (int i = 0; i < 9; ++i) {
-            ItemStack st = client.player.getInventory().getStack(i);
-            if (st.isEmpty() || !st.isOf(want)) continue;
+            ItemStack st = client.player.getInventory().getItem(i);
+            if (st.isEmpty() || !st.is(want)) continue;
             return i;
         }
         return -1;
@@ -1300,13 +1299,13 @@ extends Screen implements KeyboardConsumingScreen {
         };
     }
 
-    private Text pickerTitleForKind() {
+    private Component pickerTitleForKind() {
         return switch (this.registryPickerKind.ordinal()) {
-            case 1 -> Text.literal("Pick item id");
-            case 2 -> Text.literal("Pick block id");
-            case 3 -> Text.literal("Pick item \u2192 hotbar slot");
-            case 4 -> Text.literal("Pick entity type id");
-            default -> Text.literal("Pick");
+            case 1 -> Component.literal("Pick item id");
+            case 2 -> Component.literal("Pick block id");
+            case 3 -> Component.literal("Pick item \u2192 hotbar slot");
+            case 4 -> Component.literal("Pick entity type id");
+            default -> Component.literal("Pick");
         };
     }
 
@@ -1354,8 +1353,8 @@ extends Screen implements KeyboardConsumingScreen {
         this.registryPickerScroll = 0;
         this.layoutItemPickerPanel();
         if (this.itemPickerFilter != null) {
-            this.itemPickerFilter.setText("");
-            this.itemPickerFilter.setPlaceholder(Text.literal("type to filter\u2026"));
+            this.itemPickerFilter.setValue("");
+            this.itemPickerFilter.setHint(Component.literal("type to filter\u2026"));
             this.itemPickerFilter.setVisible(true);
             this.itemPickerFilter.setEditable(true);
         }
@@ -1366,8 +1365,8 @@ extends Screen implements KeyboardConsumingScreen {
         this.registryPickerScroll = 0;
         this.layoutItemPickerPanel();
         if (this.itemPickerFilter != null) {
-            this.itemPickerFilter.setText("");
-            this.itemPickerFilter.setPlaceholder(Text.literal("filter block ids\u2026"));
+            this.itemPickerFilter.setValue("");
+            this.itemPickerFilter.setHint(Component.literal("filter block ids\u2026"));
             this.itemPickerFilter.setVisible(true);
             this.itemPickerFilter.setEditable(true);
         }
@@ -1378,8 +1377,8 @@ extends Screen implements KeyboardConsumingScreen {
         this.registryPickerScroll = 0;
         this.layoutItemPickerPanel();
         if (this.itemPickerFilter != null) {
-            this.itemPickerFilter.setText("");
-            this.itemPickerFilter.setPlaceholder(Text.literal("filter items\u2026"));
+            this.itemPickerFilter.setValue("");
+            this.itemPickerFilter.setHint(Component.literal("filter items\u2026"));
             this.itemPickerFilter.setVisible(true);
             this.itemPickerFilter.setEditable(true);
         }
@@ -1390,8 +1389,8 @@ extends Screen implements KeyboardConsumingScreen {
         this.registryPickerScroll = 0;
         this.layoutItemPickerPanel();
         if (this.itemPickerFilter != null) {
-            this.itemPickerFilter.setText("");
-            this.itemPickerFilter.setPlaceholder(Text.literal("filter entity ids\u2026"));
+            this.itemPickerFilter.setValue("");
+            this.itemPickerFilter.setHint(Component.literal("filter entity ids\u2026"));
             this.itemPickerFilter.setVisible(true);
             this.itemPickerFilter.setEditable(true);
         }
@@ -1437,7 +1436,7 @@ extends Screen implements KeyboardConsumingScreen {
                             break;
                         }
                         case 3: {
-                            int slot = MacroEditorScreen.findHotbarSlotForItem(this.client, pickedId);
+                            int slot = MacroEditorScreen.findHotbarSlotForItem(this.minecraft, pickedId);
                             if (slot < 0) {
                                 MacroEditorScreen.toast("No hotbar stack matches that item.");
                                 break;
@@ -1452,7 +1451,7 @@ extends Screen implements KeyboardConsumingScreen {
                         case 4: {
                             n.entityTypeId = pickedId;
                             if (this.inspEntityType == null) break;
-                            this.inspEntityType.setText(pickedId);
+                            this.inspEntityType.setValue(pickedId);
                             break;
                         }
                     }
@@ -1468,12 +1467,12 @@ extends Screen implements KeyboardConsumingScreen {
     }
 
     private List<String> filteredPickerRows() {
-        String q = this.itemPickerFilter != null ? this.itemPickerFilter.getText().trim().toLowerCase(Locale.ROOT) : "";
+        String q = this.itemPickerFilter != null ? this.itemPickerFilter.getValue().trim().toLowerCase(Locale.ROOT) : "";
         List<String> all = this.currentPickerSourceList();
         return q.isEmpty() ? all : all.stream().filter(s -> s.toLowerCase(Locale.ROOT).contains(q)).toList();
     }
 
-    private void renderItemPickerLayer(DrawContext context, int mouseX, int mouseY) {
+    private void renderItemPickerLayer(GuiGraphics context, int mouseX, int mouseY) {
         int idx;
         if (!this.isRegistryPickerOpen()) {
             return;
@@ -1482,26 +1481,26 @@ extends Screen implements KeyboardConsumingScreen {
         context.fill(0, 0, this.width, this.height, -2012739568);
         context.fill(this.itemPickerPx, this.itemPickerPy, this.itemPickerPx + this.itemPickerPw, this.itemPickerPy + this.itemPickerPh, -267380696);
         context.fill(this.itemPickerPx, this.itemPickerPy, this.itemPickerPx + this.itemPickerPw, this.itemPickerPy + 2, -11899184);
-        context.drawCenteredTextWithShadow(this.textRenderer, this.pickerTitleForKind(), this.itemPickerPx + this.itemPickerPw / 2, this.itemPickerPy + 6, -1380097);
+        context.drawCenteredString(this.font, this.pickerTitleForKind(), this.itemPickerPx + this.itemPickerPw / 2, this.itemPickerPy + 6, -1380097);
         List<String> filtered = this.filteredPickerRows();
         int rowH = 11;
         int rows = Math.max(1, this.itemPickerListHeight / rowH);
         int maxScroll = Math.max(0, filtered.size() - rows);
-        this.registryPickerScroll = MathHelper.clamp((int)this.registryPickerScroll, (int)0, (int)maxScroll);
+        this.registryPickerScroll = Mth.clamp((int)this.registryPickerScroll, (int)0, (int)maxScroll);
         int y = this.itemPickerListTop;
         for (int i = 0; i < rows && (idx = this.registryPickerScroll + i) < filtered.size(); ++i) {
             boolean hot;
             String row = filtered.get(idx);
-            String shown = this.textRenderer.trimToWidth(row, this.itemPickerPw - 20);
+            String shown = this.font.plainSubstrByWidth(row, this.itemPickerPw - 20);
             boolean bl = hot = mouseX >= this.itemPickerPx + 6 && mouseX < this.itemPickerPx + this.itemPickerPw - 6 && mouseY >= y && mouseY < y + rowH;
             if (hot) {
                 context.fill(this.itemPickerPx + 4, y - 1, this.itemPickerPx + this.itemPickerPw - 4, y + rowH, 1714442384);
             }
-            context.drawTextWithShadow(this.textRenderer, Text.literal(shown), this.itemPickerPx + 8, y, -1642753);
+            context.drawString(this.font, Component.literal(shown), this.itemPickerPx + 8, y, -1642753);
             y += rowH;
         }
         if (filtered.size() > rows) {
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Scroll wheel"), this.itemPickerPx + 8, this.itemPickerPy + this.itemPickerPh - 14, -8747362);
+            context.drawString(this.font, Component.literal("Scroll wheel"), this.itemPickerPx + 8, this.itemPickerPy + this.itemPickerPh - 14, -8747362);
         }
     }
 
@@ -1650,9 +1649,9 @@ extends Screen implements KeyboardConsumingScreen {
             MacroGraphNode n;
             MacroGraphNode macroGraphNode = n = this.soleSelectedId() == null ? null : this.findNode(this.soleSelectedId());
             if (n == null) {
-                this.inspTicks.setPlaceholder(Text.literal((this.selectedNodeIds.size() > 1 ? "Multi-select" : "")));
-                this.inspTicks.setText("");
-                this.inspText.setText("");
+                this.inspTicks.setHint(Component.literal((this.selectedNodeIds.size() > 1 ? "Multi-select" : "")));
+                this.inspTicks.setValue("");
+                this.inspText.setValue("");
                 this.inspTicks.setEditable(false);
                 this.inspText.setEditable(false);
                 if (this.inspBlockSearchRadius != null) {
@@ -1663,11 +1662,11 @@ extends Screen implements KeyboardConsumingScreen {
                 return;
             }
             if (MacroGraphTypes.isControlNode(n.type)) {
-                this.inspTicks.setPlaceholder(Text.literal(""));
+                this.inspTicks.setHint(Component.literal(""));
                 this.inspTicks.setEditable(false);
                 this.inspText.setEditable(false);
-                this.inspTicks.setText("");
-                this.inspText.setText("");
+                this.inspTicks.setValue("");
+                this.inspText.setValue("");
                 if (this.inspBlockSearchRadius != null) {
                     this.inspBlockSearchRadius.setVisible(false);
                     this.inspBlockSearchRadius.setEditable(false);
@@ -1683,7 +1682,7 @@ extends Screen implements KeyboardConsumingScreen {
                 case 2: {
                     this.inspTicks.setEditable(false);
                     this.inspText.setEditable(true);
-                    this.inspText.setText(n.text == null ? "" : n.text);
+                    this.inspText.setValue(n.text == null ? "" : n.text);
                     return;
                 }
                 case 3: {
@@ -1691,136 +1690,136 @@ extends Screen implements KeyboardConsumingScreen {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(true);
                     if ("BLOCKS".equalsIgnoreCase(n.moveForwardMeasure)) {
-                        this.inspTicks.setPlaceholder(Text.literal("blocks"));
-                        this.inspTicks.setText(String.valueOf(Math.max(1, n.moveForwardBlocks)));
+                        this.inspTicks.setHint(Component.literal("blocks"));
+                        this.inspTicks.setValue(String.valueOf(Math.max(1, n.moveForwardBlocks)));
                     } else {
-                        this.inspTicks.setPlaceholder(Text.literal("ticks"));
-                        this.inspTicks.setText(String.valueOf(Math.max(1, n.ticks)));
+                        this.inspTicks.setHint(Component.literal("ticks"));
+                        this.inspTicks.setValue(String.valueOf(Math.max(1, n.ticks)));
                     }
-                    this.inspText.setPlaceholder(Text.literal("also hold: USE+SNEAK (optional)"));
+                    this.inspText.setHint(Component.literal("also hold: USE+SNEAK (optional)"));
                     String a1 = n.moveAuxHoldKeyId == null ? "" : n.moveAuxHoldKeyId.trim();
                     String string = a2 = n.moveAuxHoldKey2Id == null ? "" : n.moveAuxHoldKey2Id.trim();
                     if (a1.isEmpty() && a2.isEmpty()) {
-                        this.inspText.setText("");
+                        this.inspText.setValue("");
                         return;
                     }
                     if (a2.isEmpty()) {
-                        this.inspText.setText(a1);
+                        this.inspText.setValue(a1);
                         return;
                     }
-                    this.inspText.setText(a1 + "+" + a2);
+                    this.inspText.setValue(a1 + "+" + a2);
                     return;
                 }
                 case 5: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setPlaceholder(Text.literal("times (0=\u221e)"));
-                    this.inspTicks.setText(String.valueOf(Math.max(0, n.ticks)));
+                    this.inspText.setValue("");
+                    this.inspTicks.setHint(Component.literal("times (0=\u221e)"));
+                    this.inspTicks.setValue(String.valueOf(Math.max(0, n.ticks)));
                     return;
                 }
                 case 6: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setPlaceholder(Text.literal("degrees"));
-                    this.inspTicks.setText(String.valueOf(n.ticks));
+                    this.inspText.setValue("");
+                    this.inspTicks.setHint(Component.literal("degrees"));
+                    this.inspTicks.setValue(String.valueOf(n.ticks));
                     return;
                 }
                 case 4: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setPlaceholder(Text.literal("ticks"));
-                    this.inspTicks.setText(String.valueOf(Math.max(1, n.ticks)));
+                    this.inspText.setValue("");
+                    this.inspTicks.setHint(Component.literal("ticks"));
+                    this.inspTicks.setValue(String.valueOf(Math.max(1, n.ticks)));
                     return;
                 }
                 case 15: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(true);
-                    this.inspText.setPlaceholder(Text.literal("block id"));
-                    this.inspTicks.setPlaceholder(Text.literal("max wait (0=\u221e)"));
-                    this.inspTicks.setText(String.valueOf(Math.max(0, n.ticks)));
-                    this.inspText.setText(n.blockCustomId == null ? "" : n.blockCustomId);
+                    this.inspText.setHint(Component.literal("block id"));
+                    this.inspTicks.setHint(Component.literal("max wait (0=\u221e)"));
+                    this.inspTicks.setValue(String.valueOf(Math.max(0, n.ticks)));
+                    this.inspText.setValue(n.blockCustomId == null ? "" : n.blockCustomId);
                     return;
                 }
                 case 16: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setPlaceholder(Text.literal("max wait (0=\u221e)"));
-                    this.inspTicks.setText(String.valueOf(Math.max(0, n.ticks)));
+                    this.inspText.setValue("");
+                    this.inspTicks.setHint(Component.literal("max wait (0=\u221e)"));
+                    this.inspTicks.setValue(String.valueOf(Math.max(0, n.ticks)));
                     if (this.inspEntityType == null) return;
                     this.inspEntityType.setEditable(true);
-                    this.inspEntityType.setText(n.entityTypeId == null ? "" : n.entityTypeId);
+                    this.inspEntityType.setValue(n.entityTypeId == null ? "" : n.entityTypeId);
                     return;
                 }
                 case 10: {
                     this.inspTicks.setEditable(!n.guiItemAmountAll);
                     boolean anyItem = n.guiItemAnyItem || MacroAutomation.isAnyItem(n.guiItemId);
                     this.inspText.setEditable(!anyItem);
-                    this.inspText.setPlaceholder(Text.literal(anyItem ? "all items" : "item id"));
-                    this.inspText.setText(anyItem ? "" : (n.guiItemId == null ? "" : n.guiItemId));
+                    this.inspText.setHint(Component.literal(anyItem ? "all items" : "item id"));
+                    this.inspText.setValue(anyItem ? "" : (n.guiItemId == null ? "" : n.guiItemId));
                     if (n.guiItemAmountAll) {
-                        this.inspTicks.setPlaceholder(Text.literal("all"));
-                        this.inspTicks.setText("");
+                        this.inspTicks.setHint(Component.literal("all"));
+                        this.inspTicks.setValue("");
                     } else {
-                        this.inspTicks.setPlaceholder(Text.literal("count"));
-                        this.inspTicks.setText(String.valueOf(Math.max(1, n.guiItemCount)));
+                        this.inspTicks.setHint(Component.literal("count"));
+                        this.inspTicks.setValue(String.valueOf(Math.max(1, n.guiItemCount)));
                     }
                     if (this.inspGuiItemDelayTicks == null) return;
                     this.inspGuiItemDelayTicks.setEditable(true);
-                    this.inspGuiItemDelayTicks.setText(String.valueOf(Math.max(0, Math.min(100, n.guiItemDelayTicks))));
+                    this.inspGuiItemDelayTicks.setValue(String.valueOf(Math.max(0, Math.min(100, n.guiItemDelayTicks))));
                     return;
                 }
                 case 11: {
                     this.blockPresetCycle.setValue(MacroAutomation.normalizeBlockPreset(n.blockPreset));
                     this.inspBlockSearchRadius.setEditable(true);
-                    this.inspBlockSearchRadius.setPlaceholder(Text.literal("blocks"));
-                    this.inspBlockSearchRadius.setText(String.valueOf(Math.max(1, Math.min(32, n.blockSearchRadius))));
+                    this.inspBlockSearchRadius.setHint(Component.literal("blocks"));
+                    this.inspBlockSearchRadius.setValue(String.valueOf(Math.max(1, Math.min(32, n.blockSearchRadius))));
                     this.inspTicks.setEditable(true);
-                    this.inspTicks.setPlaceholder(Text.literal("max walk ticks"));
-                    this.inspTicks.setText(String.valueOf(Math.max(20, n.blockNavigateMaxTicks)));
+                    this.inspTicks.setHint(Component.literal("max walk ticks"));
+                    this.inspTicks.setValue(String.valueOf(Math.max(20, n.blockNavigateMaxTicks)));
                     boolean other = "OTHER".equals(MacroAutomation.normalizeBlockPreset(n.blockPreset));
                     this.inspText.setEditable(other);
-                    this.inspText.setPlaceholder((Text)(other ? Text.literal("minecraft:\u2026") : Text.literal("")));
-                    this.inspText.setText(other && n.blockCustomId != null ? n.blockCustomId : "");
+                    this.inspText.setHint((Component)(other ? Component.literal("minecraft:\u2026") : Component.literal("")));
+                    this.inspText.setValue(other && n.blockCustomId != null ? n.blockCustomId : "");
                     if (this.inspEntityType == null) return;
                     this.inspEntityType.setEditable(true);
-                    this.inspEntityType.setText(n.entityTypeId == null ? "" : n.entityTypeId);
+                    this.inspEntityType.setValue(n.entityTypeId == null ? "" : n.entityTypeId);
                     return;
                 }
                 case 7: {
                     this.inspTicks.setEditable(false);
                     this.inspText.setEditable(false);
-                    this.inspTicks.setText("");
-                    this.inspText.setText("");
+                    this.inspTicks.setValue("");
+                    this.inspText.setValue("");
                     return;
                 }
                 case 8: 
                 case 9: {
                     this.inspTicks.setEditable(false);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setText("");
+                    this.inspText.setValue("");
+                    this.inspTicks.setValue("");
                     if (this.hotbarSlotCycle == null) return;
-                    this.hotbarSlotCycle.setValue(String.valueOf(MathHelper.clamp((int)n.hotbarSlot, (int)0, (int)8)));
+                    this.hotbarSlotCycle.setValue(String.valueOf(Mth.clamp((int)n.hotbarSlot, (int)0, (int)8)));
                     return;
                 }
                 case 13: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setPlaceholder(Text.literal("pitch \u00b0"));
-                    this.inspTicks.setText(String.valueOf(n.ticks));
+                    this.inspText.setValue("");
+                    this.inspTicks.setHint(Component.literal("pitch \u00b0"));
+                    this.inspTicks.setValue(String.valueOf(n.ticks));
                     return;
                 }
                 case 12: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setPlaceholder(Text.literal("ticks"));
-                    this.inspTicks.setText(String.valueOf(Math.max(1, n.ticks)));
+                    this.inspText.setValue("");
+                    this.inspTicks.setHint(Component.literal("ticks"));
+                    this.inspTicks.setValue(String.valueOf(Math.max(1, n.ticks)));
                     if (this.holdKeyCycle == null) return;
                     this.holdKeyCycle.setValue(MacroHoldKeys.normalize(n.holdKeyId));
                     return;
@@ -1828,42 +1827,42 @@ extends Screen implements KeyboardConsumingScreen {
                 case 14: {
                     this.inspTicks.setEditable(false);
                     this.inspText.setEditable(false);
-                    this.inspTicks.setText("");
-                    this.inspText.setText("");
+                    this.inspTicks.setValue("");
+                    this.inspText.setValue("");
                     if (this.dropFullStackButton == null) return;
-                    this.dropFullStackButton.setMessage(Text.literal((n.dropFullStack ? "Drop: stack" : "Drop: one")));
+                    this.dropFullStackButton.setMessage(Component.literal((n.dropFullStack ? "Drop: stack" : "Drop: one")));
                     return;
                 }
                 case 17: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(true);
-                    this.inspTicks.setPlaceholder(Text.literal("times"));
-                    this.inspTicks.setText(String.valueOf(Math.max(1, n.fabricatorTimes)));
-                    this.inspText.setPlaceholder(Text.literal("slot id or item filter"));
-                    this.inspText.setText(n.fabricatorSlot == null ? "0" : n.fabricatorSlot);
+                    this.inspTicks.setHint(Component.literal("times"));
+                    this.inspTicks.setValue(String.valueOf(Math.max(1, n.fabricatorTimes)));
+                    this.inspText.setHint(Component.literal("slot id or item filter"));
+                    this.inspText.setValue(n.fabricatorSlot == null ? "0" : n.fabricatorSlot);
                     if (this.inspGuiItemDelayTicks == null) return;
                     this.inspGuiItemDelayTicks.setEditable(true);
-                    this.inspGuiItemDelayTicks.setPlaceholder(Text.literal("action index"));
-                    this.inspGuiItemDelayTicks.setText(String.valueOf(Math.max(0, n.fabricatorActionIndex)));
+                    this.inspGuiItemDelayTicks.setHint(Component.literal("action index"));
+                    this.inspGuiItemDelayTicks.setValue(String.valueOf(Math.max(0, n.fabricatorActionIndex)));
                     return;
                 }
                 case 18: {
                     this.inspTicks.setEditable(true);
                     this.inspText.setEditable(false);
-                    this.inspText.setText("");
-                    this.inspTicks.setPlaceholder(Text.literal("slot id"));
-                    this.inspTicks.setText(String.valueOf(n.clickSlotId));
+                    this.inspText.setValue("");
+                    this.inspTicks.setHint(Component.literal("slot id"));
+                    this.inspTicks.setValue(String.valueOf(n.clickSlotId));
                     if (this.inspGuiItemDelayTicks == null) return;
                     this.inspGuiItemDelayTicks.setEditable(true);
-                    this.inspGuiItemDelayTicks.setPlaceholder(Text.literal("mouse button (0/1)"));
-                    this.inspGuiItemDelayTicks.setText(String.valueOf(Math.max(0, n.clickSlotButton)));
+                    this.inspGuiItemDelayTicks.setHint(Component.literal("mouse button (0/1)"));
+                    this.inspGuiItemDelayTicks.setValue(String.valueOf(Math.max(0, n.clickSlotButton)));
                     return;
                 }
                 case 19: {
                     this.inspTicks.setEditable(false);
                     this.inspText.setEditable(false);
-                    this.inspTicks.setText("");
-                    this.inspText.setText("");
+                    this.inspTicks.setValue("");
+                    this.inspText.setValue("");
                     return;
                 }
             }
@@ -2271,7 +2270,7 @@ extends Screen implements KeyboardConsumingScreen {
         if (n != null && MacroStepType.fromString(MacroEditorScreen.trimType(n.type)) == MacroStepType.MOVE_FORWARD) {
             String f = MacroGraphTypes.normalizeWalkFacing(n.walkFacing);
             String label = "PLAYER".equals(f) ? "Facing: view" : "Facing: " + f;
-            this.facingButton.setMessage(Text.literal(label));
+            this.facingButton.setMessage(Component.literal(label));
         }
     }
 
@@ -2320,7 +2319,7 @@ extends Screen implements KeyboardConsumingScreen {
         String raw;
         n.moveAuxHoldKeyId = "";
         n.moveAuxHoldKey2Id = "";
-        String string = raw = this.inspText.getText() == null ? "" : this.inspText.getText().trim();
+        String string = raw = this.inspText.getValue() == null ? "" : this.inspText.getValue().trim();
         if (raw.isEmpty()) {
             return;
         }
@@ -2358,21 +2357,21 @@ extends Screen implements KeyboardConsumingScreen {
             String typeStr = MacroEditorScreen.trimType(n.type);
             if ("LOOK_TURN".equals(typeStr)) {
                 try {
-                    n.ticks = Math.max(-3600, Math.min(3600, Integer.parseInt(this.inspTicks.getText().trim())));
+                    n.ticks = Math.max(-3600, Math.min(3600, Integer.parseInt(this.inspTicks.getValue().trim())));
                 }
                 catch (NumberFormatException e) {
                     n.ticks = 90;
                 }
             } else if (MacroStepType.WAIT_LOOK_BLOCK.name().equals(typeStr) || MacroStepType.WAIT_LOOK_ENTITY.name().equals(typeStr)) {
                 try {
-                    n.ticks = Math.max(0, Integer.parseInt(this.inspTicks.getText().trim()));
+                    n.ticks = Math.max(0, Integer.parseInt(this.inspTicks.getValue().trim()));
                 }
                 catch (NumberFormatException e) {
                     n.ticks = 400;
                 }
             } else {
                 try {
-                    int v = Integer.parseInt(this.inspTicks.getText().trim());
+                    int v = Integer.parseInt(this.inspTicks.getValue().trim());
                     if (MacroGraphTypes.isRepeatNode(typeStr)) {
                         n.ticks = Math.max(0, v);
                     } else {
@@ -2393,7 +2392,7 @@ extends Screen implements KeyboardConsumingScreen {
             }
         }
         if (MacroStepType.fromString(MacroEditorScreen.trimType(n.type)) == MacroStepType.SEND_CHAT) {
-            n.text = this.inspText.getText();
+            n.text = this.inspText.getValue();
         }
         if (MacroStepType.fromString(MacroEditorScreen.trimType(n.type)) == MacroStepType.MOVE_FORWARD) {
             this.applyWalkAuxKeysFromInspector(n);
@@ -2401,13 +2400,13 @@ extends Screen implements KeyboardConsumingScreen {
         if ("GUI_ITEM".equals(typeStr2 = MacroEditorScreen.trimType(n.type))) {
             boolean anyItem = n.guiItemAnyItem || MacroAutomation.isAnyItem(n.guiItemId);
             if (!anyItem) {
-                n.guiItemId = this.inspText.getText().trim();
+                n.guiItemId = this.inspText.getValue().trim();
             }
             if (n.guiItemAmountAll) {
                 n.guiItemCount = -1;
             } else {
                 try {
-                    n.guiItemCount = Math.max(1, Integer.parseInt(this.inspTicks.getText().trim()));
+                    n.guiItemCount = Math.max(1, Integer.parseInt(this.inspTicks.getValue().trim()));
                 }
                 catch (NumberFormatException e) {
                     n.guiItemCount = 1;
@@ -2415,7 +2414,7 @@ extends Screen implements KeyboardConsumingScreen {
             }
             if (this.inspGuiItemDelayTicks != null) {
                 try {
-                    n.guiItemDelayTicks = Math.max(0, Math.min(100, Integer.parseInt(this.inspGuiItemDelayTicks.getText().trim())));
+                    n.guiItemDelayTicks = Math.max(0, Math.min(100, Integer.parseInt(this.inspGuiItemDelayTicks.getValue().trim())));
                 }
                 catch (NumberFormatException e) {
                     n.guiItemDelayTicks = 0;
@@ -2424,27 +2423,27 @@ extends Screen implements KeyboardConsumingScreen {
         }
         if ("BLOCK_INTERACT".equals(typeStr2) || "USE_BLOCK".equals(typeStr2)) {
             try {
-                n.blockSearchRadius = Math.max(1, Math.min(32, Integer.parseInt(this.inspBlockSearchRadius.getText().trim())));
+                n.blockSearchRadius = Math.max(1, Math.min(32, Integer.parseInt(this.inspBlockSearchRadius.getValue().trim())));
             }
             catch (NumberFormatException e) {
                 n.blockSearchRadius = 10;
             }
             try {
-                n.blockNavigateMaxTicks = Math.max(20, Integer.parseInt(this.inspTicks.getText().trim()));
+                n.blockNavigateMaxTicks = Math.max(20, Integer.parseInt(this.inspTicks.getValue().trim()));
             }
             catch (NumberFormatException e) {
                 n.blockNavigateMaxTicks = 400;
             }
             if ("OTHER".equals(MacroAutomation.normalizeBlockPreset(n.blockPreset))) {
-                n.blockCustomId = this.inspText.getText().trim();
+                n.blockCustomId = this.inspText.getValue().trim();
             }
             if (this.inspEntityType != null) {
-                n.entityTypeId = this.inspEntityType.getText().trim();
+                n.entityTypeId = this.inspEntityType.getValue().trim();
             }
         }
         if ("USE_HOTBAR_ITEM".equals(typeStr2) || "USE_ITEM".equals(typeStr2) || "HOTBAR_SELECT".equals(typeStr2)) {
             try {
-                n.hotbarSlot = this.hotbarSlotCycle != null ? MathHelper.clamp((int)Integer.parseInt(this.hotbarSlotCycle.getValue().trim()), (int)0, (int)8) : MathHelper.clamp((int)Integer.parseInt(this.inspTicks.getText().trim()), (int)0, (int)8);
+                n.hotbarSlot = this.hotbarSlotCycle != null ? Mth.clamp((int)Integer.parseInt(this.hotbarSlotCycle.getValue().trim()), (int)0, (int)8) : Mth.clamp((int)Integer.parseInt(this.inspTicks.getValue().trim()), (int)0, (int)8);
             }
             catch (NumberFormatException e) {
                 n.hotbarSlot = 0;
@@ -2452,7 +2451,7 @@ extends Screen implements KeyboardConsumingScreen {
         }
         if ("LOOK_PITCH".equals(typeStr2)) {
             try {
-                n.ticks = MathHelper.clamp((int)Integer.parseInt(this.inspTicks.getText().trim()), (int)-1800, (int)1800);
+                n.ticks = Mth.clamp((int)Integer.parseInt(this.inspTicks.getValue().trim()), (int)-1800, (int)1800);
             }
             catch (NumberFormatException e) {
                 n.ticks = -10;
@@ -2460,32 +2459,32 @@ extends Screen implements KeyboardConsumingScreen {
         }
         if ("KEY_HOLD".equals(typeStr2) || "ATTACK".equals(typeStr2)) {
             try {
-                n.ticks = Math.max(1, Integer.parseInt(this.inspTicks.getText().trim()));
+                n.ticks = Math.max(1, Integer.parseInt(this.inspTicks.getValue().trim()));
             }
             catch (NumberFormatException e) {
                 n.ticks = 20;
             }
         }
         if (MacroStepType.WAIT_LOOK_BLOCK.name().equals(typeStr2)) {
-            n.blockCustomId = this.inspText.getText().trim();
+            n.blockCustomId = this.inspText.getValue().trim();
         }
         if (MacroStepType.WAIT_LOOK_ENTITY.name().equals(typeStr2) && this.inspEntityType != null) {
-            n.entityTypeId = this.inspEntityType.getText().trim();
+            n.entityTypeId = this.inspEntityType.getValue().trim();
         }
         if (MacroStepType.FABRICATOR_SEND.name().equals(typeStr2)) {
-            n.fabricatorSlot = this.inspText.getText().trim();
+            n.fabricatorSlot = this.inspText.getValue().trim();
             if (n.fabricatorSlot.isBlank()) {
                 n.fabricatorSlot = "0";
             }
             try {
-                n.fabricatorTimes = Math.max(1, Integer.parseInt(this.inspTicks.getText().trim()));
+                n.fabricatorTimes = Math.max(1, Integer.parseInt(this.inspTicks.getValue().trim()));
             }
             catch (NumberFormatException e) {
                 n.fabricatorTimes = 1;
             }
             if (this.inspGuiItemDelayTicks != null) {
                 try {
-                    n.fabricatorActionIndex = Math.max(0, Integer.parseInt(this.inspGuiItemDelayTicks.getText().trim()));
+                    n.fabricatorActionIndex = Math.max(0, Integer.parseInt(this.inspGuiItemDelayTicks.getValue().trim()));
                 }
                 catch (NumberFormatException e) {
                     n.fabricatorActionIndex = 0;
@@ -2494,14 +2493,14 @@ extends Screen implements KeyboardConsumingScreen {
         }
         if (MacroStepType.CLICK_SLOT.name().equals(typeStr2)) {
             try {
-                n.clickSlotId = Integer.parseInt(this.inspTicks.getText().trim());
+                n.clickSlotId = Integer.parseInt(this.inspTicks.getValue().trim());
             }
             catch (NumberFormatException e) {
                 n.clickSlotId = 0;
             }
             if (this.inspGuiItemDelayTicks != null) {
                 try {
-                    n.clickSlotButton = Math.max(0, Integer.parseInt(this.inspGuiItemDelayTicks.getText().trim()));
+                    n.clickSlotButton = Math.max(0, Integer.parseInt(this.inspGuiItemDelayTicks.getValue().trim()));
                 }
                 catch (NumberFormatException e) {
                     n.clickSlotButton = 0;
@@ -2536,7 +2535,7 @@ extends Screen implements KeyboardConsumingScreen {
         MacroGraphNode macroGraphNode = n = this.soleSelectedId() == null ? null : this.findNode(this.soleSelectedId());
         if (n != null && MacroStepType.fromString(MacroEditorScreen.trimType(n.type)) == MacroStepType.MOVE_FORWARD) {
             boolean blocks = "BLOCKS".equalsIgnoreCase(n.moveForwardMeasure);
-            this.walkMeasureButton.setMessage(Text.literal((blocks ? "Measure: blocks" : "Measure: ticks")));
+            this.walkMeasureButton.setMessage(Component.literal((blocks ? "Measure: blocks" : "Measure: ticks")));
         }
     }
 
@@ -2549,9 +2548,9 @@ extends Screen implements KeyboardConsumingScreen {
         if (n != null && "GUI_ITEM".equals(MacroEditorScreen.trimType(n.type))) {
             boolean take = "TAKE".equalsIgnoreCase(n.guiItemMode);
             boolean anyItem = n.guiItemAnyItem || MacroAutomation.isAnyItem(n.guiItemId);
-            this.guiItemModeButton.setMessage(Text.literal((take ? "Into/Out: take" : "Into/Out: put")));
-            this.guiItemFilterButton.setMessage(Text.literal((anyItem ? "Filter: all items" : "Filter: specific")));
-            this.guiItemAmountAllButton.setMessage(Text.literal((n.guiItemAmountAll ? "Amount: all" : "Amount: count")));
+            this.guiItemModeButton.setMessage(Component.literal((take ? "Into/Out: take" : "Into/Out: put")));
+            this.guiItemFilterButton.setMessage(Component.literal((anyItem ? "Filter: all items" : "Filter: specific")));
+            this.guiItemAmountAllButton.setMessage(Component.literal((n.guiItemAmountAll ? "Amount: all" : "Amount: count")));
         }
     }
 
@@ -2619,7 +2618,7 @@ extends Screen implements KeyboardConsumingScreen {
         }
         MacroGraphNode macroGraphNode = n = this.soleSelectedId() == null ? null : this.findNode(this.soleSelectedId());
         if (n != null && MacroStepType.CLICK_SLOT.name().equals(MacroEditorScreen.trimType(n.type))) {
-            this.clickSlotActionButton.setMessage(Text.literal("Action: " + MacroSlotActions.normalize(n.clickSlotAction)));
+            this.clickSlotActionButton.setMessage(Component.literal("Action: " + MacroSlotActions.normalize(n.clickSlotAction)));
         }
     }
 
@@ -2631,7 +2630,7 @@ extends Screen implements KeyboardConsumingScreen {
         }
         this.capturingPressKey = true;
         if (this.pressKeyCaptureButton != null) {
-            this.pressKeyCaptureButton.setMessage(Text.literal("Press any key\u2026"));
+            this.pressKeyCaptureButton.setMessage(Component.literal("Press any key\u2026"));
         }
     }
 
@@ -2647,7 +2646,7 @@ extends Screen implements KeyboardConsumingScreen {
         }
         MacroGraphNode macroGraphNode = n = this.soleSelectedId() == null ? null : this.findNode(this.soleSelectedId());
         if (n != null && MacroStepType.PRESS_BUTTON.name().equals(MacroEditorScreen.trimType(n.type))) {
-            this.pressKeyCaptureButton.setMessage(Text.literal("Key: " + MacroKeyPress.keyLabel(n.pressKeyCode, n.pressKeyModifiers)));
+            this.pressKeyCaptureButton.setMessage(Component.literal("Key: " + MacroKeyPress.keyLabel(n.pressKeyCode, n.pressKeyModifiers)));
         }
     }
 
@@ -2662,14 +2661,14 @@ extends Screen implements KeyboardConsumingScreen {
     }
 
     private void exportCurrentMacro() {
-        if (this.client == null || this.def == null) {
+        if (this.minecraft == null || this.def == null) {
             return;
         }
         this.captureHeader();
         this.applyInspectorToSelection();
         this.syncDefFromGraphWithoutDirty();
         this.def.normalize();
-        MacroShare.exportDefinitionToClipboard(this.client, this.def);
+        MacroShare.exportDefinitionToClipboard(this.minecraft, this.def);
     }
 
     private int measureCompilePanelHeight() {
@@ -2702,7 +2701,7 @@ extends Screen implements KeyboardConsumingScreen {
         for (String w : words) {
             String attempt;
             String string = attempt = line.isEmpty() ? w : String.valueOf(line) + " " + w;
-            if (this.textRenderer.getWidth(attempt) > maxWidth && !line.isEmpty()) {
+            if (this.font.width(attempt) > maxWidth && !line.isEmpty()) {
                 out.add(line.toString());
                 line = new StringBuilder(w);
                 continue;
@@ -2744,7 +2743,7 @@ extends Screen implements KeyboardConsumingScreen {
                     this.saveOverlayDetail = hkErr;
                     this.savePhase = SavePhase.FAILED;
                     this.savePhaseTicks = 0;
-                    this.sendMacroChatLine(Text.literal(hkErr).formatted(Formatting.RED));
+                    this.sendMacroChatLine(Component.literal(hkErr).withStyle(ChatFormatting.RED));
                     this.updateSaveButtonLabel();
                     return;
                 }
@@ -2773,18 +2772,18 @@ extends Screen implements KeyboardConsumingScreen {
                         this.saveOverlayDetail = MacroGraphCompiler.summarizePlan(this.def);
                         this.savePhase = SavePhase.DONE_OK;
                         this.clearDirty();
-                        this.sendMacroChatLine(Text.literal(("Saved graph \u2192 " + this.saveOverlayDetail)).formatted(Formatting.GREEN));
+                        this.sendMacroChatLine(Component.literal(("Saved graph \u2192 " + this.saveOverlayDetail)).withStyle(ChatFormatting.GREEN));
                     } else {
                         this.saveOverlayDetail = diags.getFirst() + (diags.size() > 1 ? "  (see Compile panel for +" + (diags.size() - 1) + " more)" : "");
                         this.savePhase = SavePhase.DONE_WARN;
                         this.clearDirty();
-                        this.sendMacroChatLine(Text.literal("Saved file; fix compile issues to run: ").formatted(Formatting.YELLOW).append(Text.literal(diags.getFirst()).formatted(Formatting.RED)));
+                        this.sendMacroChatLine(Component.literal("Saved file; fix compile issues to run: ").withStyle(ChatFormatting.YELLOW).append(Component.literal(diags.getFirst()).withStyle(ChatFormatting.RED)));
                     }
                 }
                 catch (Exception e) {
                     this.savePhase = SavePhase.FAILED;
                     this.saveOverlayDetail = e.getMessage() == null ? "Unknown error" : e.getMessage();
-                    this.sendMacroChatLine(Text.literal(("Save failed: " + this.saveOverlayDetail)).formatted(Formatting.RED));
+                    this.sendMacroChatLine(Component.literal(("Save failed: " + this.saveOverlayDetail)).withStyle(ChatFormatting.RED));
                 }
                 this.savePhaseTicks = 0;
                 this.updateSaveButtonLabel();
@@ -2812,13 +2811,13 @@ extends Screen implements KeyboardConsumingScreen {
             case 2 -> "Saving\u2026";
             default -> "Save";
         };
-        this.macroSaveButton.setMessage(Text.literal(label));
+        this.macroSaveButton.setMessage(Component.literal(label));
     }
 
-    private void sendMacroChatLine(Text message) {
-        MinecraftClient c = MinecraftClient.getInstance();
+    private void sendMacroChatLine(Component message) {
+        Minecraft c = Minecraft.getInstance();
         if (c.player != null) {
-            c.player.sendMessage(Text.literal("[Macro] ").formatted(Formatting.GOLD).append(message), false);
+            c.player.displayClientMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD).append(message), false);
         }
     }
 
@@ -2845,13 +2844,13 @@ extends Screen implements KeyboardConsumingScreen {
         return null;
     }
 
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
         context.fill(0, 0, this.width, HEADER_H, 0xCC0A0E14);
         context.fill(0, HEADER_H - 1, this.width, HEADER_H, UiTokens.ACCENT & 0x44FFFFFF | 0x88000000);
-        context.drawTextWithShadow(this.textRenderer, this.title, 12, 14, UiTokens.ACCENT);
+        context.drawString(this.font, this.title, 12, 14, UiTokens.ACCENT);
         if (this.autosaveFlashTicks > 0) {
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Autosaved").formatted(Formatting.DARK_GREEN),
+            context.drawString(this.font, Component.literal("Autosaved").withStyle(ChatFormatting.DARK_GREEN),
                     this.width - 420, 14, 0xFF4ADE9A);
         }
         this.renderSidebar(context, mouseX, mouseY);
@@ -2864,12 +2863,12 @@ extends Screen implements KeyboardConsumingScreen {
         this.renderSaveProgressOverlay(context, delta);
     }
 
-    private void renderFooterHint(DrawContext context) {
+    private void renderFooterHint(GuiGraphics context) {
         if (this.height < 24) {
             return;
         }
-        context.drawTextWithShadow(this.textRenderer,
-                Text.literal("Drag nodes · Del delete · RMB ports · wheel zoom / palette scroll"),
+        context.drawString(this.font,
+                Component.literal("Drag nodes · Del delete · RMB ports · wheel zoom / palette scroll"),
                 12, this.height - 14, UiTokens.TEXT_DIM);
     }
 
@@ -2913,11 +2912,11 @@ extends Screen implements KeyboardConsumingScreen {
         this.paletteScroll = Math.max(0, Math.min(this.paletteScroll, max));
     }
 
-    private void renderSidebar(DrawContext context, int mouseX, int mouseY) {
+    private void renderSidebar(GuiGraphics context, int mouseX, int mouseY) {
         context.fill(0, CANVAS_TOP, this.sidebarW(), this.height, UiTokens.BG_PANEL);
         context.fill(this.sidebarW() - 1, CANVAS_TOP, this.sidebarW(), this.height, -11870592);
         int titleY = CANVAS_TOP + 6;
-        context.drawTextWithShadow(this.textRenderer, Text.literal("Nodes"), 8, titleY, -11870592);
+        context.drawString(this.font, Component.literal("Nodes"), 8, titleY, -11870592);
         int vpTop = this.paletteViewportTop();
         int vpH = this.paletteViewportHeight();
         this.clampPaletteScroll();
@@ -2937,8 +2936,8 @@ extends Screen implements KeyboardConsumingScreen {
             if (sy + 13 > vpTop && sy < vpTop + vpH) {
                 context.fill(4, sy, this.sidebarW() - 4, sy + 13 - 1, headBg);
                 String tri = expanded ? "\u25bc " : "\u25b6 ";
-                String head = this.textRenderer.trimToWidth(tri + cat, labelMaxW);
-                context.drawTextWithShadow(this.textRenderer, Text.literal(head), 8, sy + 2, -11870592);
+                String head = this.font.plainSubstrByWidth(tri + cat, labelMaxW);
+                context.drawString(this.font, Component.literal(head), 8, sy + 2, -11870592);
             }
             vy += 13;
             while (i < entries.size() && entries.get(i).category().equals(cat)) {
@@ -2950,8 +2949,8 @@ extends Screen implements KeyboardConsumingScreen {
                     int n2 = bg = hot ? -1437579208 : 1712328728;
                     if (rowSy + 17 > vpTop && rowSy < vpTop + vpH) {
                         context.fill(4, rowSy, this.sidebarW() - 4, rowSy + 17 - 1, bg);
-                        String lab = this.textRenderer.trimToWidth(row.label(), labelMaxW);
-                        context.drawTextWithShadow(this.textRenderer, Text.literal(lab), 8, rowSy + 4, -1380097);
+                        String lab = this.font.plainSubstrByWidth(row.label(), labelMaxW);
+                        context.drawString(this.font, Component.literal(lab), 8, rowSy + 4, -1380097);
                     }
                     vy += 17;
                 }
@@ -3034,7 +3033,7 @@ extends Screen implements KeyboardConsumingScreen {
         return false;
     }
 
-    private void renderCanvas(DrawContext context, int mouseX, int mouseY) {
+    private void renderCanvas(GuiGraphics context, int mouseX, int mouseY) {
         MacroGraphNode a;
         int cl = this.canvasLeft();
         int cw = this.canvasWidth();
@@ -3044,11 +3043,11 @@ extends Screen implements KeyboardConsumingScreen {
         int gridStep = this.canvasZoom < 0.85 ? 64 : 32;
         for (int gx = 0; gx < cw; gx += gridStep) {
             int sx = cl + gx + (int)(this.panX % (double)gridStep);
-            context.drawVerticalLine(sx, CANVAS_TOP, CANVAS_TOP + ch, 856692776);
+            context.vLine(sx, CANVAS_TOP, CANVAS_TOP + ch, 856692776);
         }
         for (int gy = 0; gy < ch; gy += gridStep) {
             int sy = CANVAS_TOP + gy + (int)(this.panY % (double)gridStep);
-            context.drawHorizontalLine(cl, cl + cw, sy, 856692776);
+            context.hLine(cl, cl + cw, sy, 856692776);
         }
         for (MacroGraphGroup g : this.graphGroups) {
             if (g.memberNodeIds == null || g.memberNodeIds.isEmpty()) continue;
@@ -3079,7 +3078,7 @@ extends Screen implements KeyboardConsumingScreen {
                 context.fill(bx1 - 1, by0, bx1, by1, g.borderArgb);
                 String lab = g.label == null || g.label.isBlank() ? "Group" : g.label;
                 String shortLab = lab.length() > 18 ? lab.substring(0, 18) + "\u2026" : lab;
-                context.drawTextWithShadow(this.textRenderer, Text.literal((shortLab + " \u25b6")), bx0 + 3, by0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
+                context.drawString(this.font, Component.literal((shortLab + " \u25b6")), bx0 + 3, by0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
                 continue;
             }
             int[] rect = this.expandedGroupScreenRect(g);
@@ -3094,7 +3093,7 @@ extends Screen implements KeyboardConsumingScreen {
             context.fill(x0, y0, x0 + 1, y1, g.borderArgb);
             context.fill(x1 - 1, y0, x1, y1, g.borderArgb);
             String lab = g.label == null || g.label.isBlank() ? "Group" : g.label;
-            context.drawTextWithShadow(this.textRenderer, Text.literal(lab), x0 + 3, y0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
+            context.drawString(this.font, Component.literal(lab), x0 + 3, y0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
         }
         this.renderNodeById.clear();
         for (MacroGraphNode n : this.graphNodes) {
@@ -3120,10 +3119,10 @@ extends Screen implements KeyboardConsumingScreen {
             int rx1 = (int)Math.max(this.marqueeAX, this.marqueeBX);
             int ry1 = (int)Math.max(this.marqueeAY, this.marqueeBY);
             context.fill(rx0, ry0, rx1, ry1, 857751680);
-            context.drawHorizontalLine(rx0, rx1, ry0, -9789697);
-            context.drawHorizontalLine(rx0, rx1, ry1, -9789697);
-            context.drawVerticalLine(rx0, ry0, ry1, -9789697);
-            context.drawVerticalLine(rx1, ry0, ry1, -9789697);
+            context.hLine(rx0, rx1, ry0, -9789697);
+            context.hLine(rx0, rx1, ry1, -9789697);
+            context.vLine(rx0, ry0, ry1, -9789697);
+            context.vLine(rx1, ry0, ry1, -9789697);
         }
         for (MacroGraphNode n : this.graphNodes) {
             if (this.isNodeInCollapsedGroup(n)) continue;
@@ -3144,8 +3143,8 @@ extends Screen implements KeyboardConsumingScreen {
             context.fill(rx0, ry0, rx1, ry0 + barH, control ? -11870566 : -11870592);
             String rawTitle = control ? ("GRAPH_START".equals(n.type) ? "START" : "END") : n.type;
             int innerW = Math.max(8, rx1 - rx0 - 2 * textPad);
-            String title = this.textRenderer.trimToWidth(rawTitle, innerW);
-            context.drawTextWithShadow(this.textRenderer, Text.literal(title), rx0 + textPad, ry0 + textPad, -1642753);
+            String title = this.font.plainSubstrByWidth(rawTitle, innerW);
+            context.drawString(this.font, Component.literal(title), rx0 + textPad, ry0 + textPad, -1642753);
             if (!"GRAPH_START".equals(n.type)) {
                 this.fillWorldRect(context, n.x - 4.5, n.y + 21.0 - 4.5, n.x + 4.5, n.y + 21.0 + 4.5, -12198260);
             }
@@ -3159,14 +3158,14 @@ extends Screen implements KeyboardConsumingScreen {
                     int pyLoop = this.toScreenY(n.y + 9.24);
                     int pyNext = this.toScreenY(n.y + 32.76);
                     int tdx = 2;
-                    context.drawTextWithShadow(this.textRenderer, Text.literal("Repeat"), pxR + tdx, pyLoop - 4, -5308440);
-                    context.drawTextWithShadow(this.textRenderer, Text.literal("Continue"), pxR + tdx, pyNext - 4, -11096);
+                    context.drawString(this.font, Component.literal("Repeat"), pxR + tdx, pyLoop - 4, -5308440);
+                    context.drawString(this.font, Component.literal("Continue"), pxR + tdx, pyNext - 4, -11096);
                     continue;
                 }
                 this.fillWorldRect(context, n.x + 108.0 - 4.5, n.y + 21.0 - 4.5, n.x + 108.0 + 4.5, n.y + 21.0 + 4.5, -10616888);
                 pxR = Math.max(this.toScreenX(n.x + 108.0 - 4.5), this.toScreenX(n.x + 108.0 + 4.5));
                 int pyC = this.toScreenY(n.y + 21.0);
-                context.drawTextWithShadow(this.textRenderer, Text.literal("Repeat"), pxR + 2, pyC - 4, -5308440);
+                context.drawString(this.font, Component.literal("Repeat"), pxR + 2, pyC - 4, -5308440);
                 continue;
             }
             this.fillWorldRect(context, n.x + 108.0 - 4.5, n.y + 21.0 - 4.5, n.x + 108.0 + 4.5, n.y + 21.0 + 4.5, -19605);
@@ -3202,21 +3201,21 @@ extends Screen implements KeyboardConsumingScreen {
         return x.equals(y);
     }
 
-    private void renderCompileStrip(DrawContext context, int ix) {
+    private void renderCompileStrip(GuiGraphics context, int ix) {
         block8: {
             int w = this.inspectorW() - 10;
             int x = ix + 5;
             int y = this.compilePanelTop;
             context.fill(x, y, x + w, y + this.compilePanelHeight, 1712330792);
             context.fill(x, y, x + w, y + 1, -12886369);
-            context.drawTextWithShadow(this.textRenderer, Text.literal("Compile"), x + 4, y + 4, -14217);
+            context.drawString(this.font, Component.literal("Compile"), x + 4, y + 4, -14217);
             int maxW = Math.max(24, w - 8);
             int ty = y + 16;
             if (this.liveCompileDiagnostics.isEmpty()) {
                 String plan = this.def != null ? MacroGraphCompiler.summarizePlan(this.def) : "";
                 for (String line : this.wrapPlain("OK \u2014 " + plan, maxW)) {
                     if (ty <= y + this.compilePanelHeight - 8) {
-                        context.drawTextWithShadow(this.textRenderer, Text.literal(line), x + 4, ty, -10823512);
+                        context.drawString(this.font, Component.literal(line), x + 4, ty, -10823512);
                         ty += 10;
                         continue;
                     }
@@ -3228,11 +3227,11 @@ extends Screen implements KeyboardConsumingScreen {
                     for (String line : this.wrapPlain(msg, maxW)) {
                         if (shown >= 9) {
                             if (ty > y + this.compilePanelHeight - 8) break block8;
-                            context.drawTextWithShadow(this.textRenderer, Text.literal("\u2026"), x + 4, ty, -8747362);
+                            context.drawString(this.font, Component.literal("\u2026"), x + 4, ty, -8747362);
                             break block8;
                         }
                         if (ty <= y + this.compilePanelHeight - 8) {
-                            context.drawTextWithShadow(this.textRenderer, Text.literal(line), x + 4, ty, -25718);
+                            context.drawString(this.font, Component.literal(line), x + 4, ty, -25718);
                             ty += 10;
                             ++shown;
                             continue;
@@ -3244,7 +3243,7 @@ extends Screen implements KeyboardConsumingScreen {
         }
     }
 
-    private void renderSaveProgressOverlay(DrawContext context, float delta) {
+    private void renderSaveProgressOverlay(GuiGraphics context, float delta) {
         if (this.savePhase == SavePhase.IDLE) {
             return;
         }
@@ -3262,7 +3261,7 @@ extends Screen implements KeyboardConsumingScreen {
             case 5 -> "Save blocked / failed";
             default -> "";
         };
-        context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(title), px + panelW / 2, py + 2, -1380097);
+        context.drawCenteredString(this.font, Component.literal(title), px + panelW / 2, py + 2, -1380097);
         if (this.savePhase == SavePhase.VALIDATING || this.savePhase == SavePhase.PERSISTING) {
             int bx = px + 12;
             int by = py + 20;
@@ -3278,26 +3277,26 @@ extends Screen implements KeyboardConsumingScreen {
             int col = this.savePhase == SavePhase.FAILED ? -29830 : (this.savePhase == SavePhase.DONE_WARN ? -11126 : -10823512);
             String body = this.saveOverlayDetail.isEmpty() ? "\u2014" : this.saveOverlayDetail;
             for (String line : this.wrapPlain(body, panelW - 20)) {
-                context.drawCenteredTextWithShadow(this.textRenderer, Text.literal(line), px + panelW / 2, ty, col);
+                context.drawCenteredString(this.font, Component.literal(line), px + panelW / 2, ty, col);
                 ty += 10;
             }
         }
     }
 
-    private void renderInspectorFrame(DrawContext context, int mouseX, int mouseY) {
+    private void renderInspectorFrame(GuiGraphics context, int mouseX, int mouseY) {
         int ix = this.width - this.inspectorW();
         context.fill(ix, CANVAS_TOP, this.width, this.height, UiTokens.BG_PANEL);
         context.fill(ix, CANVAS_TOP, ix + 1, this.height, -11870592);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("Inspector"), ix + 8, CANVAS_TOP + 6, UiTokens.ACCENT);
+        context.drawString(this.font, Component.literal("Inspector"), ix + 8, CANVAS_TOP + 6, UiTokens.ACCENT);
         String hint = this.inspectorOverlayHint();
         if (!hint.isEmpty()) {
-            context.drawTextWithShadow(this.textRenderer, Text.literal(hint), ix + 8, CANVAS_TOP + 18, UiTokens.TEXT_DIM);
+            context.drawString(this.font, Component.literal(hint), ix + 8, CANVAS_TOP + 18, UiTokens.TEXT_DIM);
         }
         this.renderCompileStrip(context, ix);
         int runKeyY = this.compilePanelTop + this.compilePanelHeight + 4;
-        context.drawTextWithShadow(this.textRenderer, Text.literal("Run key: DupeClient → Macros panel"), ix + 8, runKeyY, UiTokens.TEXT_DIM);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("Macro library"), ix + 8, this.libraryListTop, UiTokens.ACCENT);
-        context.drawTextWithShadow(this.textRenderer, Text.literal("Click · dbl-click · RMB del"), ix + 8, this.libraryListTop + 10, UiTokens.TEXT_DIM);
+        context.drawString(this.font, Component.literal("Run key: DupeClient → Macros panel"), ix + 8, runKeyY, UiTokens.TEXT_DIM);
+        context.drawString(this.font, Component.literal("Macro library"), ix + 8, this.libraryListTop, UiTokens.ACCENT);
+        context.drawString(this.font, Component.literal("Click · dbl-click · RMB del"), ix + 8, this.libraryListTop + 10, UiTokens.TEXT_DIM);
         int rowY = this.libraryListTop + 22;
         String currentId = MacroStorage.filenameId(this.def.id);
         for (int i = 0; i < this.libraryVisibleRows; ++i) {
@@ -3313,20 +3312,20 @@ extends Screen implements KeyboardConsumingScreen {
             if (hot && !current) {
                 context.fill(ix + 5, ry + 1, this.width - 5, ry + LIB_ROW_H - 1, 0x18FFFFFF);
             }
-            String shown = this.textRenderer.trimToWidth(id, this.inspectorW() - 28);
-            context.drawTextWithShadow(this.textRenderer, Text.literal(shown), ix + 10, ry + 3,
+            String shown = this.font.plainSubstrByWidth(id, this.inspectorW() - 28);
+            context.drawString(this.font, Component.literal(shown), ix + 10, ry + 3,
                     current ? UiTokens.MINT_300 : UiTokens.TEXT);
         }
     }
 
     private static void toast(String message) {
-        MinecraftClient c = MinecraftClient.getInstance();
+        Minecraft c = Minecraft.getInstance();
         if (c.player != null) {
-            c.player.sendMessage(Text.literal(message).formatted(Formatting.YELLOW), false);
+            c.player.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.YELLOW), false);
         }
     }
 
-    public boolean mouseClicked(Click click, boolean doubleClick) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         OutPortHit outHit;
         int libIdx;
         double wy;
@@ -3626,7 +3625,7 @@ extends Screen implements KeyboardConsumingScreen {
         return false;
     }
 
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         if (click.button() == 2) {
             this.panning = false;
         }
@@ -3654,7 +3653,7 @@ extends Screen implements KeyboardConsumingScreen {
         return super.mouseReleased(click);
     }
 
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
         if (this.panning && click.button() == 2) {
             this.panX = this.panGrabPx + (click.x() - this.panGrabMx);
             this.panY = this.panGrabPy + (click.y() - this.panGrabMy);
@@ -3714,7 +3713,7 @@ extends Screen implements KeyboardConsumingScreen {
         }
         if (this.inCanvas(mouseX, mouseY)) {
             double oldZoom = this.canvasZoom;
-            this.canvasZoom = MathHelper.clamp((double)(this.canvasZoom * (verticalAmount > 0.0 ? 1.1 : 0.91)), (double)0.25, (double)2.5);
+            this.canvasZoom = Mth.clamp((double)(this.canvasZoom * (verticalAmount > 0.0 ? 1.1 : 0.91)), (double)0.25, (double)2.5);
             double wx = (mouseX - (double)this.canvasLeft()) / oldZoom - this.panX;
             double wy = (mouseY - (double)CANVAS_TOP) / oldZoom - this.panY;
             this.panX = (mouseX - (double)this.canvasLeft()) / this.canvasZoom - wx;
@@ -3724,7 +3723,7 @@ extends Screen implements KeyboardConsumingScreen {
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
-    public boolean keyPressed(KeyInput keyInput) {
+    public boolean keyPressed(KeyEvent keyInput) {
         if (this.capturingPressKey) {
             this.capturingPressKey = false;
             MacroGraphNode n = this.soleSelectedId() == null ? null : this.findNode(this.soleSelectedId());
@@ -3791,8 +3790,8 @@ extends Screen implements KeyboardConsumingScreen {
         macroGraphClipboard.nodes = nodes;
         macroGraphClipboard.edges = edges;
         macroGraphClipboard.groups = groups;
-        if (this.client != null && this.client.keyboard != null) {
-            this.client.keyboard.setClipboard(MacroStorage.toJson(macroGraphClipboard));
+        if (this.minecraft != null && this.minecraft.keyboardHandler != null) {
+            this.minecraft.keyboardHandler.setClipboard(MacroStorage.toJson(macroGraphClipboard));
         }
         String extra = groups.isEmpty() ? "" : " +" + groups.size() + " group(s)";
         MacroEditorScreen.toast("Copied " + nodes.size() + " node(s)" + extra + ".");
@@ -3800,10 +3799,10 @@ extends Screen implements KeyboardConsumingScreen {
 
     private void pasteFromClipboard() {
         MacroGraphClipboard clip;
-        if (this.client == null || this.client.keyboard == null) {
+        if (this.minecraft == null || this.minecraft.keyboardHandler == null) {
             return;
         }
-        String raw = this.client.keyboard.getClipboard();
+        String raw = this.minecraft.keyboardHandler.getClipboard();
         if (raw == null || raw.isBlank()) {
             MacroEditorScreen.toast("Clipboard empty.");
             return;
@@ -3904,7 +3903,7 @@ extends Screen implements KeyboardConsumingScreen {
             this.exitToParent();
             return;
         }
-        MinecraftClient c = this.client;
+        Minecraft c = this.minecraft;
         if (c == null) {
             return;
         }
@@ -3929,20 +3928,20 @@ extends Screen implements KeyboardConsumingScreen {
                 self.clearDirty();
                 c.setScreen(self.parent);
             }
-        }, Text.literal("Save macro?"), Text.literal("You have unsaved changes. Yes writes to disk; No discards.")));
+        }, Component.literal("Save macro?"), Component.literal("You have unsaved changes. Yes writes to disk; No discards.")));
     }
 
     private void exitToParent() {
-        if (this.client != null) {
-            this.client.setScreen(this.parent);
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(this.parent);
         }
     }
 
-    public void close() {
+    public void onClose() {
         this.tryClose();
     }
 
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
@@ -3976,40 +3975,40 @@ extends Screen implements KeyboardConsumingScreen {
         private StylishTextFieldWidget fillField;
 
         MacroGroupStyleEditScreen(MacroGraphGroup target) {
-            super(Text.literal("Group style"));
+            super(Component.literal("Group style"));
             this.target = target;
         }
 
         protected void init() {
             int cx = this.width / 2 - 100;
             int y = 72;
-            this.labelField = StylishTextFieldWidget.create(MacroEditorScreen.this.textRenderer, cx, y, 200, 20, Text.literal("Label"));
+            this.labelField = StylishTextFieldWidget.create(MacroEditorScreen.this.font, cx, y, 200, 20, Component.literal("Label"));
             this.labelField.setMaxLength(64);
-            this.labelField.setText(this.target.label == null ? "" : this.target.label);
-            this.addDrawableChild(this.labelField);
-            this.borderField = StylishTextFieldWidget.create(MacroEditorScreen.this.textRenderer, cx, y += 28, 200, 20, Text.literal("Border ARGB"));
+            this.labelField.setValue(this.target.label == null ? "" : this.target.label);
+            this.addRenderableWidget(this.labelField);
+            this.borderField = StylishTextFieldWidget.create(MacroEditorScreen.this.font, cx, y += 28, 200, 20, Component.literal("Border ARGB"));
             this.borderField.setMaxLength(12);
-            this.borderField.setText(String.format("0x%08X", this.target.borderArgb));
-            this.addDrawableChild(this.borderField);
-            this.fillField = StylishTextFieldWidget.create(MacroEditorScreen.this.textRenderer, cx, y += 28, 200, 20, Text.literal("Fill ARGB"));
+            this.borderField.setValue(String.format("0x%08X", this.target.borderArgb));
+            this.addRenderableWidget(this.borderField);
+            this.fillField = StylishTextFieldWidget.create(MacroEditorScreen.this.font, cx, y += 28, 200, 20, Component.literal("Fill ARGB"));
             this.fillField.setMaxLength(12);
-            this.fillField.setText(String.format("0x%08X", this.target.fillArgb));
-            this.addDrawableChild(this.fillField);
-            this.addDrawableChild(new StylishButtonWidget(cx, y += 36, 96, 20, Text.literal("Done"), this::applyAndClose));
-            this.addDrawableChild(new StylishButtonWidget(cx + 104, y, 96, 20, Text.literal("Cancel"), () -> {
-                if (MacroEditorScreen.this.client != null) {
-                    MacroEditorScreen.this.client.setScreen((Screen)MacroEditorScreen.this);
+            this.fillField.setValue(String.format("0x%08X", this.target.fillArgb));
+            this.addRenderableWidget(this.fillField);
+            this.addRenderableWidget(new StylishButtonWidget(cx, y += 36, 96, 20, Component.literal("Done"), this::applyAndClose));
+            this.addRenderableWidget(new StylishButtonWidget(cx + 104, y, 96, 20, Component.literal("Cancel"), () -> {
+                if (MacroEditorScreen.this.minecraft != null) {
+                    MacroEditorScreen.this.minecraft.setScreen((Screen)MacroEditorScreen.this);
                 }
             }));
         }
 
         private void applyAndClose() {
             try {
-                int b = MacroEditorScreen.parseArgbHex(this.borderField.getText());
-                int f = MacroEditorScreen.parseArgbHex(this.fillField.getText());
-                MacroEditorScreen.this.applyGroupStyleFromDialog(this.target, this.labelField.getText(), b, f);
-                if (MacroEditorScreen.this.client != null) {
-                    MacroEditorScreen.this.client.setScreen((Screen)MacroEditorScreen.this);
+                int b = MacroEditorScreen.parseArgbHex(this.borderField.getValue());
+                int f = MacroEditorScreen.parseArgbHex(this.fillField.getValue());
+                MacroEditorScreen.this.applyGroupStyleFromDialog(this.target, this.labelField.getValue(), b, f);
+                if (MacroEditorScreen.this.minecraft != null) {
+                    MacroEditorScreen.this.minecraft.setScreen((Screen)MacroEditorScreen.this);
                 }
             }
             catch (Exception e) {
@@ -4017,24 +4016,24 @@ extends Screen implements KeyboardConsumingScreen {
             }
         }
 
-        public boolean keyPressed(KeyInput keyInput) {
+        public boolean keyPressed(KeyEvent keyInput) {
             if (keyInput.key() == 256) {
-                if (MacroEditorScreen.this.client != null) {
-                    MacroEditorScreen.this.client.setScreen((Screen)MacroEditorScreen.this);
+                if (MacroEditorScreen.this.minecraft != null) {
+                    MacroEditorScreen.this.minecraft.setScreen((Screen)MacroEditorScreen.this);
                 }
                 return true;
             }
             return super.keyPressed(keyInput);
         }
 
-        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
             UiDraw.fillMidnightBackground(context, this.width, this.height);
-            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 48, -1380097);
-            context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("ARGB: alpha + RGB (e.g. fill 0x40204060)"), this.width / 2, 62, -8747362);
+            context.drawCenteredString(this.font, this.title, this.width / 2, 48, -1380097);
+            context.drawCenteredString(this.font, Component.literal("ARGB: alpha + RGB (e.g. fill 0x40204060)"), this.width / 2, 62, -8747362);
             super.render(context, mouseX, mouseY, delta);
         }
 
-        public boolean shouldPause() {
+        public boolean isPauseScreen() {
             return false;
         }
     }

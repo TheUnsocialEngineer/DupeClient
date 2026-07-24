@@ -7,10 +7,9 @@ import com.dupeclient.client.gui.MacroShareScreen;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -47,7 +46,7 @@ public final class MacroCommands {
                 }))
                 .then(literal("delete").then(argument("id", StringArgumentType.word()).executes(ctx -> {
                     String id = StringArgumentType.getString(ctx, "id");
-                    MinecraftClient client = ctx.getSource().getClient();
+                    Minecraft client = ctx.getSource().getClient();
                     String active = MacroEngine.INSTANCE.getActiveMacroId();
                     try {
                         MacroStorage.deleteMacro(id);
@@ -86,7 +85,7 @@ public final class MacroCommands {
                     if (SlashCommandGate.blockExploit(ctx.getSource())) {
                         return 0;
                     }
-                    MacroPromptScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().currentScreen);
+                    MacroPromptScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().screen);
                     feedback(ctx, "Opening macro prompt generator.");
                     return 1;
                 }).then(argument("text", StringArgumentType.greedyString()).executes(ctx -> {
@@ -111,7 +110,7 @@ public final class MacroCommands {
                         return 0;
                     }
                     String id = StringArgumentType.getString(ctx, "id");
-                    MinecraftClient client = ctx.getSource().getClient();
+                    Minecraft client = ctx.getSource().getClient();
                     if (MacroShare.exportMacroToClipboard(client, id)) {
                         feedback(ctx, "Copied export bundle for \"" + MacroStorage.filenameId(id) + "\" to clipboard.");
                     }
@@ -121,7 +120,7 @@ public final class MacroCommands {
                     if (SlashCommandGate.blockExploit(ctx.getSource())) {
                         return 0;
                     }
-                    MacroShareScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().currentScreen, null);
+                    MacroShareScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().screen, null);
                     feedback(ctx, "Opening macro import screen (clipboard JSON).");
                     return 1;
                 }))
@@ -207,7 +206,7 @@ public final class MacroCommands {
     }
 
     private static void feedback(com.mojang.brigadier.context.CommandContext<FabricClientCommandSource> ctx, String message) {
-        ctx.getSource().sendFeedback(Text.literal("[Macro] ").formatted(Formatting.GOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY)));
+        ctx.getSource().sendFeedback(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 }

@@ -2,10 +2,10 @@ package com.ui_utils.mixin;
 
 import com.ui_utils.UiUtilsScreens;
 import com.ui_utils.gui.CustomTextFieldWidget;
-import net.minecraft.client.Keyboard;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.input.CharInput;
+import net.minecraft.client.KeyboardHandler;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,17 +15,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * HandledScreen no longer exposes {@code charTyped} for mixin injection in 1.21.11; route typed
- * characters to the UI Utils chat field from {@link Keyboard#onChar} instead.
+ * characters to the UI Utils chat field from {@link KeyboardHandler#charTyped} instead.
  */
-@Mixin(Keyboard.class)
+@Mixin(KeyboardHandler.class)
 public abstract class KeyboardMixin {
     @Shadow
     @Final
-    private MinecraftClient client;
+    private Minecraft minecraft;
 
-    @Inject(method = "onChar", at = @At("HEAD"), cancellable = true)
-    private void uiutils$onChar(long window, CharInput input, CallbackInfo ci) {
-        if (!(this.client.currentScreen instanceof HandledScreen<?> screen)) {
+    @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
+    private void uiutils$onChar(long window, CharacterEvent input, CallbackInfo ci) {
+        if (!(this.minecraft.screen instanceof AbstractContainerScreen<?> screen)) {
             return;
         }
         if (!UiUtilsScreens.shouldAttachWidgets(screen)) {

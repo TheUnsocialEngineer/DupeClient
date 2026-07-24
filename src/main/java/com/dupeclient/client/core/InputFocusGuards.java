@@ -3,14 +3,14 @@ package com.dupeclient.client.core;
 import com.dupeclient.client.DupeClient;
 import com.dupeclient.client.gui.ClientGuiScreen;
 import com.dupeclient.client.gui.overlay.IngameOverlayHost;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.ParentElement;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.SleepingChatScreen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.InBedChatScreen;
+import net.minecraft.client.gui.screens.Screen;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -24,7 +24,7 @@ public final class InputFocusGuards {
         if (screen == null) {
             return false;
         }
-        if (screen instanceof ChatScreen || screen instanceof SleepingChatScreen) {
+        if (screen instanceof ChatScreen || screen instanceof InBedChatScreen) {
             return true;
         }
         String name = screen.getClass().getSimpleName();
@@ -35,11 +35,11 @@ public final class InputFocusGuards {
                 || name.contains("CommandBlock");
     }
 
-    public static boolean hasAnyTextInputFocus(MinecraftClient client) {
+    public static boolean hasAnyTextInputFocus(Minecraft client) {
         if (client == null) {
             return false;
         }
-        Screen screen = client.currentScreen;
+        Screen screen = client.screen;
         if (isTypingScreen(screen)) {
             return true;
         }
@@ -52,12 +52,12 @@ public final class InputFocusGuards {
         return IngameOverlayHost.anyHasTextFocus();
     }
 
-    public static boolean shouldBlockGlobalHotkeys(MinecraftClient client) {
+    public static boolean shouldBlockGlobalHotkeys(Minecraft client) {
         return hasAnyTextInputFocus(client);
     }
 
     /** Block overlay/module toggle hotkeys while any text field or key-capture UI has focus. */
-    public static boolean shouldBlockOverlayToggleHotkeys(MinecraftClient client) {
+    public static boolean shouldBlockOverlayToggleHotkeys(Minecraft client) {
         return shouldBlockGlobalHotkeys(client);
     }
 
@@ -72,30 +72,30 @@ public final class InputFocusGuards {
         if (screen instanceof ClientGuiScreen) {
             return DupeClient.getGuiManager().hasFocusedTextInput();
         }
-        Element focused = screen.getFocused();
+        GuiEventListener focused = screen.getFocused();
         if (isTextInputElement(focused) && isElementFocused(focused)) {
             return true;
         }
         return scanForFocusedTextInput(screen);
     }
 
-    private static boolean scanForFocusedTextInput(ParentElement parent) {
-        for (Element child : parent.children()) {
+    private static boolean scanForFocusedTextInput(ContainerEventHandler parent) {
+        for (GuiEventListener child : parent.children()) {
             if (isTextInputElement(child) && isElementFocused(child)) {
                 return true;
             }
-            if (child instanceof ParentElement nested && scanForFocusedTextInput(nested)) {
+            if (child instanceof ContainerEventHandler nested && scanForFocusedTextInput(nested)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean isTextInputElement(@Nullable Element element) {
+    private static boolean isTextInputElement(@Nullable GuiEventListener element) {
         if (element == null) {
             return false;
         }
-        if (element instanceof TextFieldWidget) {
+        if (element instanceof EditBox) {
             return true;
         }
         String simple = element.getClass().getSimpleName();
@@ -106,8 +106,8 @@ public final class InputFocusGuards {
                 || simple.contains("SnbtTextArea");
     }
 
-    private static boolean isElementFocused(Element element) {
-        if (element instanceof ClickableWidget widget) {
+    private static boolean isElementFocused(GuiEventListener element) {
+        if (element instanceof AbstractWidget widget) {
             return widget.isFocused();
         }
         return false;

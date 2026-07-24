@@ -3,9 +3,9 @@ package com.dupeclient.client.module.utility;
 import com.dupeclient.client.core.InputFocusGuards;
 import com.dupeclient.client.module.dupedb.P2wServerPolicy;
 import com.dupeclient.client.module.packet.FeatureHotkeyManager;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 public final class ChatGamesManager {
     public static final ChatGamesManager INSTANCE = new ChatGamesManager();
@@ -35,7 +35,7 @@ public final class ChatGamesManager {
         textInputFocused = focused;
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         if (client == null || client.getWindow() == null) {
             return;
         }
@@ -86,8 +86,8 @@ public final class ChatGamesManager {
         if (!settings.enabled || raw == null || raw.isBlank()) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.player == null || client.getNetworkHandler() == null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client == null || client.player == null || client.getConnection() == null) {
             return;
         }
 
@@ -155,10 +155,10 @@ public final class ChatGamesManager {
         return true;
     }
 
-    private static void sendAnswer(MinecraftClient client, String message) {
+    private static void sendAnswer(Minecraft client, String message) {
         client.execute(() -> {
-            if (client.player != null && client.getNetworkHandler() != null) {
-                client.getNetworkHandler().sendChatMessage(message);
+            if (client.player != null && client.getConnection() != null) {
+                client.getConnection().sendChat(message);
             }
         });
     }
@@ -175,15 +175,15 @@ public final class ChatGamesManager {
     }
 
     private void sendFeedbackLine(String message) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) {
             return;
         }
-        Text line = Text.literal("[Chat Games] ").formatted(Formatting.GOLD, Formatting.BOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY));
+        Component line = Component.literal("[Chat Games] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.sendMessage(line, false);
+                client.player.displayClientMessage(line, false);
             }
         });
     }

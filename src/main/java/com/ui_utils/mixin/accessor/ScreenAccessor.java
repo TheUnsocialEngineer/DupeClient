@@ -1,8 +1,8 @@
 package com.ui_utils.mixin.accessor;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Mixin(Screen.class)
 public interface ScreenAccessor {
     @Accessor
-    TextRenderer getTextRenderer();
+    Font getFont();
 
-    @Invoker("remove")
-    void uiUtils$remove(Element child);
+    @Invoker("removeWidget")
+    void uiUtils$remove(GuiEventListener child);
 }

@@ -5,22 +5,22 @@ import com.dupeclient.client.module.packet.sniffer.PacketRecordCodec;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlayScreen;
 import com.dupeclient.client.module.packet.PacketUtils;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 
 /**
  * Edit captured packets, resend/replay them, or fabricate new C2S packets from field tables.
@@ -69,7 +69,7 @@ public final class PacketWorkbenchScreen extends Screen {
     private int hitFabListH;
 
     public PacketWorkbenchScreen(@Nullable Screen parent, @Nullable PacketSnifferEntry entry) {
-        super(Text.literal(entry == null ? "Packet Fabrication" : "Packet Editor"));
+        super(Component.literal(entry == null ? "Packet Fabrication" : "Packet Editor"));
         this.parent = parent;
         this.sourceEntry = entry;
         if (entry != null) {
@@ -84,7 +84,7 @@ public final class PacketWorkbenchScreen extends Screen {
         if (entry == null) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client != null) {
             client.setScreen(new PacketWorkbenchScreen(normalizeParent(parent), entry));
         }
@@ -99,7 +99,7 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     public static void openFabrication(@Nullable Screen parent) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client != null) {
             client.setScreen(new PacketWorkbenchScreen(normalizeParent(parent), null));
         }
@@ -125,19 +125,19 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0xC0101018);
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         renderBackground(context, mouseX, mouseY, delta);
-        TextRenderer tr = textRenderer;
+        Font tr = font;
         int pad = 12;
         int panelW = Math.min(560, width - pad * 2);
         int panelH = height - pad * 2;
@@ -146,13 +146,13 @@ public final class PacketWorkbenchScreen extends Screen {
 
         context.fill(px, py, px + panelW, py + panelH, 0xF018181B);
         String title = mode == Mode.FABRICATE ? "Packet Fabrication" : "Packet Editor";
-        context.drawTextWithShadow(tr, Text.literal(title), px + pad, py + 8, UiTokens.TEXT);
+        context.drawString(tr, Component.literal(title), px + pad, py + 8, UiTokens.TEXT);
         PacketSnifferManager sniffer = PacketSnifferManager.INSTANCE;
         String totals = "C2S " + sniffer.c2sCount() + " · S2C " + sniffer.s2cCount();
-        context.drawTextWithShadow(
+        context.drawString(
                 tr,
-                Text.literal(totals),
-                px + panelW - pad - tr.getWidth(totals),
+                Component.literal(totals),
+                px + panelW - pad - tr.width(totals),
                 py + 8,
                 UiTokens.TEXT_DIM);
 
@@ -160,9 +160,9 @@ public final class PacketWorkbenchScreen extends Screen {
         if (mode == Mode.FABRICATE) {
             y = drawFabricatePicker(context, tr, px, y, panelW, pad, mouseX, mouseY);
         } else if (sourceEntry != null) {
-            context.drawTextWithShadow(
+            context.drawString(
                     tr,
-                    Text.literal(sourceEntry.direction.label + " · " + sourceEntry.name),
+                    Component.literal(sourceEntry.direction.label + " · " + sourceEntry.name),
                     px + pad,
                     y,
                     UiTokens.TEXT_DIM);
@@ -180,12 +180,12 @@ public final class PacketWorkbenchScreen extends Screen {
         y = hitTableY + hitTableH + 6;
         drawPacketStats(context, tr, hitTableX, y, hitTableW);
         y += STATS_H + 2;
-        context.drawTextWithShadow(tr, Text.literal("Repeat"), px + pad, y + 4, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal("Repeat"), px + pad, y + 4, UiTokens.TEXT_DIM);
         hitRepeatX = px + pad + 48;
         hitRepeatY = y;
         hitRepeatW = 48;
         context.fill(hitRepeatX, hitRepeatY, hitRepeatX + hitRepeatW, hitRepeatY + 16, repeatFocused() ? 0xFF374151 : 0xFF1F2937);
-        context.drawTextWithShadow(tr, Text.literal(repeatInput.toString()), hitRepeatX + 4, hitRepeatY + 4, 0xFFE5E7EB);
+        context.drawString(tr, Component.literal(repeatInput.toString()), hitRepeatX + 4, hitRepeatY + 4, 0xFFE5E7EB);
 
         int btnY = y;
         int btnW = 88;
@@ -201,12 +201,12 @@ public final class PacketWorkbenchScreen extends Screen {
         drawBtn(context, tr, bx, btnY, 64, "Close", 0xFF374151);
 
         if (!status.isEmpty()) {
-            context.drawTextWithShadow(tr, Text.literal(status.toString()), px + pad, py + panelH - 16, 0xFF9CA3AF);
+            context.drawString(tr, Component.literal(status.toString()), px + pad, py + panelH - 16, 0xFF9CA3AF);
         }
         super.render(context, mouseX, mouseY, delta);
     }
 
-    private void drawPacketStats(DrawContext context, TextRenderer tr, int x, int y, int w) {
+    private void drawPacketStats(GuiGraphics context, Font tr, int x, int y, int w) {
         PacketSnifferManager sniffer = PacketSnifferManager.INSTANCE;
         int gap = 8;
         int colW = (w - gap) / 2;
@@ -218,8 +218,8 @@ public final class PacketWorkbenchScreen extends Screen {
 
         String c2sHeader = "Client → Server (" + sniffer.c2sCount() + ")";
         String s2cHeader = "Server → Client (" + sniffer.s2cCount() + ")";
-        context.drawTextWithShadow(tr, Text.literal(c2sHeader), c2sX + 4, y + 3, 0xFF86EFAC);
-        context.drawTextWithShadow(tr, Text.literal(s2cHeader), s2cX + 4, y + 3, 0xFF93C5FD);
+        context.drawString(tr, Component.literal(c2sHeader), c2sX + 4, y + 3, 0xFF86EFAC);
+        context.drawString(tr, Component.literal(s2cHeader), s2cX + 4, y + 3, 0xFF93C5FD);
         context.fill(c2sX + 2, y + 14, c2sX + colW - 2, y + 15, 0xFF374151);
         context.fill(s2cX + 2, y + 14, s2cX + colW - 2, y + 15, 0xFF374151);
 
@@ -235,8 +235,8 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     private void drawStatsRow(
-            DrawContext context,
-            TextRenderer tr,
+            GuiGraphics context,
+            Font tr,
             int x,
             int y,
             int maxW,
@@ -249,7 +249,7 @@ public final class PacketWorkbenchScreen extends Screen {
         int total = statsTotal(direction);
         String pct = total > 0 ? String.format(" (%.1f%%)", entry.getValue() * 100.0 / total) : "";
         String line = entry.getKey() + "  " + entry.getValue() + pct;
-        context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(line, maxW)), x, y, color);
+        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(line, maxW)), x, y, color);
     }
 
     private int statsTotal(PacketDirection direction) {
@@ -269,8 +269,8 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     private int drawFabricatePicker(
-            DrawContext context,
-            TextRenderer tr,
+            GuiGraphics context,
+            Font tr,
             int px,
             int y,
             int panelW,
@@ -290,14 +290,14 @@ public final class PacketWorkbenchScreen extends Screen {
         String searchShown = fabricateSearch.isEmpty() && !fabricateSearchFocused
                 ? "Search C2S packets (+inc -exc)…"
                 : fabricateSearch.toString();
-        context.drawTextWithShadow(
+        context.drawString(
                 tr,
-                Text.literal(tr.trimToWidth(searchShown, hitFabSearchW - 6)),
+                Component.literal(tr.plainSubstrByWidth(searchShown, hitFabSearchW - 6)),
                 hitFabSearchX + 4,
                 hitFabSearchY + 3,
                 fabricateSearch.isEmpty() && !fabricateSearchFocused ? UiTokens.TEXT_DIM : 0xFFE5E7EB);
         String count = filtered.size() + "/" + sortedC2sNames().size();
-        context.drawTextWithShadow(tr, Text.literal(count), hitFabSearchX + hitFabSearchW - tr.getWidth(count) - 4, hitFabSearchY + 3, UiTokens.TEXT_DIM);
+        context.drawString(tr, Component.literal(count), hitFabSearchX + hitFabSearchW - tr.width(count) - 4, hitFabSearchY + 3, UiTokens.TEXT_DIM);
         y += FAB_SEARCH_H + 4;
 
         hitFabListX = px + pad;
@@ -325,7 +325,7 @@ public final class PacketWorkbenchScreen extends Screen {
                 context.fill(hitFabListX + 1, ry, hitFabListX + hitFabListW - 1, ry + FAB_ROW_H, 0x33222C3A);
             }
             String label = formatTypeCountLabel(typeName, PacketDirection.C2S);
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(label, hitFabListW - 8)), hitFabListX + 4, ry + 2, selected ? 0xFF86EFAC : 0xFFE5E7EB);
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(label, hitFabListW - 8)), hitFabListX + 4, ry + 2, selected ? 0xFF86EFAC : 0xFFE5E7EB);
         }
 
         if (maxScroll > 0) {
@@ -340,11 +340,11 @@ public final class PacketWorkbenchScreen extends Screen {
         return y + hitFabListH + 6;
     }
 
-    private void drawFieldTable(DrawContext context, TextRenderer tr, int mouseX, int mouseY) {
+    private void drawFieldTable(GuiGraphics context, Font tr, int mouseX, int mouseY) {
         int headerY = hitTableY + 4;
-        context.drawTextWithShadow(tr, Text.literal("Field"), hitTableX + 4, headerY, 0xFF9CA3AF);
-        context.drawTextWithShadow(tr, Text.literal("Type"), hitTableX + COL_FIELD_W + 4, headerY, 0xFF9CA3AF);
-        context.drawTextWithShadow(tr, Text.literal("Value"), hitTableX + COL_FIELD_W + COL_TYPE_W + 4, headerY, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal("Field"), hitTableX + 4, headerY, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal("Type"), hitTableX + COL_FIELD_W + 4, headerY, 0xFF9CA3AF);
+        context.drawString(tr, Component.literal("Value"), hitTableX + COL_FIELD_W + COL_TYPE_W + 4, headerY, 0xFF9CA3AF);
         context.fill(hitTableX + 2, hitTableY + 16, hitTableX + hitTableW - 2, hitTableY + 17, 0xFF374151);
 
         int bodyTop = hitTableY + 18;
@@ -369,10 +369,10 @@ public final class PacketWorkbenchScreen extends Screen {
             }
 
             int nameColor = field.editable ? 0xFFE5E7EB : 0xFF9CA3AF;
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(field.name, COL_FIELD_W - 8)), hitTableX + 4, ry + 3, nameColor);
-            context.drawTextWithShadow(
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(field.name, COL_FIELD_W - 8)), hitTableX + 4, ry + 3, nameColor);
+            context.drawString(
                     tr,
-                    Text.literal(tr.trimToWidth(field.typeName, COL_TYPE_W - 8)),
+                    Component.literal(tr.plainSubstrByWidth(field.typeName, COL_TYPE_W - 8)),
                     hitTableX + COL_FIELD_W + 4,
                     ry + 3,
                     0xFF6B7280);
@@ -382,22 +382,22 @@ public final class PacketWorkbenchScreen extends Screen {
                 shown = "_";
             }
             int valueColor = field.editable ? 0xFF86EFAC : 0xFF9CA3AF;
-            context.drawTextWithShadow(tr, Text.literal(tr.trimToWidth(shown, valueW - 4)), valueX, ry + 3, valueColor);
+            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(shown, valueW - 4)), valueX, ry + 3, valueColor);
 
             if (field.editable && field.valueType != null && field.valueType.isEnum()) {
-                context.drawTextWithShadow(tr, Text.literal("▸"), hitTableX + hitTableW - 12, ry + 3, 0xFF60A5FA);
+                context.drawString(tr, Component.literal("▸"), hitTableX + hitTableW - 12, ry + 3, 0xFF60A5FA);
             }
         }
     }
 
-    private void drawBtn(DrawContext context, TextRenderer tr, int x, int y, int w, String label, int color) {
+    private void drawBtn(GuiGraphics context, Font tr, int x, int y, int w, String label, int color) {
         context.fill(x, y, x + w, y + 16, color);
-        int tw = tr.getWidth(label);
-        context.drawTextWithShadow(tr, Text.literal(label), x + (w - tw) / 2, y + 4, 0xFFE5E7EB);
+        int tw = tr.width(label);
+        context.drawString(tr, Component.literal(label), x + (w - tw) / 2, y + 4, 0xFFE5E7EB);
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean doubleClick) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean doubleClick) {
         double mouseX = click.x();
         double mouseY = click.y();
         int button = click.button();
@@ -525,7 +525,7 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         int keyCode = input.key();
 
         if (fabricateSearchFocused) {
@@ -611,7 +611,7 @@ public final class PacketWorkbenchScreen extends Screen {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_V && (input.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0) {
-            String clip = MinecraftClient.getInstance().keyboard.getClipboard();
+            String clip = Minecraft.getInstance().keyboardHandler.getClipboard();
             if (clip != null) {
                 valueEditor.append(clip.replace("\r", "").replace("\n", " "));
                 fields.set(focusedField, field.withValue(valueEditor.toString()));
@@ -622,7 +622,7 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(CharInput input) {
+    public boolean charTyped(CharacterEvent input) {
         char chr = (char) input.codepoint();
         if (fabricateSearchFocused) {
             if (!Character.isISOControl(chr) && fabricateSearch.length() < 96) {
@@ -744,10 +744,10 @@ public final class PacketWorkbenchScreen extends Screen {
 
     private void sendEdited(boolean queue) {
         commitFocusedField();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         try {
             Packet<?> built = PacketRecordCodec.fromEditable(PacketRecordCodec.buildEditable(fields));
-            if (built instanceof ClickSlotC2SPacket click) {
+            if (built instanceof ServerboundContainerClickPacket click) {
                 built = PacketRecordCodec.refreshClickSlot(click, client);
             }
             int times = parseRepeat();
@@ -775,8 +775,8 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     private void closeScreen() {
-        if (client != null) {
-            client.setScreen(parent);
+        if (minecraft != null) {
+            minecraft.setScreen(parent);
         }
     }
 

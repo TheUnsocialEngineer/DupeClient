@@ -1,11 +1,11 @@
 package com.dupeclient.client.gui.panel;
 
 import com.dupeclient.client.gui.modern.UiComponents;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 /** Shared hotkey pill rows for hub module panels. */
 final class PanelKeybinds {
@@ -28,8 +28,8 @@ final class PanelKeybinds {
     }
 
     static void drawRow(
-            TextRenderer tr,
-            DrawContext context,
+            Font tr,
+            GuiGraphics context,
             int x,
             int y,
             int w,

@@ -1,35 +1,33 @@
 package com.dupeclient.client.module.macro;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ChestBlock;
-import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.block.TrappedChestBlock;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.world.level.block.TrappedChestBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Client-side helpers for macro steps that move inventory via shift-clicks or use nearby blocks.
@@ -109,7 +107,7 @@ public final class MacroAutomation {
         if (id == null) {
             return Items.AIR;
         }
-        return Registries.ITEM.get(id);
+        return BuiltInRegistries.ITEM.getValue(id);
     }
 
     public static boolean isAnyItem(@Nullable String raw) {
@@ -124,12 +122,12 @@ public final class MacroAutomation {
      * First non-empty slot on the source side for shift-click quick move (any item type).
      */
     @Nullable
-    public static Slot findAnyQuickMoveSourceSlot(ScreenHandler handler, PlayerEntity player, boolean takeFromContainer) {
+    public static Slot findAnyQuickMoveSourceSlot(AbstractContainerMenu handler, Player player, boolean takeFromContainer) {
         for (Slot slot : handler.slots) {
-            if (slot == null || !slot.hasStack()) {
+            if (slot == null || !slot.hasItem()) {
                 continue;
             }
-            boolean isPlayer = slot.inventory == player.getInventory();
+            boolean isPlayer = slot.container == player.getInventory();
             if (takeFromContainer == isPlayer) {
                 continue;
             }
@@ -138,9 +136,9 @@ public final class MacroAutomation {
         return null;
     }
 
-    public static boolean hasNonPlayerInventorySlots(ScreenHandler handler, PlayerEntity player) {
+    public static boolean hasNonPlayerInventorySlots(AbstractContainerMenu handler, Player player) {
         for (Slot slot : handler.slots) {
-            if (slot != null && slot.inventory != player.getInventory()) {
+            if (slot != null && slot.container != player.getInventory()) {
                 return true;
             }
         }
@@ -152,16 +150,16 @@ public final class MacroAutomation {
      *
      * @param takeFromContainer {@code true} = move from container into player; {@code false} = from player into container
      */
-    public static Slot findQuickMoveSourceSlot(ScreenHandler handler, PlayerEntity player, Item item, boolean takeFromContainer) {
+    public static Slot findQuickMoveSourceSlot(AbstractContainerMenu handler, Player player, Item item, boolean takeFromContainer) {
         for (Slot slot : handler.slots) {
-            if (slot == null || !slot.hasStack()) {
+            if (slot == null || !slot.hasItem()) {
                 continue;
             }
-            boolean isPlayer = slot.inventory == player.getInventory();
+            boolean isPlayer = slot.container == player.getInventory();
             if (takeFromContainer == isPlayer) {
                 continue;
             }
-            if (slot.getStack().isOf(item)) {
+            if (slot.getItem().is(item)) {
                 return slot;
             }
         }
@@ -173,18 +171,18 @@ public final class MacroAutomation {
      */
     @Nullable
     public static Slot findSmallestAnyStackUnderCap(
-            ScreenHandler handler, PlayerEntity player, boolean takeFromContainer, int maxCount) {
+            AbstractContainerMenu handler, Player player, boolean takeFromContainer, int maxCount) {
         Slot best = null;
         int bestCount = Integer.MAX_VALUE;
         for (Slot slot : handler.slots) {
-            if (slot == null || !slot.hasStack()) {
+            if (slot == null || !slot.hasItem()) {
                 continue;
             }
-            boolean isPlayer = slot.inventory == player.getInventory();
+            boolean isPlayer = slot.container == player.getInventory();
             if (takeFromContainer == isPlayer) {
                 continue;
             }
-            int c = slot.getStack().getCount();
+            int c = slot.getItem().getCount();
             if (c > maxCount) {
                 continue;
             }
@@ -200,18 +198,18 @@ public final class MacroAutomation {
      * Smallest stack on the source side (any item), including stacks larger than {@code maxCount}.
      */
     @Nullable
-    public static Slot findSmallestAnyStack(ScreenHandler handler, PlayerEntity player, boolean takeFromContainer) {
+    public static Slot findSmallestAnyStack(AbstractContainerMenu handler, Player player, boolean takeFromContainer) {
         Slot best = null;
         int bestCount = Integer.MAX_VALUE;
         for (Slot slot : handler.slots) {
-            if (slot == null || !slot.hasStack()) {
+            if (slot == null || !slot.hasItem()) {
                 continue;
             }
-            boolean isPlayer = slot.inventory == player.getInventory();
+            boolean isPlayer = slot.container == player.getInventory();
             if (takeFromContainer == isPlayer) {
                 continue;
             }
-            int c = slot.getStack().getCount();
+            int c = slot.getItem().getCount();
             if (c < bestCount) {
                 bestCount = c;
                 best = slot;
@@ -223,21 +221,21 @@ public final class MacroAutomation {
     /**
      * Smallest matching stack whose count does not exceed {@code maxCount} (for precise-ish moves).
      */
-    public static Slot findSmallestStackUnderCap(ScreenHandler handler, PlayerEntity player, Item item, boolean takeFromContainer, int maxCount) {
+    public static Slot findSmallestStackUnderCap(AbstractContainerMenu handler, Player player, Item item, boolean takeFromContainer, int maxCount) {
         Slot best = null;
         int bestCount = Integer.MAX_VALUE;
         for (Slot slot : handler.slots) {
-            if (slot == null || !slot.hasStack()) {
+            if (slot == null || !slot.hasItem()) {
                 continue;
             }
-            boolean isPlayer = slot.inventory == player.getInventory();
+            boolean isPlayer = slot.container == player.getInventory();
             if (takeFromContainer == isPlayer) {
                 continue;
             }
-            if (!slot.getStack().isOf(item)) {
+            if (!slot.getItem().is(item)) {
                 continue;
             }
-            int c = slot.getStack().getCount();
+            int c = slot.getItem().getCount();
             if (c > maxCount) {
                 continue;
             }
@@ -252,21 +250,21 @@ public final class MacroAutomation {
     /**
      * Smallest matching stack (including stacks larger than {@code maxCount}) — used to finish a remainder with one overshooting shift-click.
      */
-    public static Slot findSmallestMatchingStack(ScreenHandler handler, PlayerEntity player, Item item, boolean takeFromContainer) {
+    public static Slot findSmallestMatchingStack(AbstractContainerMenu handler, Player player, Item item, boolean takeFromContainer) {
         Slot best = null;
         int bestCount = Integer.MAX_VALUE;
         for (Slot slot : handler.slots) {
-            if (slot == null || !slot.hasStack()) {
+            if (slot == null || !slot.hasItem()) {
                 continue;
             }
-            boolean isPlayer = slot.inventory == player.getInventory();
+            boolean isPlayer = slot.container == player.getInventory();
             if (takeFromContainer == isPlayer) {
                 continue;
             }
-            if (!slot.getStack().isOf(item)) {
+            if (!slot.getItem().is(item)) {
                 continue;
             }
-            int c = slot.getStack().getCount();
+            int c = slot.getItem().getCount();
             if (c < bestCount) {
                 bestCount = c;
                 best = slot;
@@ -279,33 +277,33 @@ public final class MacroAutomation {
         String p = normalizeBlockPreset(preset);
         return switch (p) {
             case "CHEST" -> state.getBlock() instanceof ChestBlock || state.getBlock() instanceof TrappedChestBlock;
-            case "ENDER_CHEST" -> state.isOf(Blocks.ENDER_CHEST);
-            case "BARREL" -> state.isOf(Blocks.BARREL);
+            case "ENDER_CHEST" -> state.is(Blocks.ENDER_CHEST);
+            case "BARREL" -> state.is(Blocks.BARREL);
             case "SHULKER_BOX" -> state.getBlock() instanceof ShulkerBoxBlock;
-            case "CRAFTING_TABLE" -> state.isOf(Blocks.CRAFTING_TABLE);
-            case "FURNACE" -> state.isOf(Blocks.FURNACE);
-            case "BLAST_FURNACE" -> state.isOf(Blocks.BLAST_FURNACE);
-            case "SMOKER" -> state.isOf(Blocks.SMOKER);
-            case "ANVIL" -> state.isOf(Blocks.ANVIL) || state.isOf(Blocks.CHIPPED_ANVIL) || state.isOf(Blocks.DAMAGED_ANVIL);
-            case "SMITHING_TABLE" -> state.isOf(Blocks.SMITHING_TABLE);
-            case "GRINDSTONE" -> state.isOf(Blocks.GRINDSTONE);
-            case "LECTERN" -> state.isOf(Blocks.LECTERN);
-            case "STONECUTTER" -> state.isOf(Blocks.STONECUTTER);
-            case "ENCHANTING_TABLE" -> state.isOf(Blocks.ENCHANTING_TABLE);
-            case "BELL" -> state.isOf(Blocks.BELL);
-            case "HOPPER" -> state.isOf(Blocks.HOPPER);
-            case "DISPENSER" -> state.isOf(Blocks.DISPENSER);
-            case "DROPPER" -> state.isOf(Blocks.DROPPER);
-            case "BREWING_STAND" -> state.isOf(Blocks.BREWING_STAND);
-            case "CARTOGRAPHY_TABLE" -> state.isOf(Blocks.CARTOGRAPHY_TABLE);
-            case "LOOM" -> state.isOf(Blocks.LOOM);
+            case "CRAFTING_TABLE" -> state.is(Blocks.CRAFTING_TABLE);
+            case "FURNACE" -> state.is(Blocks.FURNACE);
+            case "BLAST_FURNACE" -> state.is(Blocks.BLAST_FURNACE);
+            case "SMOKER" -> state.is(Blocks.SMOKER);
+            case "ANVIL" -> state.is(Blocks.ANVIL) || state.is(Blocks.CHIPPED_ANVIL) || state.is(Blocks.DAMAGED_ANVIL);
+            case "SMITHING_TABLE" -> state.is(Blocks.SMITHING_TABLE);
+            case "GRINDSTONE" -> state.is(Blocks.GRINDSTONE);
+            case "LECTERN" -> state.is(Blocks.LECTERN);
+            case "STONECUTTER" -> state.is(Blocks.STONECUTTER);
+            case "ENCHANTING_TABLE" -> state.is(Blocks.ENCHANTING_TABLE);
+            case "BELL" -> state.is(Blocks.BELL);
+            case "HOPPER" -> state.is(Blocks.HOPPER);
+            case "DISPENSER" -> state.is(Blocks.DISPENSER);
+            case "DROPPER" -> state.is(Blocks.DROPPER);
+            case "BREWING_STAND" -> state.is(Blocks.BREWING_STAND);
+            case "CARTOGRAPHY_TABLE" -> state.is(Blocks.CARTOGRAPHY_TABLE);
+            case "LOOM" -> state.is(Blocks.LOOM);
             case "OTHER" -> {
                 Identifier id = Identifier.tryParse(customBlockId == null ? "" : customBlockId.trim());
                 if (id == null) {
                     yield false;
                 }
-                Block b = Registries.BLOCK.get(id);
-                yield b != null && b != Blocks.AIR && state.isOf(b);
+                Block b = BuiltInRegistries.BLOCK.getValue(id);
+                yield b != null && b != Blocks.AIR && state.is(b);
             }
             default -> false;
         };
@@ -315,16 +313,16 @@ public final class MacroAutomation {
      * Finds the nearest block matching the preset within a Euclidean radius (in blocks) from the player.
      */
     @Nullable
-    public static BlockPos findNearestMatchingBlock(MinecraftClient client, String preset, String customBlockId, int radiusBlocks) {
-        ClientPlayerEntity player = client.player;
-        World world = client.world;
+    public static BlockPos findNearestMatchingBlock(Minecraft client, String preset, String customBlockId, int radiusBlocks) {
+        LocalPlayer player = client.player;
+        Level world = client.level;
         if (player == null || world == null) {
             return null;
         }
         int r = Math.max(1, radiusBlocks);
         int rSq = r * r;
-        BlockPos origin = player.getBlockPos();
-        BlockPos.Mutable m = new BlockPos.Mutable();
+        BlockPos origin = player.blockPosition();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         BlockPos best = null;
         double bestD2 = Double.MAX_VALUE;
         for (int dy = -r; dy <= r; dy++) {
@@ -334,7 +332,7 @@ public final class MacroAutomation {
                         continue;
                     }
                     m.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
-                    if (!world.isChunkLoaded(m)) {
+                    if (!world.hasChunkAt(m)) {
                         continue;
                     }
                     BlockState st = world.getBlockState(m);
@@ -344,10 +342,10 @@ public final class MacroAutomation {
                     if (!blockPresetMatches(preset, customBlockId, st)) {
                         continue;
                     }
-                    double d2 = player.squaredDistanceTo(Vec3d.ofCenter(m));
+                    double d2 = player.distanceToSqr(Vec3.atCenterOf(m));
                     if (d2 < bestD2) {
                         bestD2 = d2;
-                        best = m.toImmutable();
+                        best = m.immutable();
                     }
                 }
             }
@@ -355,60 +353,60 @@ public final class MacroAutomation {
         return best;
     }
 
-    public static void lookToward(ClientPlayerEntity player, Vec3d target) {
-        Vec3d eye = player.getEyePos();
+    public static void lookToward(LocalPlayer player, Vec3 target) {
+        Vec3 eye = player.getEyePosition();
         double dx = target.x - eye.x;
         double dz = target.z - eye.z;
-        float yaw = (float) (MathHelper.atan2(dx, dz) * (180f / Math.PI));
-        yaw = MathHelper.wrapDegrees(yaw);
-        player.setYaw(yaw);
-        player.setBodyYaw(yaw);
-        player.setHeadYaw(yaw);
+        float yaw = (float) (Mth.atan2(dx, dz) * (180f / Math.PI));
+        yaw = Mth.wrapDegrees(yaw);
+        player.setYRot(yaw);
+        player.setYBodyRot(yaw);
+        player.setYHeadRot(yaw);
     }
 
     /**
      * Right-click / “use” with the item in the main hotbar slot {@code slot0To8} (0 = leftmost, 8 = rightmost),
      * then restores the player’s selected hotbar slot.
      */
-    public static boolean tryUseHotbarSlot(MinecraftClient client, int slot0To8) {
-        if (client.player == null || client.interactionManager == null) {
+    public static boolean tryUseHotbarSlot(Minecraft client, int slot0To8) {
+        if (client.player == null || client.gameMode == null) {
             return false;
         }
-        int slot = MathHelper.clamp(slot0To8, 0, 8);
-        PlayerInventory inv = client.player.getInventory();
+        int slot = Mth.clamp(slot0To8, 0, 8);
+        Inventory inv = client.player.getInventory();
         int prev = inv.getSelectedSlot();
         inv.setSelectedSlot(slot);
-        ActionResult r = client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
+        InteractionResult r = client.gameMode.useItem(client.player, InteractionHand.MAIN_HAND);
         inv.setSelectedSlot(prev);
-        return r.isAccepted();
+        return r.consumesAction();
     }
 
-    public static boolean tryInteractBlock(MinecraftClient client, BlockPos pos) {
-        if (client.player == null || client.interactionManager == null || client.world == null) {
+    public static boolean tryInteractBlock(Minecraft client, BlockPos pos) {
+        if (client.player == null || client.gameMode == null || client.level == null) {
             return false;
         }
-        Vec3d center = Vec3d.ofCenter(pos);
+        Vec3 center = Vec3.atCenterOf(pos);
         lookToward(client.player, center);
-        BlockHitResult hit = new BlockHitResult(center, Direction.UP, pos.toImmutable(), false);
-        return client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit).isAccepted();
+        BlockHitResult hit = new BlockHitResult(center, Direction.UP, pos.immutable(), false);
+        return client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit).consumesAction();
     }
 
-    public static void quickMoveSlot(MinecraftClient client, ScreenHandler handler, Slot slot) {
-        if (client.player == null || client.interactionManager == null || slot == null) {
+    public static void quickMoveSlot(Minecraft client, AbstractContainerMenu handler, Slot slot) {
+        if (client.player == null || client.gameMode == null || slot == null) {
             return;
         }
-        clickSlot(client, handler, slot.id, SlotActionType.QUICK_MOVE, 0);
+        clickSlot(client, handler, slot.index, ClickType.QUICK_MOVE, 0);
     }
 
     public static void clickSlot(
-            MinecraftClient client,
-            ScreenHandler handler,
+            Minecraft client,
+            AbstractContainerMenu handler,
             int slotId,
-            SlotActionType action,
+            ClickType action,
             int button) {
-        if (client.player == null || client.interactionManager == null || handler == null || action == null) {
+        if (client.player == null || client.gameMode == null || handler == null || action == null) {
             return;
         }
-        client.interactionManager.clickSlot(handler.syncId, slotId, button, action, client.player);
+        client.gameMode.handleInventoryMouseClick(handler.containerId, slotId, button, action, client.player);
     }
 }

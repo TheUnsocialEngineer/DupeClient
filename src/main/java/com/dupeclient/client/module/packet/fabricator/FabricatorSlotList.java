@@ -1,12 +1,11 @@
 package com.dupeclient.client.module.packet.fabricator;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.screen.ScreenHandler;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 
 /** Parses and formats fabricator user-visible slot lists (e.g. {@code 0,5,100}). */
 public final class FabricatorSlotList {
@@ -62,7 +61,7 @@ public final class FabricatorSlotList {
         return format(slots);
     }
 
-    public static List<Integer> resolveHandlerSlots(MinecraftClient client, ScreenHandler handler, String raw) {
+    public static List<Integer> resolveHandlerSlots(Minecraft client, AbstractContainerMenu handler, String raw) {
         List<Integer> handlerSlots = new ArrayList<>();
         for (int visible : parseVisible(raw)) {
             int handlerSlot = FabricatorInventorySlots.resolveHandlerSlot(client, visible);

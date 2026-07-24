@@ -1,6 +1,6 @@
 package com.dupeclient.client.module.macro;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
 /** Thin API surface; logic in {@link MacroRuntime}. */
@@ -23,15 +23,15 @@ public final class MacroEngine {
         return MacroRuntime.INSTANCE.getRunLabel();
     }
 
-    public void start(MinecraftClient client, String id) {
+    public void start(Minecraft client, String id) {
         MacroRuntime.INSTANCE.start(client, id);
     }
 
-    public void stop(MinecraftClient client) {
+    public void stop(Minecraft client) {
         MacroRuntime.INSTANCE.stop(client);
     }
 
-    public void tick(MinecraftClient client) {
+    public void tick(Minecraft client) {
         MacroRuntime.INSTANCE.tick(client);
     }
 }

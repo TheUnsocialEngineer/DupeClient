@@ -3,9 +3,9 @@ package com.dupeclient.client.module.hud;
 import com.dupeclient.client.gui.IngameUiRouter;
 import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
@@ -16,8 +16,8 @@ public final class HudCommands {
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(literal("hud")
                 .then(literal("editor").executes(ctx -> {
-                    MinecraftClient client = ctx.getSource().getClient();
-                    IngameUiRouter.openHudEditor(client.currentScreen);
+                    Minecraft client = ctx.getSource().getClient();
+                    IngameUiRouter.openHudEditor(client.screen);
                     feedback(ctx.getSource(), "Opened HUD editor.");
                     return 1;
                 }))
@@ -38,7 +38,7 @@ public final class HudCommands {
     }
 
     private static void feedback(FabricClientCommandSource src, String message) {
-        src.sendFeedback(Text.literal("[HUD] ").formatted(Formatting.GOLD)
-                .append(Text.literal(message).formatted(Formatting.GRAY)));
+        src.sendFeedback(Component.literal("[HUD] ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(message).withStyle(ChatFormatting.GRAY)));
     }
 }
