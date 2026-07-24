@@ -96,8 +96,6 @@ All commands are client-side. See [docs/commands/](docs/commands/index.md) for f
 /dupedb developer
 ```
 
-![DupeDB panel](docs/assets/screenshots/panel-dupedb.png)
-
 ![DupeDB overlay](docs/assets/screenshots/overlay-dupedb.png)
 
 ### P2W registry
@@ -113,8 +111,6 @@ All commands are client-side. See [docs/commands/](docs/commands/index.md) for f
 
 Hub panel and overlays for the packet queue, fabricator, and sniffer. See [Packet Utils guide](docs/modules/packet-utils.md).
 
-![Packet Utils panel](docs/assets/screenshots/panel-packet-utils.png)
-
 ![Packet sniffer overlay](docs/assets/screenshots/overlay-sniffer.png)
 
 ![Packet fabricator overlay](docs/assets/screenshots/overlay-fabricator.png)
@@ -123,15 +119,12 @@ Hub panel and overlays for the packet queue, fabricator, and sniffer. See [Packe
 
 Bulk pay overlay. See [PayAll guide](docs/modules/payall.md).
 
-![PayAll panel](docs/assets/screenshots/panel-payall.png)
-
 ![PayAll overlay](docs/assets/screenshots/overlay-payall.png)
 
 ### MCPTools
 
 Bot tools and bundle sync. See [MCPTools guide](docs/modules/mcptools.md).
 
-![MCPTools panel](docs/assets/screenshots/panel-mcp-tools.png)
 
 ![MCPTools overlay](docs/assets/screenshots/overlay-mcptools.png)
 
@@ -146,7 +139,6 @@ Bot tools and bundle sync. See [MCPTools guide](docs/modules/mcptools.md).
 /dupeclient macro export <id>
 ```
 
-![Macros panel](docs/assets/screenshots/panel-macros.png)
 
 ![Macro studio](docs/assets/screenshots/screen-macro-studio.png)
 
@@ -156,8 +148,6 @@ Bot tools and bundle sync. See [MCPTools guide](docs/modules/mcptools.md).
 /hud editor | toggle | reset
 /vault save | dismiss | lock
 ```
-
-![HUD panel](docs/assets/screenshots/panel-hud.png)
 
 ![HUD editor](docs/assets/screenshots/screen-hud-editor.png)
 
@@ -169,7 +159,6 @@ Bot tools and bundle sync. See [MCPTools guide](docs/modules/mcptools.md).
 
 Friends list and presence. See [Social guide](docs/modules/social.md).
 
-![Social panel](docs/assets/screenshots/panel-social.png)
 
 ![Social screen](docs/assets/screenshots/screen-social.png)
 
