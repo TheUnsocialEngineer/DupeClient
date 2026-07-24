@@ -5,7 +5,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** Shared hotkey pill rows for hub module panels. */
 final class PanelKeybinds {
@@ -29,7 +29,7 @@ final class PanelKeybinds {
 
     static void drawRow(
             Font tr,
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int x,
             int y,
             int w,

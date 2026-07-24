@@ -1,7 +1,7 @@
 package com.dupeclient.client.core;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
@@ -27,7 +27,7 @@ public final class KeybindManager {
     }
 
     public static void register() {
-        KeyBindingHelper.registerKeyBinding(OPEN_GUI_KEY);
-        KeyBindingHelper.registerKeyBinding(OPEN_MACRO_EDITOR_KEY);
+        KeyMappingHelper.registerKeyMapping(OPEN_GUI_KEY);
+        KeyMappingHelper.registerKeyMapping(OPEN_MACRO_EDITOR_KEY);
     }
 }

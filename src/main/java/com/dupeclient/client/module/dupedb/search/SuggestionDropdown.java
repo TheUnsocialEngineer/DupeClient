@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 
 final class SuggestionDropdown {
@@ -158,7 +158,7 @@ final class SuggestionDropdown {
       }
    }
 
-   void render(GuiGraphics ctx) {
+   void render(GuiGraphicsExtractor ctx) {
       this.refresh();
       if (this.filtered.isEmpty()) {
          this.visibleCount = 0;
@@ -190,8 +190,8 @@ final class SuggestionDropdown {
             String countText = this.formatCount(it.count());
             int countW = this.tr.width(countText);
             String label = this.trimToWidth(it.label(), Math.max(0, w - countW - 12));
-            ctx.drawString(this.tr, label, x + 4, ry + 2, -1642753, false);
-            ctx.drawString(this.tr, countText, x + w - countW - 4, ry + 2, -6442794, false);
+            ctx.text(this.tr, label, x + 4, ry + 2, -1642753, false);
+            ctx.text(this.tr, countText, x + w - countW - 4, ry + 2, -6442794, false);
          }
 
          if (this.filtered.size() > count) {

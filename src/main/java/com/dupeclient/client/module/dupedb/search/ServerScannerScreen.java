@@ -27,7 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -1824,16 +1824,16 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+   public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
       if (this.activeTab == ServerScannerScreen.Tab.LIVE) {
          this.renderTopStats(context);
          this.renderLivePanelBackgrounds(context);
          this.positionLiveActionButtons();
          this.refreshLiveActionButtons();
-         super.render(context, mouseX, mouseY, deltaTicks);
+         super.extractRenderState(context, mouseX, mouseY, deltaTicks);
          this.renderLivePanelForeground(context);
          int liveColor = this.liveLoading ? -1261205 : (this.liveStatusText.startsWith("Live fetch failed") ? -32640 : -7937906);
-         context.drawString(this.font, Component.literal(this.liveStatusText), 10, this.height - 14, liveColor);
+         context.text(this.font, Component.literal(this.liveStatusText), 10, this.height - 14, liveColor);
          this.renderAccountLabel(context);
          if (this.detailsModalOpen) {
             this.renderDetailsModal(context);
@@ -1858,19 +1858,19 @@ public class ServerScannerScreen extends Screen {
          context.fill(8, listTop - 18, this.width - 8, listTop - 2, -2011157958);
          context.fill(8, listTop - 2, this.width - 8, listBottom, 1712066586);
          int headerY = listTop - 15;
-         context.drawString(this.font, Component.literal("IP / MOTD"), cols.ipX() + 20, headerY, -5257217);
-         context.drawString(this.font, Component.literal("Version"), cols.versionX(), headerY, -5257217);
+         context.text(this.font, Component.literal("IP / MOTD"), cols.ipX() + 20, headerY, -5257217);
+         context.text(this.font, Component.literal("Version"), cols.versionX(), headerY, -5257217);
          if (cols.showSoftware()) {
-            context.drawString(this.font, Component.literal("Software"), cols.softwareX(), headerY, -5257217);
+            context.text(this.font, Component.literal("Software"), cols.softwareX(), headerY, -5257217);
          }
 
-         context.drawString(this.font, Component.literal("Players"), cols.playersX(), headerY, -5257217);
-         context.drawString(this.font, Component.literal("Cty"), cols.countryX(), headerY, -5257217);
+         context.text(this.font, Component.literal("Players"), cols.playersX(), headerY, -5257217);
+         context.text(this.font, Component.literal("Cty"), cols.countryX(), headerY, -5257217);
          if (cols.showLastSeen()) {
-            context.drawString(this.font, Component.literal("Last Seen"), cols.lastSeenX(), headerY, -5257217);
+            context.text(this.font, Component.literal("Last Seen"), cols.lastSeenX(), headerY, -5257217);
          }
 
-         context.drawString(this.font, Component.literal("Actions"), cols.actionsX() + 2, headerY, -5257217);
+         context.text(this.font, Component.literal("Actions"), cols.actionsX() + 2, headerY, -5257217);
 
          this.positionDashboardActionButtons();
          this.refreshActionButtons();
@@ -1886,7 +1886,7 @@ public class ServerScannerScreen extends Screen {
             context.fill(10, y, cols.actionsX() - 2, y + 26, bg);
          }
 
-         super.render(context, mouseX, mouseY, deltaTicks);
+         super.extractRenderState(context, mouseX, mouseY, deltaTicks);
 
          for (int row = 0; row < this.visibleRows; row++) {
             int idx = this.scrollOffset + row;
@@ -1909,18 +1909,18 @@ public class ServerScannerScreen extends Screen {
 
             int textX = cols.ipX() + 20;
             int ipTextW = Math.max(0, cols.ipW() - 22);
-            context.drawString(this.font, this.truncateToWidth(ipPort, ipTextW), textX, y + 5, -1, false);
+            context.text(this.font, this.truncateToWidth(ipPort, ipTextW), textX, y + 5, -1, false);
             String desc = this.truncateToWidth(this.sanitizeMotd(s.description), cols.ipW());
-            context.drawString(this.font, desc, cols.ipX(), y + 19, -8355712, false);
-            context.drawString(this.font, this.truncateToWidth(s.version, cols.versionW()), cols.versionX(), y + 5, -4729345, false);
+            context.text(this.font, desc, cols.ipX(), y + 19, -8355712, false);
+            context.text(this.font, this.truncateToWidth(s.version, cols.versionW()), cols.versionX(), y + 5, -4729345, false);
             if (cols.showSoftware()) {
-               context.drawString(this.font, this.truncateToWidth(s.software, cols.softwareW()), cols.softwareX(), y + 5, -8398721, false);
+               context.text(this.font, this.truncateToWidth(s.software, cols.softwareW()), cols.softwareX(), y + 5, -8398721, false);
             }
 
-            context.drawString(this.font, players, cols.playersX(), y + 5, -1261205, false);
-            context.drawString(this.font, s.country, cols.countryX(), y + 5, -3815995, false);
+            context.text(this.font, players, cols.playersX(), y + 5, -1261205, false);
+            context.text(this.font, s.country, cols.countryX(), y + 5, -3815995, false);
             if (cols.showLastSeen()) {
-               context.drawString(
+               context.text(
                   this.font, this.truncateToWidth(formatLastSeen(s.lastSeenIso), cols.lastSeenW()), cols.lastSeenX(), y + 5, -6250336, false
                );
             }
@@ -1928,11 +1928,11 @@ public class ServerScannerScreen extends Screen {
 
          int from = this.servers.isEmpty() ? 0 : this.scrollOffset + 1;
          int to = Math.min(this.servers.size(), this.scrollOffset + this.visibleRows);
-         context.drawString(
+         context.text(
             this.font, Component.literal("Showing " + from + "-" + to + " of " + this.servers.size()), 10, this.height - 24, -7686913
          );
          int statusColor = this.loading ? -1261205 : (!this.statusText.startsWith("Search failed") && !this.statusText.startsWith("HTTP ") ? -7937906 : -32640);
-         context.drawString(this.font, Component.literal(this.statusText), 10, this.height - 14, statusColor);
+         context.text(this.font, Component.literal(this.statusText), 10, this.height - 14, statusColor);
          this.renderAccountLabel(context);
          if (!this.detailsModalOpen) {
             SuggestionDropdown active = this.activeDropdown();
@@ -1947,7 +1947,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private void renderFilterChips(GuiGraphics context) {
+   private void renderFilterChips(GuiGraphicsExtractor context) {
       this.chipRegions.clear();
       if (this.chipBandY >= 0) {
          int x = 12;
@@ -1961,12 +1961,12 @@ public class ServerScannerScreen extends Screen {
          this.drawFilterChip(context, x, y, maxX, "Plugin", this.pluginNameField);
          if (!this.filterOptionsStatus.isEmpty()) {
             int w = this.font.width(this.filterOptionsStatus);
-            context.drawString(this.font, this.filterOptionsStatus, maxX - w, y, -2054054, false);
+            context.text(this.font, this.filterOptionsStatus, maxX - w, y, -2054054, false);
          }
       }
    }
 
-   private int drawFilterChip(GuiGraphics context, int x, int y, int maxX, String label, StylishTextFieldWidget field) {
+   private int drawFilterChip(GuiGraphicsExtractor context, int x, int y, int maxX, String label, StylishTextFieldWidget field) {
       String value = field != null && field.getValue() != null ? field.getValue().trim() : "";
       if (value.isEmpty()) {
          return x;
@@ -1979,9 +1979,9 @@ public class ServerScannerScreen extends Screen {
             return x;
          } else {
             context.fill(x, y - 1, x + chipW, y + 10, -2010035078);
-            context.drawString(this.font, text, x + 4, y + 1, -1642753, false);
+            context.text(this.font, text, x + 4, y + 1, -1642753, false);
             int xMarkX = x + 4 + textW + 4;
-            context.drawString(this.font, "x", xMarkX, y + 1, -28528, false);
+            context.text(this.font, "x", xMarkX, y + 1, -28528, false);
             this.chipRegions.add(new ServerScannerScreen.ChipRegion(xMarkX - 2, y - 2, xMarkW + 6, 13, field));
             return x + chipW + 5;
          }
@@ -2000,13 +2000,13 @@ public class ServerScannerScreen extends Screen {
       return this.actionCopyButtonX() - ACTION_BTN_GAP - ACTION_JOIN_BTN_W;
    }
 
-   private void renderLivePanelBackgrounds(GuiGraphics context) {
+   private void renderLivePanelBackgrounds(GuiGraphicsExtractor context) {
       int titleY = this.getLiveSectionTitleY();
       int listTop = this.getLiveCardsTop();
       int listBottom = this.height - 26;
       int cardH = 58;
       context.fill(8, titleY - 2, this.width - 8, listBottom, 1712066586);
-      context.drawString(this.font, Component.literal("Live Streamer Sightings"), 12, titleY, -6360130);
+      context.text(this.font, Component.literal("Live Streamer Sightings"), 12, titleY, -6360130);
       int cardW = this.width - 20;
       int joinX = this.actionJoinButtonX();
 
@@ -2055,7 +2055,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private void renderLivePanelForeground(GuiGraphics context) {
+   private void renderLivePanelForeground(GuiGraphicsExtractor context) {
       this.liveLinkRegions.clear();
       int listTop = this.getLiveCardsTop();
       int cardH = 58;
@@ -2075,34 +2075,34 @@ public class ServerScannerScreen extends Screen {
          String username = this.truncateToWidth(displayName, Math.max(40, nameMaxW));
          int ux = 14;
          int uy = y + 6;
-         context.drawString(this.font, Component.literal(username), ux, uy, -11672441);
+         context.text(this.font, Component.literal(username), ux, uy, -11672441);
          String url = "https://www.twitch.tv/" + e.userLogin;
          this.liveLinkRegions.add(new ServerScannerScreen.LiveLinkRegion(ux, uy, this.font.width(username), 9, url));
          String badge = e.isLiveNow ? "LIVE" : "EARLIER";
          int badgeW = this.font.width(badge) + 8;
          int bx = joinX - badgeW - 36;
-         context.drawString(this.font, badge, bx + 4, y + 5, -1903873, false);
-         context.drawString(this.font, e.confidence + "%", bx + badgeW + 4, y + 5, -1261205, false);
+         context.text(this.font, badge, bx + 4, y + 5, -1903873, false);
+         context.text(this.font, e.confidence + "%", bx + badgeW + 4, y + 5, -1261205, false);
          int bodyY = y + 20 + 2;
-         context.drawString(this.font, this.truncateToWidth(this.sanitizeMotd(e.streamTitle), titleW), 14, bodyY, -1, false);
+         context.text(this.font, this.truncateToWidth(this.sanitizeMotd(e.streamTitle), titleW), 14, bodyY, -1, false);
          String srv = this.normalizeServerIp(e.serverIp) + ":" + e.serverPort;
-         context.drawString(this.font, this.truncateToWidth(srv, 140), 14, bodyY + 11, -4204289, false);
-         context.drawString(this.font, this.truncateToWidth(e.serverType, 72), 158, bodyY + 11, -4204289, false);
-         context.drawString(this.font, e.countryCode, 236, bodyY + 11, -4204289, false);
+         context.text(this.font, this.truncateToWidth(srv, 140), 14, bodyY + 11, -4204289, false);
+         context.text(this.font, this.truncateToWidth(e.serverType, 72), 158, bodyY + 11, -4204289, false);
+         context.text(this.font, e.countryCode, 236, bodyY + 11, -4204289, false);
          String chat = e.enforcesSecureChat == null ? "?" : (e.enforcesSecureChat ? "Secure" : "Off");
-         context.drawString(this.font, chat, 268, bodyY + 11, -7351391, false);
+         context.text(this.font, chat, 268, bodyY + 11, -7351391, false);
          String meta = e.sightingsToday + " today · " + formatLastSeen(e.lastSeenAt) + " · " + formatTimeAgo(e.streamStartedAt);
-         context.drawString(this.font, this.truncateToWidth(meta, titleW), 14, bodyY + 22, -7303024, false);
+         context.text(this.font, this.truncateToWidth(meta, titleW), 14, bodyY + 22, -7303024, false);
       }
 
       this.refreshLiveActionButtons();
    }
 
-   private void drawLabel(GuiGraphics context, String text, int x, int y) {
-      context.drawString(this.font, Component.literal(text), x, y, 2141233312);
+   private void drawLabel(GuiGraphicsExtractor context, String text, int x, int y) {
+      context.text(this.font, Component.literal(text), x, y, 2141233312);
    }
 
-   private void renderTopStats(GuiGraphics context) {
+   private void renderTopStats(GuiGraphicsExtractor context) {
       int limit = (this.signOutButton != null ? this.signOutButton.getX() : this.width - 84) - 8;
       int x = 190;
       x = this.drawStatChip(context, x, 6, limit, "Online " + this.formatStat(this.statsOnlineServers), -13787046, -16437990);
@@ -2110,23 +2110,23 @@ public class ServerScannerScreen extends Screen {
       this.drawStatChip(context, x + 6, 6, limit, "Countries " + this.formatStat(this.statsTotalCountries), -7706169, -14347457);
    }
 
-   private int drawStatChip(GuiGraphics context, int x, int y, int limit, String text, int borderColor, int fillColor) {
+   private int drawStatChip(GuiGraphicsExtractor context, int x, int y, int limit, String text, int borderColor, int fillColor) {
       int w = this.font.width(text) + 12;
       if (x + w > limit) {
          return x;
       } else {
          context.fill(x, y, x + w, y + 14, borderColor);
          context.fill(x + 1, y + 1, x + w - 1, y + 13, fillColor);
-         context.drawString(this.font, text, x + 6, y + 3, -1, false);
+         context.text(this.font, text, x + 6, y + 3, -1, false);
          return x + w;
       }
    }
 
-   private void renderAccountLabel(GuiGraphics context) {
+   private void renderAccountLabel(GuiGraphicsExtractor context) {
       String label = this.accountStatus;
       int w = this.font.width(label);
       int color = this.accountStatus.startsWith("Could not verify") ? -2054054 : -7364424;
-      context.drawString(this.font, Component.literal(label), this.width - 10 - w, this.height - 14, color);
+      context.text(this.font, Component.literal(label), this.width - 10 - w, this.height - 14, color);
    }
 
    private String formatStat(int value) {
@@ -2190,7 +2190,7 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private void renderDetailsModal(GuiGraphics context) {
+   private void renderDetailsModal(GuiGraphicsExtractor context) {
       int modalW = 680;
       int modalH = this.getDetailsModalHeight();
       int x = (this.width - modalW) / 2;
@@ -2199,13 +2199,13 @@ public class ServerScannerScreen extends Screen {
       context.fill(x, y, x + modalW, y + modalH, -267381470);
       context.fill(x + 1, y + 1, x + modalW - 1, y + modalH - 1, -266788557);
       context.fill(x, y, x + modalW, y + 30, -14731944);
-      context.drawString(this.font, Component.literal("Server Details"), x + 8, y + 8, -1);
-      context.drawString(this.font, Component.literal("X"), x + modalW - 16, y + 9, -28528);
+      context.text(this.font, Component.literal("Server Details"), x + 8, y + 8, -1);
+      context.text(this.font, Component.literal("X"), x + modalW - 16, y + 9, -28528);
       if (this.detailsLoading) {
-         context.drawCenteredString(this.font, Component.literal(this.detailsStatus), x + modalW / 2, y + modalH / 2, -1261205);
+         context.centeredText(this.font, Component.literal(this.detailsStatus), x + modalW / 2, y + modalH / 2, -1261205);
       } else if (this.detailsData == null) {
          String msg = this.detailsStatus.isBlank() ? "No details loaded." : this.detailsStatus;
-         context.drawCenteredString(this.font, Component.literal(msg), x + modalW / 2, y + modalH / 2, -32640);
+         context.centeredText(this.font, Component.literal(msg), x + modalW / 2, y + modalH / 2, -32640);
       } else {
          int left = x + 14;
          int right = x + 250;
@@ -2227,7 +2227,7 @@ public class ServerScannerScreen extends Screen {
          int summaryY = lineY + 6;
 
          for (String line : this.wrapText(this.detailsData.ip + ":" + this.detailsData.port, summaryTextW, 2)) {
-            context.drawString(this.font, Component.literal(line), summaryTextX, summaryY, -1);
+            context.text(this.font, Component.literal(line), summaryTextX, summaryY, -1);
             summaryY += 11;
          }
 
@@ -2237,14 +2237,14 @@ public class ServerScannerScreen extends Screen {
          this.detailsCopyIpX = summaryTextX + summaryTextW - this.detailsCopyIpW;
          this.detailsCopyIpY = lineY + 4;
          context.fill(this.detailsCopyIpX, this.detailsCopyIpY, this.detailsCopyIpX + this.detailsCopyIpW, this.detailsCopyIpY + this.detailsCopyIpH, -2010035078);
-         context.drawCenteredString(this.font, Component.literal("Copy IP"), this.detailsCopyIpX + this.detailsCopyIpW / 2, this.detailsCopyIpY + 3, -6371585);
+         context.centeredText(this.font, Component.literal("Copy IP"), this.detailsCopyIpX + this.detailsCopyIpW / 2, this.detailsCopyIpY + 3, -6371585);
 
          for (String line : this.wrapText(this.detailsData.versionName, summaryTextW, 2)) {
-            context.drawString(this.font, Component.literal(line), summaryTextX, summaryY, -4729345);
+            context.text(this.font, Component.literal(line), summaryTextX, summaryY, -4729345);
             summaryY += 11;
          }
 
-         context.drawString(
+         context.text(
             this.font, Component.literal(this.detailsData.playersOnline + "/" + this.detailsData.playersMax), summaryTextX, summaryY + 1, -1261205
          );
          int yInfo = y + 112;
@@ -2261,11 +2261,11 @@ public class ServerScannerScreen extends Screen {
          List<String> descLines = this.wrapText(fullDescription, descContentWidth, this.detailsDescriptionExpanded ? 7 : 3);
          int descH = 24 + descLines.size() * 11;
          context.fill(right, y + 42, right + descW, y + 42 + descH, 1714438232);
-         context.drawString(this.font, Component.literal("Description"), right + 8, y + 47, -7686913);
+         context.text(this.font, Component.literal("Description"), right + 8, y + 47, -7686913);
          int dy = y + 61;
 
          for (String line : descLines) {
-            context.drawString(this.font, line, descX + 8, dy, -1, false);
+            context.text(this.font, line, descX + 8, dy, -1, false);
             dy += 11;
          }
 
@@ -2278,11 +2278,11 @@ public class ServerScannerScreen extends Screen {
             this.descToggleW = tw + 4;
             this.descToggleH = 10;
             this.descToggleVisible = true;
-            context.drawString(this.font, toggle, this.descToggleX + 2, this.descToggleY + 1, -6371585, false);
+            context.text(this.font, toggle, this.descToggleX + 2, this.descToggleY + 1, -6371585, false);
          }
 
          int sectionY = y + 50 + descH;
-         context.drawString(this.font, Component.literal("Recent Players"), descX, sectionY, -7686913);
+         context.text(this.font, Component.literal("Recent Players"), descX, sectionY, -7686913);
          if (this.detailsData.recentPlayers.size() > 18) {
             String t = this.detailsPlayersExpanded ? "Collapse" : "Expand";
             int tw = this.font.width(t);
@@ -2291,13 +2291,13 @@ public class ServerScannerScreen extends Screen {
             this.playersToggleW = tw + 4;
             this.playersToggleH = 10;
             this.playersToggleVisible = true;
-            context.drawString(this.font, t, this.playersToggleX + 2, this.playersToggleY + 1, -6371585, false);
+            context.text(this.font, t, this.playersToggleX + 2, this.playersToggleY + 1, -6371585, false);
          }
 
          sectionY += 16;
          sectionY = this.drawChips(context, this.detailsData.recentPlayers, "-", descX, sectionY, descW, this.detailsPlayersExpanded ? Integer.MAX_VALUE : 18);
          sectionY += 8;
-         context.drawString(this.font, Component.literal("Detected Plugins"), descX, sectionY, -7686913);
+         context.text(this.font, Component.literal("Detected Plugins"), descX, sectionY, -7686913);
          if (this.detailsData.detectedPlugins.size() > 24) {
             String t = this.detailsPluginsExpanded ? "Collapse" : "Expand";
             int tw = this.font.width(t);
@@ -2306,7 +2306,7 @@ public class ServerScannerScreen extends Screen {
             this.pluginsToggleW = tw + 4;
             this.pluginsToggleH = 10;
             this.pluginsToggleVisible = true;
-            context.drawString(this.font, t, this.pluginsToggleX + 2, this.pluginsToggleY + 1, -6371585, false);
+            context.text(this.font, t, this.pluginsToggleX + 2, this.pluginsToggleY + 1, -6371585, false);
          }
 
          sectionY += 16;
@@ -2314,13 +2314,13 @@ public class ServerScannerScreen extends Screen {
       }
    }
 
-   private int drawInfoLine(GuiGraphics context, String label, String value, int x, int y) {
-      context.drawString(this.font, label + ":", x, y, -7686913, false);
-      context.drawString(this.font, this.truncateToWidth(value == null ? "-" : value, 180), x + 62, y, -3811340, false);
+   private int drawInfoLine(GuiGraphicsExtractor context, String label, String value, int x, int y) {
+      context.text(this.font, label + ":", x, y, -7686913, false);
+      context.text(this.font, this.truncateToWidth(value == null ? "-" : value, 180), x + 62, y, -3811340, false);
       return y + 14;
    }
 
-   private int drawChips(GuiGraphics context, List<String> values, String fallback, int x, int y, int width, int maxChips) {
+   private int drawChips(GuiGraphicsExtractor context, List<String> values, String fallback, int x, int y, int width, int maxChips) {
       List<String> chips = values != null && !values.isEmpty() ? values : List.of(fallback);
       int cursorX = x;
       int maxX = x + width;
@@ -2340,7 +2340,7 @@ public class ServerScannerScreen extends Screen {
          }
 
          context.fill(cursorX, rowY - 1, cursorX + chipW, rowY + 10, 2000703600);
-         context.drawString(this.font, chipText, cursorX + 5, rowY + 1, -1642753, false);
+         context.text(this.font, chipText, cursorX + 5, rowY + 1, -1642753, false);
          cursorX += chipW + 6;
          rendered++;
       }
@@ -2354,7 +2354,7 @@ public class ServerScannerScreen extends Screen {
          }
 
          context.fill(cursorX, rowY - 1, cursorX + chipW, rowY + 10, 1716546191);
-         context.drawString(this.font, more, cursorX + 5, rowY + 1, -3153153, false);
+         context.text(this.font, more, cursorX + 5, rowY + 1, -3153153, false);
       }
 
       return rowY + 14;

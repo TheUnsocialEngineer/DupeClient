@@ -869,7 +869,7 @@ public final class DupedbManager {
         Component message = dupeDbPrefix().copy().append(body);
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(message, false);
+                client.player.sendSystemMessage(message);
             }
         });
     }

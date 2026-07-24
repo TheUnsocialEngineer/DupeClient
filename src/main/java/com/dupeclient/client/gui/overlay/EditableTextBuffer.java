@@ -3,7 +3,7 @@ package com.dupeclient.client.gui.overlay;
 import com.dupeclient.client.gui.modern.ModernTextInputChrome;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -212,7 +212,7 @@ public final class EditableTextBuffer {
 
     public void draw(
             Font tr,
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int x,
             int y,
             int maxWidth,
@@ -228,7 +228,7 @@ public final class EditableTextBuffer {
             int selW = tr.width(selected);
             context.fill(selX - 1, y - 1, selX + selW + 1, y + 9, ModernTextInputChrome.SELECTION_COLOR);
         }
-        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(shown, maxWidth)), x, y, textColor);
+        context.text(tr, Component.literal(tr.plainSubstrByWidth(shown, maxWidth)), x, y, textColor);
         if (focused && ModernTextInputChrome.caretVisible()) {
             int caretX = x + tr.width(shown.substring(0, Math.min(cursor, shown.length())));
             context.fill(caretX, y - 1, caretX + 1, y + 9, ModernTextInputChrome.CARET_COLOR);

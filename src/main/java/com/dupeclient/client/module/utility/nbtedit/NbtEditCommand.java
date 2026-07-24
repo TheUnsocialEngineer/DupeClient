@@ -2,7 +2,7 @@ package com.dupeclient.client.module.utility.nbtedit;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -15,7 +15,7 @@ public final class NbtEditCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(
-                ClientCommandManager.literal("nbtedit")
+                ClientCommands.literal("nbtedit")
                         .executes(NbtEditCommand::open));
     }
 

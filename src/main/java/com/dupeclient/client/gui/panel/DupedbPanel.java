@@ -9,7 +9,7 @@ import com.dupeclient.client.module.dupedb.DupedbSettings;
 import com.dupeclient.client.module.dupedb.P2wMarkManager;
 import com.dupeclient.client.module.dupedb.P2wServerPolicy;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public class DupedbPanel extends Panel {
@@ -35,7 +35,7 @@ public class DupedbPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
@@ -74,10 +74,10 @@ public class DupedbPanel extends Panel {
         PanelOverlayActions.drawStatusLine(tr, context, rx, y4, inner, status);
 
         int y5 = y4 + HINT_H + UiTokens.UI_GAP;
-        context.drawString(tr, Component.literal("Run a scan before submitting P2W marks."), rx, y5, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Run a scan before submitting P2W marks."), rx, y5, UiTokens.TEXT_DIM);
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (capturingOverlayHotkey) {
-            context.drawString(
+            context.text(
                     tr,
                     Component.literal("Press key for overlay hotkey (ESC to unbind)"),
                     x + 8,

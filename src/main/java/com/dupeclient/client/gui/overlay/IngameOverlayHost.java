@@ -14,7 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.ProgressScreen;
@@ -108,7 +108,7 @@ public final class IngameOverlayHost {
                 || screen instanceof ProgressScreen;
     }
 
-    public static void renderAll(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public static void renderAll(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         IngameOverlayHost.renderClickslotFabricator(context, mouseX, mouseY, delta);
         for (IngameModuleOverlay overlay : OVERLAYS) {
             if (overlay == PacketFabricatorOverlay.INSTANCE || !overlay.isActive()) continue;
@@ -116,7 +116,7 @@ public final class IngameOverlayHost {
         }
     }
 
-    public static void renderClickslotFabricator(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public static void renderClickslotFabricator(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         PacketFabricatorOverlay fabricator = PacketFabricatorOverlay.INSTANCE;
         if (!fabricator.isModuleEnabled() || !fabricator.isVisible()) {
             return;
@@ -129,7 +129,7 @@ public final class IngameOverlayHost {
         return fabricator.isModuleEnabled() && fabricator.isVisible();
     }
 
-    public static void renderOnHud(GuiGraphics context, DeltaTracker tickCounter) {
+    public static void renderOnHud(GuiGraphicsExtractor context, DeltaTracker tickCounter) {
         Minecraft client = Minecraft.getInstance();
         if (!IngameOverlayHost.shouldRenderOnHud(client)) {
             return;

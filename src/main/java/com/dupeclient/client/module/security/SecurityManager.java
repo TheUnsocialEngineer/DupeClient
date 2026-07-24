@@ -690,7 +690,7 @@ public final class SecurityManager {
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(text, false);
+                client.player.sendSystemMessage(text);
             }
         });
     }

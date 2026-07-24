@@ -10,7 +10,7 @@ import com.dupeclient.client.multiplayer.MultiplayerScreens;
 import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
@@ -245,7 +245,7 @@ public class ServerPasswordScreen extends Screen {
       return Math.max(1, (this.listBottom - this.listTop) / 28);
    }
 
-   public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+   public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
       boolean authMode = this.isAuthMode();
       if (authMode) {
          this.layoutAuthCard(this.creatingVault);
@@ -269,7 +269,7 @@ public class ServerPasswordScreen extends Screen {
          }
       }
 
-      super.render(context, mouseX, mouseY, deltaTicks);
+      super.extractRenderState(context, mouseX, mouseY, deltaTicks);
       if (!authMode && ServerPasswordManager.INSTANCE.isUnlocked() && this.table != null && this.settingsBottomY > 0) {
          this.drawTable(context);
       }
@@ -281,44 +281,44 @@ public class ServerPasswordScreen extends Screen {
       return !ServerPasswordManager.INSTANCE.isVaultInitialized() || !ServerPasswordManager.INSTANCE.isUnlocked();
    }
 
-   private void drawAuthChrome(GuiGraphics context, int cardX) {
+   private void drawAuthChrome(GuiGraphicsExtractor context, int cardX) {
       int iconX = this.width / 2;
       int iconY = this.authCardY + 28;
       int iconR = 14;
       UiDraw.card(context, iconX - iconR, iconY - iconR, iconR * 2, iconR * 2);
-      context.drawCenteredString(this.font, Component.literal(this.creatingVault ? "+" : "V"), iconX, iconY - 4, -7934036);
+      context.centeredText(this.font, Component.literal(this.creatingVault ? "+" : "V"), iconX, iconY - 4, -7934036);
       String headline = this.creatingVault ? "Create your vault" : "Unlock vault";
-      context.drawCenteredString(this.font, Component.literal(headline), this.width / 2, this.authCardY + 52, -460036);
+      context.centeredText(this.font, Component.literal(headline), this.width / 2, this.authCardY + 52, -460036);
       int accentW = 56;
       context.fill(this.width / 2 - accentW / 2, this.authCardY + 64, this.width / 2 + accentW / 2, this.authCardY + 65, -11870592);
       String subtitle = this.creatingVault
          ? "Pick a master password to encrypt saved server credentials."
          : "Enter your master password to access saved server passwords.";
       this.drawWrappedCentered(context, subtitle, cardX + 20, this.authCardY + 72, this.authCardW - 40, -7035976);
-      context.drawString(this.font, "Master password", cardX + 20, this.authFieldY - 10, -7035976, false);
+      context.text(this.font, "Master password", cardX + 20, this.authFieldY - 10, -7035976, false);
       if (this.creatingVault && this.confirmField != null) {
-         context.drawString(this.font, "Confirm password", cardX + 20, this.authFieldY + 22 + 1, -7035976, false);
+         context.text(this.font, "Confirm password", cardX + 20, this.authFieldY + 22 + 1, -7035976, false);
       }
 
       if (this.creatingVault) {
-         context.drawString(
+         context.text(
             this.font, "Minimum 4 characters · never stored in plain text", cardX + 20, this.authCardY + this.authCardH - 14, -10193781, false
          );
       }
    }
 
-   private void drawWrappedCentered(GuiGraphics context, String text, int x, int y, int maxW, int color) {
+   private void drawWrappedCentered(GuiGraphicsExtractor context, String text, int x, int y, int maxW, int color) {
       if (text != null && !text.isBlank()) {
          String trimmed = this.font.plainSubstrByWidth(text, maxW);
-         context.drawCenteredString(this.font, Component.literal(trimmed), x + maxW / 2, y, color);
+         context.centeredText(this.font, Component.literal(trimmed), x + maxW / 2, y, color);
       }
    }
 
-   private void drawStatus(GuiGraphics context, boolean authMode) {
+   private void drawStatus(GuiGraphicsExtractor context, boolean authMode) {
       if (!this.status.isBlank()) {
          int color = this.statusColor();
          int y = authMode ? this.authCardY + this.authCardH - 28 : this.height - 24;
-         context.drawCenteredString(this.font, Component.literal(this.status), this.width / 2, y, color);
+         context.centeredText(this.font, Component.literal(this.status), this.width / 2, y, color);
       }
    }
 
@@ -377,21 +377,21 @@ public class ServerPasswordScreen extends Screen {
       return super.keyPressed(input);
    }
 
-   private void drawPanelHeader(GuiGraphics context) {
+   private void drawPanelHeader(GuiGraphicsExtractor context) {
       int headerBottom = 54;
       context.fill(this.panelX + 1, 25, this.panelX + this.panelW - 1, headerBottom, UiTokens.argb(102, -15788246));
       context.fill(this.innerX, headerBottom - 1, this.innerX + this.innerW, headerBottom, UiTokens.argb(136, -15293622));
-      context.drawString(this.font, this.title.getString(), this.innerX, 35, -460036, false);
+      context.text(this.font, this.title.getString(), this.innerX, 35, -460036, false);
       String hint = "Profile: " + ServerPasswordManager.INSTANCE.currentProfileName();
       int hintW = this.font.width(hint);
-      context.drawString(this.font, hint, this.innerX + this.innerW - hintW, 35, -10193781, false);
+      context.text(this.font, hint, this.innerX + this.innerW - hintW, 35, -10193781, false);
    }
 
-   private void drawSectionLabel(GuiGraphics context, String label, int y) {
-      context.drawString(this.font, label, this.innerX, y, -7035976, false);
+   private void drawSectionLabel(GuiGraphicsExtractor context, String label, int y) {
+      context.text(this.font, label, this.innerX, y, -7035976, false);
    }
 
-   private void drawTable(GuiGraphics context) {
+   private void drawTable(GuiGraphicsExtractor context) {
       int tableLeft = this.innerX;
       int tableRight = this.innerX + this.innerW;
       int tableBottom = this.tableBodyBottom;
@@ -412,7 +412,7 @@ public class ServerPasswordScreen extends Screen {
          int emptyTop = this.listTop;
          int emptyH = Math.max(28, tableBottom - emptyTop);
          context.fill(tableLeft, emptyTop, tableRight, emptyTop + emptyH, UiTokens.argb(51, -14800581));
-         context.drawCenteredString(
+         context.centeredText(
             this.font, Component.literal("No saved servers yet"), tableLeft + this.innerW / 2, emptyTop + (emptyH - 8) / 2, -7035976
          );
       } else {
@@ -449,7 +449,7 @@ public class ServerPasswordScreen extends Screen {
       }
    }
 
-   private void drawColumnGuides(GuiGraphics context, int top, int bottom) {
+   private void drawColumnGuides(GuiGraphicsExtractor context, int top, int bottom) {
       int[] dividers = new int[]{this.table.userX() - 3, this.table.flagsX() - 3, this.table.pwdX() - 3, this.table.copyIpX() - 3, this.table.editX() - 3};
 
       for (int x : dividers) {
@@ -457,13 +457,13 @@ public class ServerPasswordScreen extends Screen {
       }
    }
 
-   private void drawHeaderCell(GuiGraphics context, String label, int x, int w, int y) {
-      context.drawString(this.font, label, x + 4, y, -3418655, false);
+   private void drawHeaderCell(GuiGraphicsExtractor context, String label, int x, int w, int y) {
+      context.text(this.font, label, x + 4, y, -3418655, false);
    }
 
-   private void drawCellText(GuiGraphics context, String text, int x, int w, int y, int color) {
+   private void drawCellText(GuiGraphicsExtractor context, String text, int x, int w, int y, int color) {
       String shown = this.font.plainSubstrByWidth(text == null ? "" : text, Math.max(8, w - 8));
-      context.drawString(this.font, shown, x + 4, y, color, false);
+      context.text(this.font, shown, x + 4, y, color, false);
    }
 
    private void lockVault() {

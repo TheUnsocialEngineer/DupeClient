@@ -9,7 +9,7 @@ import com.dupeclient.client.module.cape.DupeClientPresenceSettings;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -27,14 +27,14 @@ extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!SocialHubRules.socialUiAllowed()) {
             super.render(context, mouseX, mouseY, delta);
             Font tr = Minecraft.getInstance().font;
             int cx = this.x + this.width / 2;
             int cy = this.y + this.height / 2 - 14;
-            context.drawCenteredString(tr, Component.literal("Social features are unavailable."), cx, cy, -7363656);
-            context.drawCenteredString(tr, Component.literal(SocialHubRules.blockReason()), cx, cy + 12, -10193781);
+            context.centeredText(tr, Component.literal("Social features are unavailable."), cx, cy, -7363656);
+            context.centeredText(tr, Component.literal(SocialHubRules.blockReason()), cx, cy + 12, -10193781);
             return;
         }
         super.render(context, mouseX, mouseY, delta);
@@ -62,7 +62,7 @@ extends Panel {
         UiComponents.drawPillKeybind(tr, context, rx, lineY += 30, inner, 20, "Open Social hotkey", keyText, listen);
         this.height = this.bodyTopOffset() + 8 + sectionH + 12;
         if (this.captureMode != CaptureMode.NONE) {
-            context.drawString(tr, Component.literal("Press key for Social screen (ESC = unbind)"), rx, this.y + this.height - 11, -14217);
+            context.text(tr, Component.literal("Press key for Social screen (ESC = unbind)"), rx, this.y + this.height - 11, -14217);
         }
     }
 

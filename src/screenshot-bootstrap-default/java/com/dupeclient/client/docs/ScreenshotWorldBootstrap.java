@@ -4,11 +4,9 @@ import com.dupeclient.client.DupeClient;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
-import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.world.level.storage.LevelStorageSource;
@@ -49,10 +47,8 @@ public final class ScreenshotWorldBootstrap {
         LevelSettings info = new LevelSettings(
                 "DupeClient Docs",
                 GameType.CREATIVE,
-                false,
-                Difficulty.PEACEFUL,
+                new LevelSettings.DifficultySettings(Difficulty.PEACEFUL, false, true),
                 true,
-                new GameRules(FeatureFlagSet.of()),
                 WorldDataConfiguration.DEFAULT
         );
         DupeClient.LOGGER.info("Creating flat screenshot world {}", WORLD_DIR);

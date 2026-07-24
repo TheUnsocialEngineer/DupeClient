@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class McpToolsOverlay extends AbstractDraggableOverlay implements IngameModuleOverlay {
@@ -300,7 +300,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
@@ -317,7 +317,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
 
         context.fill(px, py, px + PANEL_W, py + ph, PANEL_BG);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, TITLE_BG);
-        context.drawString(tr, Component.literal("MCPTools"), px + PAD, py + 2, TITLE_FG);
+        context.text(tr, Component.literal("MCPTools"), px + PAD, py + 2, TITLE_FG);
 
         int rx = px + PAD;
         int inner = PANEL_W - PAD * 2;
@@ -325,7 +325,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
 
         hostRowY = y;
         layoutHostRow(rx, inner, y);
-        context.drawString(tr, Component.literal("Host"), rx, y + 3, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Host"), rx, y + 3, UiTokens.TEXT_DIM);
         UiComponents.drawTextField(
                 tr, context, hostFieldX, y, hostFieldW, INPUT_H, hostInput.text(), focusField == FocusField.HOST);
         UiComponents.drawPillActionButton(
@@ -349,7 +349,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
             y += INPUT_H + GAP;
         }
 
-        context.drawString(tr, Component.literal("Version"), rx, y + 3, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Version"), rx, y + 3, UiTokens.TEXT_DIM);
         versionFieldX = rx + LABEL_W;
         versionFieldY = y;
         versionFieldW = inner - LABEL_W;
@@ -381,7 +381,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         }
 
         if (tool.needsUpload) {
-            context.drawString(tr, Component.literal(tool == McpToolsTool.BRUTE_AUTH ? "Wordlist" : "Commands"), rx, y, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(tool == McpToolsTool.BRUTE_AUTH ? "Wordlist" : "Commands"), rx, y, UiTokens.TEXT_DIM);
             y += 10;
             UiComponents.drawTextField(
                     tr, context, rx, y, inner, UPLOAD_H, uploadInput.text(), focusField == FocusField.UPLOAD);
@@ -394,10 +394,10 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
                 ? manager.syncStatus()
                 : (manager.bundleVersion().isBlank() ? "Bundle not synced" : "Bundle " + manager.bundleVersion()
                 + (s.remoteRunner ? " · remote" : " · local"));
-        context.drawString(tr, Component.literal(status), rx, y, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(status), rx, y, UiTokens.TEXT_DIM);
         y += 10 + GAP;
 
-        context.drawString(tr, Component.literal("Log"), rx, y, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Log"), rx, y, UiTokens.TEXT_DIM);
         y += 10;
         logBoxX = rx - 2;
         logBoxY = y - 2;
@@ -413,7 +413,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
 
     private int drawSplitFields(
             Font tr,
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int rx,
             int y,
             int inner,
@@ -425,13 +425,13 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
             FocusField focus2) {
         int half = (inner - GAP) / 2;
         int fieldW = half - SPLIT_LABEL_W;
-        context.drawString(tr, Component.literal(label1), rx, y + 3, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(label1), rx, y + 3, UiTokens.TEXT_DIM);
         int leftFieldX = rx + SPLIT_LABEL_W;
         UiComponents.drawTextField(tr, context, leftFieldX, y, fieldW, INPUT_H, field1.text(), focusField == focus1);
         assignSplitFieldCoords(focus1, leftFieldX, y, fieldW);
 
         int rx2 = rx + half + GAP;
-        context.drawString(tr, Component.literal(label2), rx2, y + 3, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(label2), rx2, y + 3, UiTokens.TEXT_DIM);
         int rightFieldX = rx2 + SPLIT_LABEL_W;
         UiComponents.drawTextField(tr, context, rightFieldX, y, fieldW, INPUT_H, field2.text(), focusField == focus2);
         assignSplitFieldCoords(focus2, rightFieldX, y, fieldW);
@@ -505,10 +505,10 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         return n <= 1 ? "Join bot" : "Join " + n + " bots";
     }
 
-    private int renderBotControls(Font tr, GuiGraphics context, int rx, int y, int inner, int mouseX, int mouseY) {
+    private int renderBotControls(Font tr, GuiGraphicsExtractor context, int rx, int y, int inner, int mouseX, int mouseY) {
         botRowHits.clear();
         movementHits.clear();
-        context.drawString(tr, Component.literal("Bots"), rx, y, UiTokens.ACCENT);
+        context.text(tr, Component.literal("Bots"), rx, y, UiTokens.ACCENT);
         y += 10;
 
         McpToolsBotActionTarget target = manager.botActionTarget();
@@ -547,7 +547,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         McpToolsBotHandle focused = manager.focusedBot();
         int cellW = (inner - GAP * (ROSTER_COLS - 1)) / ROSTER_COLS;
         if (bots.isEmpty()) {
-            context.drawString(tr, Component.literal("No bots — click Join above"), rx + 2, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("No bots — click Join above"), rx + 2, y + 2, UiTokens.TEXT_DIM);
             y += ROSTER_ROW_H + GAP;
             rosterGridH = ROSTER_ROW_H;
         } else {
@@ -572,7 +572,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
             if (totalRows > ROSTER_GRID_ROWS) {
                 int startIdx = startRow * ROSTER_COLS + 1;
                 int endIdx = Math.min(bots.size(), (startRow + visibleRows) * ROSTER_COLS);
-                context.drawString(tr,
+                context.text(tr,
                         Component.literal(startIdx + "-" + endIdx + " / " + bots.size() + " · scroll"),
                         rx + 2, y, UiTokens.TEXT_DIM);
                 y += 10;
@@ -583,7 +583,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         String controlLabel = focused != null
                 ? "Control · " + focused.username + (focused.auth().isAuthenticated() ? " · ready" : " · login pending")
                 : "Control · " + (target == McpToolsBotActionTarget.ALL ? "all bots" : "selected bots");
-        context.drawString(tr, Component.literal(controlLabel), rx, y, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(controlLabel), rx, y, UiTokens.TEXT_DIM);
         y += 10;
 
         chatSendW = 42;
@@ -597,7 +597,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
                 manager.isBotSessionActive() ? UiComponents.PillActionStyle.PRIMARY_MINT : UiComponents.PillActionStyle.SECONDARY_SLATE);
         y += INPUT_H + GAP;
 
-        context.drawString(tr, Component.literal("Move"), rx, y, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Move"), rx, y, UiTokens.TEXT_DIM);
         y += 10;
 
         botBtnW = (inner - GAP * 3) / 4;
@@ -625,7 +625,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         drawBotDotBtn(tr, context, rx + (botBtnW + GAP) * 3, y, botBtnW, "Help", "help");
         y += BTN_H + GAP;
 
-        context.drawString(tr, Component.literal("Pathfinder"), rx, y, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Pathfinder"), rx, y, UiTokens.TEXT_DIM);
         y += 10;
 
         int coordW = (inner - GAP * 3 - 36) / 3;
@@ -654,7 +654,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
                 manager.isBotSessionActive() ? UiComponents.PillActionStyle.SECONDARY_SLATE : UiComponents.PillActionStyle.SECONDARY_SLATE);
         y += BTN_H + GAP;
 
-        context.drawString(tr, Component.literal("Mine block"), rx, y, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Mine block"), rx, y, UiTokens.TEXT_DIM);
         y += 10;
 
         botMineRowY = y;
@@ -673,11 +673,11 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         return y;
     }
 
-    private void drawHoldMovementBtn(Font tr, GuiGraphics context, int x, int y, int w, String label, String movement) {
+    private void drawHoldMovementBtn(Font tr, GuiGraphicsExtractor context, int x, int y, int w, String label, String movement) {
         drawMovementBtn(tr, context, x, y, w, label, movement, true);
     }
 
-    private void drawMovementBtn(Font tr, GuiGraphics context, int x, int y, int w, String label, String movement, boolean hold) {
+    private void drawMovementBtn(Font tr, GuiGraphicsExtractor context, int x, int y, int w, String label, String movement, boolean hold) {
         boolean active = heldMovements.contains(movement);
         UiComponents.drawPillActionButton(
                 tr, context, x, y, w, BTN_H, label,
@@ -689,11 +689,11 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         registerMovementHit(movement, x, y, w, BTN_H, hold);
     }
 
-    private void drawToggleMovementBtn(Font tr, GuiGraphics context, int x, int y, int w, String label, String movement) {
+    private void drawToggleMovementBtn(Font tr, GuiGraphicsExtractor context, int x, int y, int w, String label, String movement) {
         drawMovementBtn(tr, context, x, y, w, label, movement, false);
     }
 
-    private void drawBotDotBtn(Font tr, GuiGraphics context, int x, int y, int w, String label, String command) {
+    private void drawBotDotBtn(Font tr, GuiGraphicsExtractor context, int x, int y, int w, String label, String command) {
         UiComponents.drawPillActionButton(
                 tr, context, x, y, w, BTN_H, label,
                 manager.isBotSessionActive()
@@ -708,7 +708,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
 
     private void renderBotCell(
             Font tr,
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int x,
             int y,
             int w,
@@ -730,7 +730,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
         if (name.length() > 8) {
             name = name.substring(0, 6) + "…";
         }
-        context.drawString(
+        context.text(
                 tr,
                 Component.literal(name),
                 x + 9,
@@ -760,12 +760,12 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
     }
 
     private void drawLabeledField(
-            Font tr, GuiGraphics context, int x, int y, String label, OverlayTextField value, FocusField field, int inner) {
-        context.drawString(tr, Component.literal(label), x, y + 3, UiTokens.TEXT_DIM);
+            Font tr, GuiGraphicsExtractor context, int x, int y, String label, OverlayTextField value, FocusField field, int inner) {
+        context.text(tr, Component.literal(label), x, y + 3, UiTokens.TEXT_DIM);
         UiComponents.drawTextField(tr, context, x + LABEL_W, y, inner - LABEL_W, INPUT_H, value.text(), focusField == field);
     }
 
-    private void renderLog(GuiGraphics context, Font tr, int x, int y) {
+    private void renderLog(GuiGraphicsExtractor context, Font tr, int x, int y) {
         List<String> lines = manager.getLogs();
         int maxScroll = Math.max(0, lines.size() - LOG_LINES);
         logScrollOffset = Math.min(logScrollOffset, maxScroll);
@@ -777,7 +777,7 @@ public final class McpToolsOverlay extends AbstractDraggableOverlay implements I
             if (line.length() > LOG_CHARS) {
                 line = line.substring(0, LOG_CHARS - 1) + "…";
             }
-            context.drawString(tr, Component.literal(line), x, ly, 0xFFCBD5E1);
+            context.text(tr, Component.literal(line), x, ly, 0xFFCBD5E1);
             ly += LOG_LINE_H;
         }
     }

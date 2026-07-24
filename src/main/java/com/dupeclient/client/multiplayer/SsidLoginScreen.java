@@ -5,7 +5,7 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -77,18 +77,18 @@ public class SsidLoginScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, width, height);
         int panelH = height - 48;
         UiDraw.cardElevated(context, panelX, PANEL_TOP, panelW, panelH, 10);
 
-        context.drawCenteredString(font, title, width / 2, PANEL_TOP + 10, 0xFFE8EEF8);
-        context.drawString(font, Component.literal("Current: "), innerX, PANEL_TOP + 28, 0xFF8FA3B8);
+        context.centeredText(font, title, width / 2, PANEL_TOP + 10, 0xFFE8EEF8);
+        context.text(font, Component.literal("Current: "), innerX, PANEL_TOP + 28, 0xFF8FA3B8);
         String current = minecraft != null ? minecraft.getUser().getName() : "";
-        context.drawString(font, Component.literal(current), innerX + font.width("Current: "), PANEL_TOP + 28, 0xFF4ADE80);
-        context.drawString(font, status, innerX, PANEL_TOP + 48, UiTokens.argb(0xFF, 0xAFC7FF));
+        context.text(font, Component.literal(current), innerX + font.width("Current: "), PANEL_TOP + 28, 0xFF4ADE80);
+        context.text(font, status, innerX, PANEL_TOP + 48, UiTokens.argb(0xFF, 0xAFC7FF));
 
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
     @Override

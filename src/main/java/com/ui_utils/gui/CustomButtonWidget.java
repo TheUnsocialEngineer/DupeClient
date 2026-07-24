@@ -2,7 +2,7 @@ package com.ui_utils.gui;
 
 import com.ui_utils.gui.UITheme;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -17,7 +17,7 @@ extends AbstractWidget {
         this.onPress = onPress;
     }
 
-    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         boolean hovered = this.isHovered();
         int bg = hovered ? -266326714 : -434823890;
         int border = hovered ? -10782552 : -12627080;
@@ -28,7 +28,7 @@ extends AbstractWidget {
             context.fill(this.getX(), this.getY() + this.height - 2, this.getX() + this.width, this.getY() + this.height, -12877066);
         }
         int textColor = this.active ? -328966 : -7429950;
-        context.drawCenteredString(Minecraft.getInstance().font, this.getMessage(), this.getX() + this.width / 2, this.getY() + (this.height - 8) / 2, textColor);
+        context.centeredText(Minecraft.getInstance().font, this.getMessage(), this.getX() + this.width / 2, this.getY() + (this.height - 8) / 2, textColor);
     }
 
     public void onClick(MouseButtonEvent click, boolean doubleClick) {

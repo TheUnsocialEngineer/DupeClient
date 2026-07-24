@@ -1,7 +1,7 @@
 package com.dupeclient.client.module.serverpassword;
 
 import com.mojang.brigadier.CommandDispatcher;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -11,8 +11,8 @@ public final class ServerPasswordCommands {
     }
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-        dispatcher.register(ClientCommandManager.literal("vault")
-                .then(ClientCommandManager.literal("save").executes(ctx -> {
+        dispatcher.register(ClientCommands.literal("vault")
+                .then(ClientCommands.literal("save").executes(ctx -> {
                     if (!ServerPasswordManager.INSTANCE.isUnlocked()) {
                         ctx.getSource().sendFeedback(Component.literal("Unlock the vault first.").withStyle(ChatFormatting.RED));
                         return 0;
@@ -20,11 +20,11 @@ public final class ServerPasswordCommands {
                     ServerPasswordManager.INSTANCE.confirmPendingSave();
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("dismiss").executes(ctx -> {
+                .then(ClientCommands.literal("dismiss").executes(ctx -> {
                     ServerPasswordManager.INSTANCE.dismissPendingSave();
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("lock").executes(ctx -> {
+                .then(ClientCommands.literal("lock").executes(ctx -> {
                     if (!ServerPasswordManager.INSTANCE.isVaultInitialized()) {
                         ctx.getSource().sendFeedback(Component.literal("Vault is not initialized.").withStyle(ChatFormatting.RED));
                         return 0;

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -262,7 +262,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
@@ -272,7 +272,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         context.fill(px, py, px + PANEL_W, py + l.panelH, PANEL_BG);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, TITLE_BG);
         Font tr = Minecraft.getInstance().font;
-        context.drawString(tr, Component.literal("PayAll"), px + 6, py + 2, TITLE_FG);
+        context.text(tr, Component.literal("PayAll"), px + 6, py + 2, TITLE_FG);
 
         Minecraft mc = Minecraft.getInstance();
         UiComponents.drawInfoCard(tr, context, l.tx, l.cardTop, l.cardW, l.cardH, "PayAll");
@@ -308,7 +308,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
                 "Cancel", UiComponents.PillActionStyle.SECONDARY_SLATE);
 
         drawTrimmedText(context, "Progress " + format1(manager.getProgress() * 100.0) + "%", l.innerX, l.progressY, l.rowW, TEXT_PRIMARY);
-        context.drawString(tr, Component.literal("Online targets: " + manager.getOnlineCount(mc)), l.innerX, l.targetsY, TEXT_ONLINE);
+        context.text(tr, Component.literal("Online targets: " + manager.getOnlineCount(mc)), l.innerX, l.targetsY, TEXT_ONLINE);
 
         int staffOnline = SecurityManager.INSTANCE.countOnlineStaff(mc);
         String summary = "Manual " + manager.getManualCount()
@@ -377,7 +377,7 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         excludeDropdown.renderPopupLayer(context, tr, tabPlayers, mouseX, mouseY);
     }
 
-    private void drawTargetsPicker(GuiGraphics context, int sx, int sy, int sw, Minecraft mc) {
+    private void drawTargetsPicker(GuiGraphicsExtractor context, int sx, int sy, int sw, Minecraft mc) {
         Font tr = mc.font;
         UiComponents.drawInfoCard(tr, context, sx, sy, sw, PICKER_H, "Targets");
         int ix = sx + 6;
@@ -417,15 +417,15 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
             int idx = includedScroll + r;
             if (idx < inc.size()) {
                 String row = tr.plainSubstrByWidth(inc.get(idx), inListW - 8);
-                context.drawString(tr, Component.literal(row), inListX + 4, inListY + 2 + r * LIST_ROW, TEXT_PRIMARY);
+                context.text(tr, Component.literal(row), inListX + 4, inListY + 2 + r * LIST_ROW, TEXT_PRIMARY);
             }
             int j = excludedScroll + r;
             if (j < exc.size()) {
                 String row = tr.plainSubstrByWidth(exc.get(j), exListW - 8);
-                context.drawString(tr, Component.literal(row), exListX + 4, exListY + 2 + r * LIST_ROW, TEXT_EXCLUDED);
+                context.text(tr, Component.literal(row), exListX + 4, exListY + 2 + r * LIST_ROW, TEXT_EXCLUDED);
             }
         }
-        context.drawString(tr, Component.literal("Click name → exclude / include"), ix, listY + inListH + 2, TEXT_MUTED);
+        context.text(tr, Component.literal("Click name → exclude / include"), ix, listY + inListH + 2, TEXT_MUTED);
     }
 
     private static List<String> filterBySearch(List<String> names, String query) {
@@ -778,10 +778,10 @@ public final class PayAllOverlay extends AbstractDraggableOverlay implements Ing
         return String.format(Locale.ROOT, "%.1f", value);
     }
 
-    private void drawTrimmedText(GuiGraphics context, String value, int x, int y, int maxWidth, int color) {
+    private void drawTrimmedText(GuiGraphicsExtractor context, String value, int x, int y, int maxWidth, int color) {
         Font tr = Minecraft.getInstance().font;
         String trimmed = tr.plainSubstrByWidth(value, Math.max(6, maxWidth));
-        context.drawString(tr, Component.literal(trimmed), x, y, color);
+        context.text(tr, Component.literal(trimmed), x, y, color);
     }
 
     private void cyclePayCommand(Minecraft mc) {

@@ -6,7 +6,7 @@ import com.dupeclient.client.gui.widget.StylishButtonWidget;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -186,17 +186,17 @@ public class ProxiesScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, width, height);
         int panelH = height - 48;
         UiDraw.cardElevated(context, panelX, PANEL_TOP, panelW, panelH, 10);
 
-        context.drawCenteredString(font, title, width / 2, PANEL_TOP + 10, 0xFFE8EEF8);
+        context.centeredText(font, title, width / 2, PANEL_TOP + 10, 0xFFE8EEF8);
 
         ProxyManager.INSTANCE.getActive().ifPresentOrElse(
             proxy -> {
-                context.drawString(font, Component.literal("Active "), innerX, PANEL_TOP + 28, 0xFF8FA3B8);
-                context.drawString(
+                context.text(font, Component.literal("Active "), innerX, PANEL_TOP + 28, 0xFF8FA3B8);
+                context.text(
                     font,
                     Component.literal(proxy.displayLabel()),
                     innerX + font.width("Active "),
@@ -204,7 +204,7 @@ public class ProxiesScreen extends Screen {
                     0xFF4ADE80
                 );
             },
-            () -> context.drawString(font, Component.literal("Active: none"), innerX, PANEL_TOP + 28, 0xFF8FA3B8)
+            () -> context.text(font, Component.literal("Active: none"), innerX, PANEL_TOP + 28, 0xFF8FA3B8)
         );
 
         int row1Y = PANEL_TOP + 56;
@@ -217,10 +217,10 @@ public class ProxiesScreen extends Screen {
 
         if (!proxies.isEmpty()) {
             int headerY = listTop - 12;
-            context.drawString(font, Component.literal("Status"), innerX + 2, headerY, 0xFF8899BB);
-            context.drawString(font, Component.literal("Proxy"), innerX + 52, headerY, 0xFF8899BB);
-            context.drawString(font, Component.literal("Ping"), innerX + innerW - 200, headerY, 0xFF8899BB);
-            context.drawString(font, Component.literal("Region"), innerX + innerW - 128, headerY, 0xFF8899BB);
+            context.text(font, Component.literal("Status"), innerX + 2, headerY, 0xFF8899BB);
+            context.text(font, Component.literal("Proxy"), innerX + 52, headerY, 0xFF8899BB);
+            context.text(font, Component.literal("Ping"), innerX + innerW - 200, headerY, 0xFF8899BB);
+            context.text(font, Component.literal("Region"), innerX + innerW - 128, headerY, 0xFF8899BB);
         }
 
         int visibleRows = Math.max(1, (listBottom - listTop) / ROW_H);
@@ -241,20 +241,20 @@ public class ProxiesScreen extends Screen {
             }
 
             drawStatusDot(context, innerX + 8, rowY + 12, health.statusColor());
-            context.drawString(font, Component.literal(health.statusLabel()), innerX + 18, rowY + 6, health.statusColor());
+            context.text(font, Component.literal(health.statusLabel()), innerX + 18, rowY + 6, health.statusColor());
 
             String title = proxy.name();
             if (title.length() > 18) {
                 title = title.substring(0, 17) + "…";
             }
-            context.drawString(font, Component.literal(title), innerX + 52, rowY + 5, 0xFFE8EEF8);
+            context.text(font, Component.literal(title), innerX + 52, rowY + 5, 0xFFE8EEF8);
             String endpoint = proxy.type().label + " " + proxy.host() + ":" + proxy.port();
             if (endpoint.length() > 28) {
                 endpoint = endpoint.substring(0, 27) + "…";
             }
-            context.drawString(font, Component.literal(endpoint), innerX + 52, rowY + 16, 0xFF8FA3B8);
+            context.text(font, Component.literal(endpoint), innerX + 52, rowY + 16, 0xFF8FA3B8);
 
-            context.drawString(
+            context.text(
                 font,
                 Component.literal(health.pingLabel()),
                 innerX + innerW - 200,
@@ -269,11 +269,11 @@ public class ProxiesScreen extends Screen {
             if (region.length() > 16) {
                 region = region.substring(0, 15) + "…";
             }
-            context.drawString(font, Component.literal(region), innerX + innerW - 128, rowY + 10, 0xFFCAD9FF);
+            context.text(font, Component.literal(region), innerX + innerW - 128, rowY + 10, 0xFFCAD9FF);
         }
 
         if (proxies.isEmpty()) {
-            context.drawCenteredString(
+            context.centeredText(
                 font,
                 Component.literal("No proxies saved"),
                 width / 2,
@@ -283,17 +283,17 @@ public class ProxiesScreen extends Screen {
         }
 
         if (!status.isEmpty()) {
-            context.drawCenteredString(font, Component.literal(status), width / 2, height - 44, 0xFF00E676);
+            context.centeredText(font, Component.literal(status), width / 2, height - 44, 0xFF00E676);
         }
 
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void drawFieldLabel(GuiGraphics context, String label, int x, int y) {
-        context.drawString(font, Component.literal(label), x, y, 0xFF8FA3B8);
+    private void drawFieldLabel(GuiGraphicsExtractor context, String label, int x, int y) {
+        context.text(font, Component.literal(label), x, y, 0xFF8FA3B8);
     }
 
-    private static void drawStatusDot(GuiGraphics context, int cx, int cy, int color) {
+    private static void drawStatusDot(GuiGraphicsExtractor context, int cx, int cy, int color) {
         context.fill(cx - 3, cy - 3, cx + 3, cy + 3, color);
         context.fill(cx - 2, cy - 2, cx + 2, cy + 2, UiTokens.argb(0xFF, 0x0A1020));
         context.fill(cx - 2, cy - 2, cx + 2, cy + 2, color);

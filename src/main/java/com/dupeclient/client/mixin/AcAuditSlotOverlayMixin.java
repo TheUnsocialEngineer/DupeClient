@@ -1,7 +1,7 @@
 package com.dupeclient.client.mixin;
 
 import com.dupeclient.client.module.acaudit.AcAuditSlotOverlay;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,7 +25,7 @@ public abstract class AcAuditSlotOverlayMixin {
     protected Slot hoveredSlot;
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void dupeclient$acAuditSlotOverlay(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void dupeclient$acAuditSlotOverlay(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         AcAuditSlotOverlay.render((AbstractContainerScreen<?>) (Object) this, context, this.leftPos, this.topPos, this.imageHeight, this.hoveredSlot);
     }
 }

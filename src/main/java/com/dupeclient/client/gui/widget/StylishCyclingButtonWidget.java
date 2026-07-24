@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -62,7 +62,7 @@ public class StylishCyclingButtonWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         boolean hoveredNow = this.isHovered() && this.active;
         int x1 = getX();
         int y1 = getY();
@@ -74,7 +74,7 @@ public class StylishCyclingButtonWidget extends AbstractWidget {
         MidnightShapes.fillRoundedFrame(context, x1, y1, w, h, rr, fill, border);
 
         int textColor = this.active ? UiTokens.TEXT : UiTokens.SLATE_500;
-        context.drawCenteredString(
+        context.centeredText(
                 Minecraft.getInstance().font,
                 getMessage(),
                 x1 + w / 2,

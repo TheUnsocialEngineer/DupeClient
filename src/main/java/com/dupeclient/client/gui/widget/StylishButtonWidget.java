@@ -4,7 +4,7 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.modern.theme.MidnightPalette;
 import com.dupeclient.client.gui.modern.theme.MidnightShapes;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -29,7 +29,7 @@ public class StylishButtonWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         boolean hovered = this.isHovered();
         int x1 = getX();
         int y1 = getY();
@@ -55,7 +55,7 @@ public class StylishButtonWidget extends AbstractWidget {
         int textColor = !this.active
                 ? MidnightPalette.TEXT_MUTED
                 : (selected ? MidnightPalette.TEXT_PRIMARY : (hovered ? MidnightPalette.TEXT_PRIMARY : MidnightPalette.TEXT_SECONDARY));
-        context.drawCenteredString(
+        context.centeredText(
                 Minecraft.getInstance().font,
                 getMessage(),
                 x1 + w / 2,

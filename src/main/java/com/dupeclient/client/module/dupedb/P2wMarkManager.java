@@ -221,7 +221,7 @@ public final class P2wMarkManager {
         client.execute(() -> {
             if (client.player != null) {
                 MutableComponent msg = Component.literal("[P2W] ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD).append(line);
-                client.player.displayClientMessage(msg, false);
+                client.player.sendSystemMessage(msg);
             }
         });
     }

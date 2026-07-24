@@ -1,7 +1,7 @@
 package com.dupeclient.client.gui.overlay;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -55,12 +55,12 @@ public final class IngameModuleOverlayScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         // Do not darken or blur the world — overlays draw in {@link #render}.
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         syncBounds();
         IngameOverlayHost.renderAll(context, mouseX, mouseY, delta);
     }

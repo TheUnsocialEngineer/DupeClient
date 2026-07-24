@@ -16,7 +16,7 @@ public final class MacroShare {
         if (client == null || client.player == null) {
             return;
         }
-        client.player.displayClientMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD).append(message), false);
+        client.player.sendSystemMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD).append(message));
     }
 
     public static boolean exportMacroToClipboard(Minecraft client, String id) {
@@ -61,7 +61,7 @@ public final class MacroShare {
 
     public static MacroImportResult importJson(
             Minecraft client, String json, @Nullable String targetId, boolean overwrite) {
-        MacroImportResult result = MacroStorage.importMacro(json, targetId, overwrite, true);
+        MacroImportResult result = MacroStorage.importMacro(json, targetId, overwrite, false);
         reportImportResult(client, result);
         return result;
     }

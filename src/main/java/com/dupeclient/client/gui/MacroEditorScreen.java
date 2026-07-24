@@ -39,7 +39,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -381,7 +381,7 @@ extends Screen implements KeyboardConsumingScreen {
                 return;
             }
             try {
-                n.hotbarSlot = MathHelper.clamp((int)Integer.parseInt(value.trim()), (int)0, (int)8);
+                n.hotbarSlot = Mth.clamp((int)Integer.parseInt(value.trim()), (int)0, (int)8);
             }
             catch (NumberFormatException e) {
                 n.hotbarSlot = 0;
@@ -718,7 +718,7 @@ extends Screen implements KeyboardConsumingScreen {
         return (int)((double)CANVAS_TOP + (this.panY + wy) * this.canvasZoom);
     }
 
-    private void fillWorldRect(GuiGraphics context, double wx0, double wy0, double wx1, double wy1, int color) {
+    private void fillWorldRect(GuiGraphicsExtractor context, double wx0, double wy0, double wx1, double wy1, int color) {
         int sx0 = this.toScreenX(wx0);
         int sy0 = this.toScreenY(wy0);
         int sx1 = this.toScreenX(wx1);
@@ -1040,7 +1040,7 @@ extends Screen implements KeyboardConsumingScreen {
         this.contextMenuOpen = true;
     }
 
-    private void renderContextMenu(GuiGraphics context, int mouseX, int mouseY) {
+    private void renderContextMenu(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         if (!this.contextMenuOpen || this.contextMenuEntries.isEmpty()) {
             return;
         }
@@ -1057,7 +1057,7 @@ extends Screen implements KeyboardConsumingScreen {
             if (hot) {
                 context.fill(this.contextMenuX + 1, rowY, this.contextMenuX + this.contextMenuW - 1, rowY + 14, -1440071576);
             }
-            context.drawString(this.font, Component.literal(e.label()), this.contextMenuX + 8, rowY + 3, -1380097);
+            context.text(this.font, Component.literal(e.label()), this.contextMenuX + 8, rowY + 3, -1380097);
             rowY += 14;
         }
     }
@@ -1472,7 +1472,7 @@ extends Screen implements KeyboardConsumingScreen {
         return q.isEmpty() ? all : all.stream().filter(s -> s.toLowerCase(Locale.ROOT).contains(q)).toList();
     }
 
-    private void renderItemPickerLayer(GuiGraphics context, int mouseX, int mouseY) {
+    private void renderItemPickerLayer(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         int idx;
         if (!this.isRegistryPickerOpen()) {
             return;
@@ -1481,7 +1481,7 @@ extends Screen implements KeyboardConsumingScreen {
         context.fill(0, 0, this.width, this.height, -2012739568);
         context.fill(this.itemPickerPx, this.itemPickerPy, this.itemPickerPx + this.itemPickerPw, this.itemPickerPy + this.itemPickerPh, -267380696);
         context.fill(this.itemPickerPx, this.itemPickerPy, this.itemPickerPx + this.itemPickerPw, this.itemPickerPy + 2, -11899184);
-        context.drawCenteredString(this.font, this.pickerTitleForKind(), this.itemPickerPx + this.itemPickerPw / 2, this.itemPickerPy + 6, -1380097);
+        context.centeredText(this.font, this.pickerTitleForKind(), this.itemPickerPx + this.itemPickerPw / 2, this.itemPickerPy + 6, -1380097);
         List<String> filtered = this.filteredPickerRows();
         int rowH = 11;
         int rows = Math.max(1, this.itemPickerListHeight / rowH);
@@ -1496,11 +1496,11 @@ extends Screen implements KeyboardConsumingScreen {
             if (hot) {
                 context.fill(this.itemPickerPx + 4, y - 1, this.itemPickerPx + this.itemPickerPw - 4, y + rowH, 1714442384);
             }
-            context.drawString(this.font, Component.literal(shown), this.itemPickerPx + 8, y, -1642753);
+            context.text(this.font, Component.literal(shown), this.itemPickerPx + 8, y, -1642753);
             y += rowH;
         }
         if (filtered.size() > rows) {
-            context.drawString(this.font, Component.literal("Scroll wheel"), this.itemPickerPx + 8, this.itemPickerPy + this.itemPickerPh - 14, -8747362);
+            context.text(this.font, Component.literal("Scroll wheel"), this.itemPickerPx + 8, this.itemPickerPy + this.itemPickerPh - 14, -8747362);
         }
     }
 
@@ -2817,7 +2817,7 @@ extends Screen implements KeyboardConsumingScreen {
     private void sendMacroChatLine(Component message) {
         Minecraft c = Minecraft.getInstance();
         if (c.player != null) {
-            c.player.displayClientMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD).append(message), false);
+            c.player.sendSystemMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD).append(message));
         }
     }
 
@@ -2844,30 +2844,30 @@ extends Screen implements KeyboardConsumingScreen {
         return null;
     }
 
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
         context.fill(0, 0, this.width, HEADER_H, 0xCC0A0E14);
         context.fill(0, HEADER_H - 1, this.width, HEADER_H, UiTokens.ACCENT & 0x44FFFFFF | 0x88000000);
-        context.drawString(this.font, this.title, 12, 14, UiTokens.ACCENT);
+        context.text(this.font, this.title, 12, 14, UiTokens.ACCENT);
         if (this.autosaveFlashTicks > 0) {
-            context.drawString(this.font, Component.literal("Autosaved").withStyle(ChatFormatting.DARK_GREEN),
+            context.text(this.font, Component.literal("Autosaved").withStyle(ChatFormatting.DARK_GREEN),
                     this.width - 420, 14, 0xFF4ADE9A);
         }
         this.renderSidebar(context, mouseX, mouseY);
         this.renderCanvas(context, mouseX, mouseY);
         this.renderInspectorFrame(context, mouseX, mouseY);
         this.renderFooterHint(context);
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
         this.renderItemPickerLayer(context, mouseX, mouseY);
         this.renderContextMenu(context, mouseX, mouseY);
         this.renderSaveProgressOverlay(context, delta);
     }
 
-    private void renderFooterHint(GuiGraphics context) {
+    private void renderFooterHint(GuiGraphicsExtractor context) {
         if (this.height < 24) {
             return;
         }
-        context.drawString(this.font,
+        context.text(this.font,
                 Component.literal("Drag nodes · Del delete · RMB ports · wheel zoom / palette scroll"),
                 12, this.height - 14, UiTokens.TEXT_DIM);
     }
@@ -2912,11 +2912,11 @@ extends Screen implements KeyboardConsumingScreen {
         this.paletteScroll = Math.max(0, Math.min(this.paletteScroll, max));
     }
 
-    private void renderSidebar(GuiGraphics context, int mouseX, int mouseY) {
+    private void renderSidebar(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         context.fill(0, CANVAS_TOP, this.sidebarW(), this.height, UiTokens.BG_PANEL);
         context.fill(this.sidebarW() - 1, CANVAS_TOP, this.sidebarW(), this.height, -11870592);
         int titleY = CANVAS_TOP + 6;
-        context.drawString(this.font, Component.literal("Nodes"), 8, titleY, -11870592);
+        context.text(this.font, Component.literal("Nodes"), 8, titleY, -11870592);
         int vpTop = this.paletteViewportTop();
         int vpH = this.paletteViewportHeight();
         this.clampPaletteScroll();
@@ -2937,7 +2937,7 @@ extends Screen implements KeyboardConsumingScreen {
                 context.fill(4, sy, this.sidebarW() - 4, sy + 13 - 1, headBg);
                 String tri = expanded ? "\u25bc " : "\u25b6 ";
                 String head = this.font.plainSubstrByWidth(tri + cat, labelMaxW);
-                context.drawString(this.font, Component.literal(head), 8, sy + 2, -11870592);
+                context.text(this.font, Component.literal(head), 8, sy + 2, -11870592);
             }
             vy += 13;
             while (i < entries.size() && entries.get(i).category().equals(cat)) {
@@ -2950,7 +2950,7 @@ extends Screen implements KeyboardConsumingScreen {
                     if (rowSy + 17 > vpTop && rowSy < vpTop + vpH) {
                         context.fill(4, rowSy, this.sidebarW() - 4, rowSy + 17 - 1, bg);
                         String lab = this.font.plainSubstrByWidth(row.label(), labelMaxW);
-                        context.drawString(this.font, Component.literal(lab), 8, rowSy + 4, -1380097);
+                        context.text(this.font, Component.literal(lab), 8, rowSy + 4, -1380097);
                     }
                     vy += 17;
                 }
@@ -3033,7 +3033,7 @@ extends Screen implements KeyboardConsumingScreen {
         return false;
     }
 
-    private void renderCanvas(GuiGraphics context, int mouseX, int mouseY) {
+    private void renderCanvas(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         MacroGraphNode a;
         int cl = this.canvasLeft();
         int cw = this.canvasWidth();
@@ -3043,11 +3043,11 @@ extends Screen implements KeyboardConsumingScreen {
         int gridStep = this.canvasZoom < 0.85 ? 64 : 32;
         for (int gx = 0; gx < cw; gx += gridStep) {
             int sx = cl + gx + (int)(this.panX % (double)gridStep);
-            context.vLine(sx, CANVAS_TOP, CANVAS_TOP + ch, 856692776);
+            context.verticalLine(sx, CANVAS_TOP, CANVAS_TOP + ch, 856692776);
         }
         for (int gy = 0; gy < ch; gy += gridStep) {
             int sy = CANVAS_TOP + gy + (int)(this.panY % (double)gridStep);
-            context.hLine(cl, cl + cw, sy, 856692776);
+            context.horizontalLine(cl, cl + cw, sy, 856692776);
         }
         for (MacroGraphGroup g : this.graphGroups) {
             if (g.memberNodeIds == null || g.memberNodeIds.isEmpty()) continue;
@@ -3078,7 +3078,7 @@ extends Screen implements KeyboardConsumingScreen {
                 context.fill(bx1 - 1, by0, bx1, by1, g.borderArgb);
                 String lab = g.label == null || g.label.isBlank() ? "Group" : g.label;
                 String shortLab = lab.length() > 18 ? lab.substring(0, 18) + "\u2026" : lab;
-                context.drawString(this.font, Component.literal((shortLab + " \u25b6")), bx0 + 3, by0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
+                context.text(this.font, Component.literal((shortLab + " \u25b6")), bx0 + 3, by0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
                 continue;
             }
             int[] rect = this.expandedGroupScreenRect(g);
@@ -3093,7 +3093,7 @@ extends Screen implements KeyboardConsumingScreen {
             context.fill(x0, y0, x0 + 1, y1, g.borderArgb);
             context.fill(x1 - 1, y0, x1, y1, g.borderArgb);
             String lab = g.label == null || g.label.isBlank() ? "Group" : g.label;
-            context.drawString(this.font, Component.literal(lab), x0 + 3, y0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
+            context.text(this.font, Component.literal(lab), x0 + 3, y0 + 2, g.borderArgb & 0xFFFFFF | 0xFF000000);
         }
         this.renderNodeById.clear();
         for (MacroGraphNode n : this.graphNodes) {
@@ -3119,10 +3119,10 @@ extends Screen implements KeyboardConsumingScreen {
             int rx1 = (int)Math.max(this.marqueeAX, this.marqueeBX);
             int ry1 = (int)Math.max(this.marqueeAY, this.marqueeBY);
             context.fill(rx0, ry0, rx1, ry1, 857751680);
-            context.hLine(rx0, rx1, ry0, -9789697);
-            context.hLine(rx0, rx1, ry1, -9789697);
-            context.vLine(rx0, ry0, ry1, -9789697);
-            context.vLine(rx1, ry0, ry1, -9789697);
+            context.horizontalLine(rx0, rx1, ry0, -9789697);
+            context.horizontalLine(rx0, rx1, ry1, -9789697);
+            context.verticalLine(rx0, ry0, ry1, -9789697);
+            context.verticalLine(rx1, ry0, ry1, -9789697);
         }
         for (MacroGraphNode n : this.graphNodes) {
             if (this.isNodeInCollapsedGroup(n)) continue;
@@ -3144,7 +3144,7 @@ extends Screen implements KeyboardConsumingScreen {
             String rawTitle = control ? ("GRAPH_START".equals(n.type) ? "START" : "END") : n.type;
             int innerW = Math.max(8, rx1 - rx0 - 2 * textPad);
             String title = this.font.plainSubstrByWidth(rawTitle, innerW);
-            context.drawString(this.font, Component.literal(title), rx0 + textPad, ry0 + textPad, -1642753);
+            context.text(this.font, Component.literal(title), rx0 + textPad, ry0 + textPad, -1642753);
             if (!"GRAPH_START".equals(n.type)) {
                 this.fillWorldRect(context, n.x - 4.5, n.y + 21.0 - 4.5, n.x + 4.5, n.y + 21.0 + 4.5, -12198260);
             }
@@ -3158,14 +3158,14 @@ extends Screen implements KeyboardConsumingScreen {
                     int pyLoop = this.toScreenY(n.y + 9.24);
                     int pyNext = this.toScreenY(n.y + 32.76);
                     int tdx = 2;
-                    context.drawString(this.font, Component.literal("Repeat"), pxR + tdx, pyLoop - 4, -5308440);
-                    context.drawString(this.font, Component.literal("Continue"), pxR + tdx, pyNext - 4, -11096);
+                    context.text(this.font, Component.literal("Repeat"), pxR + tdx, pyLoop - 4, -5308440);
+                    context.text(this.font, Component.literal("Continue"), pxR + tdx, pyNext - 4, -11096);
                     continue;
                 }
                 this.fillWorldRect(context, n.x + 108.0 - 4.5, n.y + 21.0 - 4.5, n.x + 108.0 + 4.5, n.y + 21.0 + 4.5, -10616888);
                 pxR = Math.max(this.toScreenX(n.x + 108.0 - 4.5), this.toScreenX(n.x + 108.0 + 4.5));
                 int pyC = this.toScreenY(n.y + 21.0);
-                context.drawString(this.font, Component.literal("Repeat"), pxR + 2, pyC - 4, -5308440);
+                context.text(this.font, Component.literal("Repeat"), pxR + 2, pyC - 4, -5308440);
                 continue;
             }
             this.fillWorldRect(context, n.x + 108.0 - 4.5, n.y + 21.0 - 4.5, n.x + 108.0 + 4.5, n.y + 21.0 + 4.5, -19605);
@@ -3201,21 +3201,21 @@ extends Screen implements KeyboardConsumingScreen {
         return x.equals(y);
     }
 
-    private void renderCompileStrip(GuiGraphics context, int ix) {
+    private void renderCompileStrip(GuiGraphicsExtractor context, int ix) {
         block8: {
             int w = this.inspectorW() - 10;
             int x = ix + 5;
             int y = this.compilePanelTop;
             context.fill(x, y, x + w, y + this.compilePanelHeight, 1712330792);
             context.fill(x, y, x + w, y + 1, -12886369);
-            context.drawString(this.font, Component.literal("Compile"), x + 4, y + 4, -14217);
+            context.text(this.font, Component.literal("Compile"), x + 4, y + 4, -14217);
             int maxW = Math.max(24, w - 8);
             int ty = y + 16;
             if (this.liveCompileDiagnostics.isEmpty()) {
                 String plan = this.def != null ? MacroGraphCompiler.summarizePlan(this.def) : "";
                 for (String line : this.wrapPlain("OK \u2014 " + plan, maxW)) {
                     if (ty <= y + this.compilePanelHeight - 8) {
-                        context.drawString(this.font, Component.literal(line), x + 4, ty, -10823512);
+                        context.text(this.font, Component.literal(line), x + 4, ty, -10823512);
                         ty += 10;
                         continue;
                     }
@@ -3227,11 +3227,11 @@ extends Screen implements KeyboardConsumingScreen {
                     for (String line : this.wrapPlain(msg, maxW)) {
                         if (shown >= 9) {
                             if (ty > y + this.compilePanelHeight - 8) break block8;
-                            context.drawString(this.font, Component.literal("\u2026"), x + 4, ty, -8747362);
+                            context.text(this.font, Component.literal("\u2026"), x + 4, ty, -8747362);
                             break block8;
                         }
                         if (ty <= y + this.compilePanelHeight - 8) {
-                            context.drawString(this.font, Component.literal(line), x + 4, ty, -25718);
+                            context.text(this.font, Component.literal(line), x + 4, ty, -25718);
                             ty += 10;
                             ++shown;
                             continue;
@@ -3243,7 +3243,7 @@ extends Screen implements KeyboardConsumingScreen {
         }
     }
 
-    private void renderSaveProgressOverlay(GuiGraphics context, float delta) {
+    private void renderSaveProgressOverlay(GuiGraphicsExtractor context, float delta) {
         if (this.savePhase == SavePhase.IDLE) {
             return;
         }
@@ -3261,7 +3261,7 @@ extends Screen implements KeyboardConsumingScreen {
             case 5 -> "Save blocked / failed";
             default -> "";
         };
-        context.drawCenteredString(this.font, Component.literal(title), px + panelW / 2, py + 2, -1380097);
+        context.centeredText(this.font, Component.literal(title), px + panelW / 2, py + 2, -1380097);
         if (this.savePhase == SavePhase.VALIDATING || this.savePhase == SavePhase.PERSISTING) {
             int bx = px + 12;
             int by = py + 20;
@@ -3277,26 +3277,26 @@ extends Screen implements KeyboardConsumingScreen {
             int col = this.savePhase == SavePhase.FAILED ? -29830 : (this.savePhase == SavePhase.DONE_WARN ? -11126 : -10823512);
             String body = this.saveOverlayDetail.isEmpty() ? "\u2014" : this.saveOverlayDetail;
             for (String line : this.wrapPlain(body, panelW - 20)) {
-                context.drawCenteredString(this.font, Component.literal(line), px + panelW / 2, ty, col);
+                context.centeredText(this.font, Component.literal(line), px + panelW / 2, ty, col);
                 ty += 10;
             }
         }
     }
 
-    private void renderInspectorFrame(GuiGraphics context, int mouseX, int mouseY) {
+    private void renderInspectorFrame(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         int ix = this.width - this.inspectorW();
         context.fill(ix, CANVAS_TOP, this.width, this.height, UiTokens.BG_PANEL);
         context.fill(ix, CANVAS_TOP, ix + 1, this.height, -11870592);
-        context.drawString(this.font, Component.literal("Inspector"), ix + 8, CANVAS_TOP + 6, UiTokens.ACCENT);
+        context.text(this.font, Component.literal("Inspector"), ix + 8, CANVAS_TOP + 6, UiTokens.ACCENT);
         String hint = this.inspectorOverlayHint();
         if (!hint.isEmpty()) {
-            context.drawString(this.font, Component.literal(hint), ix + 8, CANVAS_TOP + 18, UiTokens.TEXT_DIM);
+            context.text(this.font, Component.literal(hint), ix + 8, CANVAS_TOP + 18, UiTokens.TEXT_DIM);
         }
         this.renderCompileStrip(context, ix);
         int runKeyY = this.compilePanelTop + this.compilePanelHeight + 4;
-        context.drawString(this.font, Component.literal("Run key: DupeClient → Macros panel"), ix + 8, runKeyY, UiTokens.TEXT_DIM);
-        context.drawString(this.font, Component.literal("Macro library"), ix + 8, this.libraryListTop, UiTokens.ACCENT);
-        context.drawString(this.font, Component.literal("Click · dbl-click · RMB del"), ix + 8, this.libraryListTop + 10, UiTokens.TEXT_DIM);
+        context.text(this.font, Component.literal("Run key: DupeClient → Macros panel"), ix + 8, runKeyY, UiTokens.TEXT_DIM);
+        context.text(this.font, Component.literal("Macro library"), ix + 8, this.libraryListTop, UiTokens.ACCENT);
+        context.text(this.font, Component.literal("Click · dbl-click · RMB del"), ix + 8, this.libraryListTop + 10, UiTokens.TEXT_DIM);
         int rowY = this.libraryListTop + 22;
         String currentId = MacroStorage.filenameId(this.def.id);
         for (int i = 0; i < this.libraryVisibleRows; ++i) {
@@ -3313,7 +3313,7 @@ extends Screen implements KeyboardConsumingScreen {
                 context.fill(ix + 5, ry + 1, this.width - 5, ry + LIB_ROW_H - 1, 0x18FFFFFF);
             }
             String shown = this.font.plainSubstrByWidth(id, this.inspectorW() - 28);
-            context.drawString(this.font, Component.literal(shown), ix + 10, ry + 3,
+            context.text(this.font, Component.literal(shown), ix + 10, ry + 3,
                     current ? UiTokens.MINT_300 : UiTokens.TEXT);
         }
     }
@@ -3321,7 +3321,7 @@ extends Screen implements KeyboardConsumingScreen {
     private static void toast(String message) {
         Minecraft c = Minecraft.getInstance();
         if (c.player != null) {
-            c.player.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.YELLOW), false);
+            c.player.sendSystemMessage(Component.literal(message).withStyle(ChatFormatting.YELLOW));
         }
     }
 
@@ -4026,11 +4026,11 @@ extends Screen implements KeyboardConsumingScreen {
             return super.keyPressed(keyInput);
         }
 
-        public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
             UiDraw.fillMidnightBackground(context, this.width, this.height);
-            context.drawCenteredString(this.font, this.title, this.width / 2, 48, -1380097);
-            context.drawCenteredString(this.font, Component.literal("ARGB: alpha + RGB (e.g. fill 0x40204060)"), this.width / 2, 62, -8747362);
-            super.render(context, mouseX, mouseY, delta);
+            context.centeredText(this.font, this.title, this.width / 2, 48, -1380097);
+            context.centeredText(this.font, Component.literal("ARGB: alpha + RGB (e.g. fill 0x40204060)"), this.width / 2, 62, -8747362);
+            super.extractRenderState(context, mouseX, mouseY, delta);
         }
 
         public boolean isPauseScreen() {

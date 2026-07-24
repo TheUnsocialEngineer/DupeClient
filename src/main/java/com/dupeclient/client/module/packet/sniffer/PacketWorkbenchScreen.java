@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -125,7 +125,7 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         context.fill(0, 0, width, height, 0xC0101018);
     }
 
@@ -135,8 +135,8 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        extractBackground(context, mouseX, mouseY, delta);
         Font tr = font;
         int pad = 12;
         int panelW = Math.min(560, width - pad * 2);
@@ -146,10 +146,10 @@ public final class PacketWorkbenchScreen extends Screen {
 
         context.fill(px, py, px + panelW, py + panelH, 0xF018181B);
         String title = mode == Mode.FABRICATE ? "Packet Fabrication" : "Packet Editor";
-        context.drawString(tr, Component.literal(title), px + pad, py + 8, UiTokens.TEXT);
+        context.text(tr, Component.literal(title), px + pad, py + 8, UiTokens.TEXT);
         PacketSnifferManager sniffer = PacketSnifferManager.INSTANCE;
         String totals = "C2S " + sniffer.c2sCount() + " · S2C " + sniffer.s2cCount();
-        context.drawString(
+        context.text(
                 tr,
                 Component.literal(totals),
                 px + panelW - pad - tr.width(totals),
@@ -160,7 +160,7 @@ public final class PacketWorkbenchScreen extends Screen {
         if (mode == Mode.FABRICATE) {
             y = drawFabricatePicker(context, tr, px, y, panelW, pad, mouseX, mouseY);
         } else if (sourceEntry != null) {
-            context.drawString(
+            context.text(
                     tr,
                     Component.literal(sourceEntry.direction.label + " · " + sourceEntry.name),
                     px + pad,
@@ -180,12 +180,12 @@ public final class PacketWorkbenchScreen extends Screen {
         y = hitTableY + hitTableH + 6;
         drawPacketStats(context, tr, hitTableX, y, hitTableW);
         y += STATS_H + 2;
-        context.drawString(tr, Component.literal("Repeat"), px + pad, y + 4, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Repeat"), px + pad, y + 4, UiTokens.TEXT_DIM);
         hitRepeatX = px + pad + 48;
         hitRepeatY = y;
         hitRepeatW = 48;
         context.fill(hitRepeatX, hitRepeatY, hitRepeatX + hitRepeatW, hitRepeatY + 16, repeatFocused() ? 0xFF374151 : 0xFF1F2937);
-        context.drawString(tr, Component.literal(repeatInput.toString()), hitRepeatX + 4, hitRepeatY + 4, 0xFFE5E7EB);
+        context.text(tr, Component.literal(repeatInput.toString()), hitRepeatX + 4, hitRepeatY + 4, 0xFFE5E7EB);
 
         int btnY = y;
         int btnW = 88;
@@ -201,12 +201,12 @@ public final class PacketWorkbenchScreen extends Screen {
         drawBtn(context, tr, bx, btnY, 64, "Close", 0xFF374151);
 
         if (!status.isEmpty()) {
-            context.drawString(tr, Component.literal(status.toString()), px + pad, py + panelH - 16, 0xFF9CA3AF);
+            context.text(tr, Component.literal(status.toString()), px + pad, py + panelH - 16, 0xFF9CA3AF);
         }
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
     }
 
-    private void drawPacketStats(GuiGraphics context, Font tr, int x, int y, int w) {
+    private void drawPacketStats(GuiGraphicsExtractor context, Font tr, int x, int y, int w) {
         PacketSnifferManager sniffer = PacketSnifferManager.INSTANCE;
         int gap = 8;
         int colW = (w - gap) / 2;
@@ -218,8 +218,8 @@ public final class PacketWorkbenchScreen extends Screen {
 
         String c2sHeader = "Client → Server (" + sniffer.c2sCount() + ")";
         String s2cHeader = "Server → Client (" + sniffer.s2cCount() + ")";
-        context.drawString(tr, Component.literal(c2sHeader), c2sX + 4, y + 3, 0xFF86EFAC);
-        context.drawString(tr, Component.literal(s2cHeader), s2cX + 4, y + 3, 0xFF93C5FD);
+        context.text(tr, Component.literal(c2sHeader), c2sX + 4, y + 3, 0xFF86EFAC);
+        context.text(tr, Component.literal(s2cHeader), s2cX + 4, y + 3, 0xFF93C5FD);
         context.fill(c2sX + 2, y + 14, c2sX + colW - 2, y + 15, 0xFF374151);
         context.fill(s2cX + 2, y + 14, s2cX + colW - 2, y + 15, 0xFF374151);
 
@@ -235,7 +235,7 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     private void drawStatsRow(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font tr,
             int x,
             int y,
@@ -249,7 +249,7 @@ public final class PacketWorkbenchScreen extends Screen {
         int total = statsTotal(direction);
         String pct = total > 0 ? String.format(" (%.1f%%)", entry.getValue() * 100.0 / total) : "";
         String line = entry.getKey() + "  " + entry.getValue() + pct;
-        context.drawString(tr, Component.literal(tr.plainSubstrByWidth(line, maxW)), x, y, color);
+        context.text(tr, Component.literal(tr.plainSubstrByWidth(line, maxW)), x, y, color);
     }
 
     private int statsTotal(PacketDirection direction) {
@@ -269,7 +269,7 @@ public final class PacketWorkbenchScreen extends Screen {
     }
 
     private int drawFabricatePicker(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font tr,
             int px,
             int y,
@@ -290,14 +290,14 @@ public final class PacketWorkbenchScreen extends Screen {
         String searchShown = fabricateSearch.isEmpty() && !fabricateSearchFocused
                 ? "Search C2S packets (+inc -exc)…"
                 : fabricateSearch.toString();
-        context.drawString(
+        context.text(
                 tr,
                 Component.literal(tr.plainSubstrByWidth(searchShown, hitFabSearchW - 6)),
                 hitFabSearchX + 4,
                 hitFabSearchY + 3,
                 fabricateSearch.isEmpty() && !fabricateSearchFocused ? UiTokens.TEXT_DIM : 0xFFE5E7EB);
         String count = filtered.size() + "/" + sortedC2sNames().size();
-        context.drawString(tr, Component.literal(count), hitFabSearchX + hitFabSearchW - tr.width(count) - 4, hitFabSearchY + 3, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(count), hitFabSearchX + hitFabSearchW - tr.width(count) - 4, hitFabSearchY + 3, UiTokens.TEXT_DIM);
         y += FAB_SEARCH_H + 4;
 
         hitFabListX = px + pad;
@@ -325,7 +325,7 @@ public final class PacketWorkbenchScreen extends Screen {
                 context.fill(hitFabListX + 1, ry, hitFabListX + hitFabListW - 1, ry + FAB_ROW_H, 0x33222C3A);
             }
             String label = formatTypeCountLabel(typeName, PacketDirection.C2S);
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(label, hitFabListW - 8)), hitFabListX + 4, ry + 2, selected ? 0xFF86EFAC : 0xFFE5E7EB);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(label, hitFabListW - 8)), hitFabListX + 4, ry + 2, selected ? 0xFF86EFAC : 0xFFE5E7EB);
         }
 
         if (maxScroll > 0) {
@@ -340,11 +340,11 @@ public final class PacketWorkbenchScreen extends Screen {
         return y + hitFabListH + 6;
     }
 
-    private void drawFieldTable(GuiGraphics context, Font tr, int mouseX, int mouseY) {
+    private void drawFieldTable(GuiGraphicsExtractor context, Font tr, int mouseX, int mouseY) {
         int headerY = hitTableY + 4;
-        context.drawString(tr, Component.literal("Field"), hitTableX + 4, headerY, 0xFF9CA3AF);
-        context.drawString(tr, Component.literal("Type"), hitTableX + COL_FIELD_W + 4, headerY, 0xFF9CA3AF);
-        context.drawString(tr, Component.literal("Value"), hitTableX + COL_FIELD_W + COL_TYPE_W + 4, headerY, 0xFF9CA3AF);
+        context.text(tr, Component.literal("Field"), hitTableX + 4, headerY, 0xFF9CA3AF);
+        context.text(tr, Component.literal("Type"), hitTableX + COL_FIELD_W + 4, headerY, 0xFF9CA3AF);
+        context.text(tr, Component.literal("Value"), hitTableX + COL_FIELD_W + COL_TYPE_W + 4, headerY, 0xFF9CA3AF);
         context.fill(hitTableX + 2, hitTableY + 16, hitTableX + hitTableW - 2, hitTableY + 17, 0xFF374151);
 
         int bodyTop = hitTableY + 18;
@@ -369,8 +369,8 @@ public final class PacketWorkbenchScreen extends Screen {
             }
 
             int nameColor = field.editable ? 0xFFE5E7EB : 0xFF9CA3AF;
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(field.name, COL_FIELD_W - 8)), hitTableX + 4, ry + 3, nameColor);
-            context.drawString(
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(field.name, COL_FIELD_W - 8)), hitTableX + 4, ry + 3, nameColor);
+            context.text(
                     tr,
                     Component.literal(tr.plainSubstrByWidth(field.typeName, COL_TYPE_W - 8)),
                     hitTableX + COL_FIELD_W + 4,
@@ -382,18 +382,18 @@ public final class PacketWorkbenchScreen extends Screen {
                 shown = "_";
             }
             int valueColor = field.editable ? 0xFF86EFAC : 0xFF9CA3AF;
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(shown, valueW - 4)), valueX, ry + 3, valueColor);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(shown, valueW - 4)), valueX, ry + 3, valueColor);
 
             if (field.editable && field.valueType != null && field.valueType.isEnum()) {
-                context.drawString(tr, Component.literal("▸"), hitTableX + hitTableW - 12, ry + 3, 0xFF60A5FA);
+                context.text(tr, Component.literal("▸"), hitTableX + hitTableW - 12, ry + 3, 0xFF60A5FA);
             }
         }
     }
 
-    private void drawBtn(GuiGraphics context, Font tr, int x, int y, int w, String label, int color) {
+    private void drawBtn(GuiGraphicsExtractor context, Font tr, int x, int y, int w, String label, int color) {
         context.fill(x, y, x + w, y + 16, color);
         int tw = tr.width(label);
-        context.drawString(tr, Component.literal(label), x + (w - tw) / 2, y + 4, 0xFFE5E7EB);
+        context.text(tr, Component.literal(label), x + (w - tw) / 2, y + 4, 0xFFE5E7EB);
     }
 
     @Override

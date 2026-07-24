@@ -6,7 +6,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.function.IntPredicate;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * Single-line text field for panels and overlays — cursor, selection, clipboard, modern chrome.
@@ -112,7 +112,7 @@ public final class InlineTextField {
         return buffer.handleCodePoint((char) codePoint);
     }
 
-    public void render(GuiGraphics context, Font tr) {
+    public void render(GuiGraphicsExtractor context, Font tr) {
         ModernTextInputChrome.drawField(context, x, y, w, h, focused);
         int textX = x + ModernTextInputChrome.PAD_X;
         int textY = ModernTextInputChrome.textY(y, h);

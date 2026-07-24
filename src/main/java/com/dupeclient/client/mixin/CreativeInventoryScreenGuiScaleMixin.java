@@ -3,12 +3,12 @@ package com.dupeclient.client.mixin;
 import com.dupeclient.client.gui.HandledScreenGuiScale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -67,9 +67,9 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
         HandledScreenAccessor gui = dupeclient$gui();
         int x = gui.getX();
         int y = gui.getY();
-        int bgW = gui.getBackgroundWidth();
-        int bgH = gui.getBackgroundHeight();
-        for (Slot slot : gui.getHandler().slots) {
+        int bgW = gui.getImageWidth();
+        int bgH = gui.getImageHeight();
+        for (Slot slot : gui.getMenu().slots) {
             if (HandledScreenGuiScale.isPointOverScaledSlot(mouseX, mouseY, slot, x, y, bgW, bgH)) {
                 return true;
             }
@@ -91,8 +91,8 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
                 SEARCH_LOCAL_H,
                 gui.getX(),
                 gui.getY(),
-                gui.getBackgroundWidth(),
-                gui.getBackgroundHeight());
+                gui.getImageWidth(),
+                gui.getImageHeight());
     }
 
     @Unique
@@ -111,8 +111,8 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
                     SEARCH_LOCAL_H,
                     gui.getX(),
                     gui.getY(),
-                    gui.getBackgroundWidth(),
-                    gui.getBackgroundHeight());
+                    gui.getImageWidth(),
+                    gui.getImageHeight());
         }
         int sx = searchBox.getX();
         int sy = searchBox.getY();
@@ -127,8 +127,8 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
         int[] pos = new int[2];
         HandledScreenGuiScale.syncGuiPosition(
                 pos,
-                gui.getBackgroundWidth(),
-                gui.getBackgroundHeight(),
+                gui.getImageWidth(),
+                gui.getImageHeight(),
                 client.getWindow().getGuiScaledWidth(),
                 client.getWindow().getGuiScaledHeight());
         gui.setX(pos[0]);
@@ -136,7 +136,7 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
     }
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void dupeclient$syncBeforeCreativeRender(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void dupeclient$syncBeforeCreativeRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (HandledScreenGuiScale.isActive()) {
             dupeclient$syncGuiPosition();
             dupeclient$layoutSearchBox();
@@ -151,26 +151,26 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
             method = "renderBg",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/components/EditBox;render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
+                    target = "Lnet/minecraft/client/gui/components/EditBox;render(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V"))
     private void dupeclient$deferScaledSearchRender(
-            EditBox instance, GuiGraphics context, int mouseX, int mouseY, float delta) {
+            EditBox instance, GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!HandledScreenGuiScale.isActive()) {
-            instance.render(context, mouseX, mouseY, delta);
+            instance.extractRenderState(context, mouseX, mouseY, delta);
         }
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void dupeclient$drawScaledSearchUi(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void dupeclient$drawScaledSearchUi(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         if (!HandledScreenGuiScale.isActive() || searchBox == null || !searchBox.active) {
             return;
         }
         dupeclient$layoutSearchBox();
-        searchBox.render(context, mouseX, mouseY, delta);
+        searchBox.extractRenderState(context, mouseX, mouseY, delta);
         HandledScreenAccessor gui = dupeclient$gui();
         int guiLeft = gui.getX();
         int guiTop = gui.getY();
-        int bgW = gui.getBackgroundWidth();
-        int bgH = gui.getBackgroundHeight();
+        int bgW = gui.getImageWidth();
+        int bgH = gui.getImageHeight();
         Minecraft client = Minecraft.getInstance();
         Font tr = client.font;
         Component label = Component.translatable("itemGroup.search");
@@ -184,7 +184,7 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
         int coverTop = Math.min(ly, (int) oldTopLeft[1]) - 1;
         int coverBottom = Math.max(ly + 9, (int) oldTopLeft[1] + 10);
         context.fill((int) oldTopLeft[0] - 2, coverTop, coverRight, coverBottom, 0xFFC6C6C6);
-        context.drawString(tr, label, lx, ly, 0xFF404040);
+        context.text(tr, label, lx, ly, 0xFF404040);
     }
 
     @Inject(method = "checkTabClicked", at = @At("HEAD"), cancellable = true)
@@ -196,8 +196,8 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
         dupeclient$syncGuiPosition();
         int x = gui.getX();
         int y = gui.getY();
-        int bgW = gui.getBackgroundWidth();
-        int bgH = gui.getBackgroundHeight();
+        int bgW = gui.getImageWidth();
+        int bgH = gui.getImageHeight();
         boolean hit = HandledScreenGuiScale.isCreativeTabHit(
                 mouseX, mouseY, getTabX(group), getTabY(group), TAB_WIDTH, TAB_HEIGHT, x, y, bgW, bgH);
         cir.setReturnValue(hit);
@@ -232,12 +232,12 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
             return;
         }
         boolean outside = HandledScreenGuiScale.isClickOutsideScaled(
-                mouseX, mouseY, left, top, gui.getBackgroundWidth(), gui.getBackgroundHeight());
+                mouseX, mouseY, left, top, gui.getImageWidth(), gui.getImageHeight());
         if (outside) {
             int x = gui.getX();
             int y = gui.getY();
-            int bgW = gui.getBackgroundWidth();
-            int bgH = gui.getBackgroundHeight();
+            int bgW = gui.getImageWidth();
+            int bgH = gui.getImageHeight();
             for (CreativeModeTab group : CreativeModeTabs.tabs()) {
                 if (HandledScreenGuiScale.isCreativeTabHit(
                         mouseX, mouseY,
@@ -255,37 +255,37 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
     }
 
     @ModifyVariable(
-            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ClickType;)V",
+            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V",
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 0)
-    private ClickType dupeclient$correctCreativeMisclassifiedThrow(
-            ClickType actionType, Slot slot, int slotId, int button) {
+    private ContainerInput dupeclient$correctCreativeMisclassifiedThrow(
+            ContainerInput actionType, Slot slot, int slotId, int button) {
         if (!HandledScreenGuiScale.isActive() || slot == null) {
             return actionType;
         }
         if (dupeclient$shiftClick) {
-            if (actionType == ClickType.PICKUP
-                    || (actionType == ClickType.THROW && slotId == -999)) {
-                return ClickType.QUICK_MOVE;
+            if (actionType == ContainerInput.PICKUP
+                    || (actionType == ContainerInput.THROW && slotId == -999)) {
+                return ContainerInput.QUICK_MOVE;
             }
             return actionType;
         }
-        if (actionType == ClickType.THROW && slotId == -999) {
-            return ClickType.PICKUP;
+        if (actionType == ContainerInput.THROW && slotId == -999) {
+            return ContainerInput.PICKUP;
         }
         return actionType;
     }
 
     @Inject(
-            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ClickType;)V",
+            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V",
             at = @At("HEAD"))
     private void dupeclient$prepareCreativeQuickMoveStack(
-            Slot slot, int slotId, int button, ClickType actionType, CallbackInfo ci) {
-        if (!HandledScreenGuiScale.isActive() || actionType != ClickType.QUICK_MOVE || slot == null) {
+            Slot slot, int slotId, int button, ContainerInput actionType, CallbackInfo ci) {
+        if (!HandledScreenGuiScale.isActive() || actionType != ContainerInput.QUICK_MOVE || slot == null) {
             return;
         }
-        dupeclient$gui().setQuickMovingStack(slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY);
+        dupeclient$gui().setLastQuickMoved(slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY);
     }
 
     @Inject(method = "mouseReleased", at = @At("HEAD"))
@@ -311,7 +311,7 @@ public abstract class CreativeInventoryScreenGuiScaleMixin {
         HandledScreenAccessor gui = dupeclient$gui();
         dupeclient$syncGuiPosition();
         float[] local = HandledScreenGuiScale.screenToLocal(
-                mouseX, mouseY, gui.getX(), gui.getY(), gui.getBackgroundWidth(), gui.getBackgroundHeight());
+                mouseX, mouseY, gui.getX(), gui.getY(), gui.getImageWidth(), gui.getImageHeight());
         boolean hit = local[0] >= 175
                 && local[0] < 175 + 14
                 && local[1] >= 18

@@ -1,7 +1,7 @@
 package com.dupeclient.client.gui.modern;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -13,7 +13,7 @@ public final class UiDraw {
     }
 
     /** Neutral dark backdrop with soft vignette (modern app shell). */
-    public static void fillMidnightBackground(GuiGraphics context, int w, int h) {
+    public static void fillMidnightBackground(GuiGraphicsExtractor context, int w, int h) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -25,7 +25,7 @@ public final class UiDraw {
     }
 
     /** Full-screen wash over the blurred vanilla background: slate + soft mint vignette. */
-    public static void fillRootGradient(GuiGraphics context, int w, int h) {
+    public static void fillRootGradient(GuiGraphicsExtractor context, int w, int h) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -35,7 +35,7 @@ public final class UiDraw {
     }
 
     /** Raven-like dark backdrop with subtle animated center rails. */
-    public static void fillRavenBackdrop(GuiGraphics context, int w, int h) {
+    public static void fillRavenBackdrop(GuiGraphicsExtractor context, int w, int h) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -55,7 +55,7 @@ public final class UiDraw {
     }
 
     /** Small Raven-inspired center wordmark treatment for major screens. */
-    public static void drawRavenWordmark(GuiGraphics context, Font tr, int w, int h, String label) {
+    public static void drawRavenWordmark(GuiGraphicsExtractor context, Font tr, int w, int h, String label) {
         if (w <= 0 || h <= 0 || tr == null || label == null || label.isEmpty()) {
             return;
         }
@@ -64,13 +64,13 @@ public final class UiDraw {
         String left = label.substring(0, Math.max(1, Math.min(4, label.length())));
         for (int i = 0; i < left.length(); i++) {
             int col = 0xFF8FB2FF;
-            context.drawCenteredString(tr, Component.literal(String.valueOf(left.charAt(i))), cx - 22, qy - 22 + i * 10, col);
+            context.centeredText(tr, Component.literal(String.valueOf(left.charAt(i))), cx - 22, qy - 22 + i * 10, col);
         }
-        context.drawCenteredString(tr, Component.literal("++"), cx + 24, qy + 20, 0xFF82A8FF);
+        context.centeredText(tr, Component.literal("++"), cx + 24, qy + 20, 0xFF82A8FF);
     }
 
     /** App bar: glass strip under window controls. */
-    public static void drawTopFullWidthBand(GuiGraphics context, int w, int barH) {
+    public static void drawTopFullWidthBand(GuiGraphicsExtractor context, int w, int barH) {
         if (w <= 0 || barH <= 0) {
             return;
         }
@@ -79,12 +79,12 @@ public final class UiDraw {
     }
 
     /** Main content matte behind the scissor. */
-    public static void fillContentWorkspace(GuiGraphics context, int x, int y, int w, int h) {
+    public static void fillContentWorkspace(GuiGraphicsExtractor context, int x, int y, int w, int h) {
         // Leave empty so the fullscreen Midnight gradient remains visible inside the scroll region.
     }
 
     /** Non-scrolling title row behind module name. */
-    public static void fillModuleHeaderStrip(GuiGraphics context, int x, int y, int w, int h) {
+    public static void fillModuleHeaderStrip(GuiGraphicsExtractor context, int x, int y, int w, int h) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -93,7 +93,7 @@ public final class UiDraw {
     }
 
     /** Elevated card: fill + hairline border (no drop shadow — avoids black gaps between stacked sections). */
-    public static void cardElevated(GuiGraphics c, int x, int y, int w, int h, int radius) {
+    public static void cardElevated(GuiGraphicsExtractor c, int x, int y, int w, int h, int radius) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -108,7 +108,7 @@ public final class UiDraw {
                 com.dupeclient.client.gui.modern.theme.MidnightPalette.BORDER_LIGHT);
     }
 
-    public static void drawScrollbar(GuiGraphics context, int x, int top, int bottom, double scroll, double maxScroll) {
+    public static void drawScrollbar(GuiGraphicsExtractor context, int x, int top, int bottom, double scroll, double maxScroll) {
         if (maxScroll <= 0.5) {
             return;
         }
@@ -125,7 +125,7 @@ public final class UiDraw {
     }
 
     /** Card surface + subtle top highlight + ring. */
-    public static void card(GuiGraphics c, int x, int y, int w, int h) {
+    public static void card(GuiGraphicsExtractor c, int x, int y, int w, int h) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -134,7 +134,7 @@ public final class UiDraw {
         ring(c, x, y, w, h, UiTokens.argb(0x44, UiTokens.MINT_600));
     }
 
-    public static void ring(GuiGraphics c, int x, int y, int w, int h, int col) {
+    public static void ring(GuiGraphicsExtractor c, int x, int y, int w, int h, int col) {
         c.fill(x, y, x + w, y + 1, col);
         c.fill(x, y + h - 1, x + w, y + h, col);
         c.fill(x, y, x + 1, y + h, col);
@@ -142,7 +142,7 @@ public final class UiDraw {
     }
 
     /** Soft shadow under elevated surfaces (offset down). */
-    public static void dropShadow(GuiGraphics c, int x, int y, int w, int h, int spread) {
+    public static void dropShadow(GuiGraphicsExtractor c, int x, int y, int w, int h, int spread) {
         int s = Math.max(1, spread);
         c.fill(x - s, y + h, x + w + s, y + h + s, UiTokens.argb(0x55, 0x000000));
         c.fill(x - s + 1, y + h + s, x + w + s - 1, y + h + s + 1, UiTokens.argb(0x22, 0x000000));

@@ -16,7 +16,7 @@ import com.dupeclient.client.module.waypoint.SharedDupeClientWaypoint;
 import com.dupeclient.client.module.waypoint.WaypointShareAudience;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.BlockPos;
@@ -244,18 +244,18 @@ public final class WaypointsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, width, height);
         int panelH = height - 48;
         UiDraw.cardElevated(context, panelX, PANEL_TOP, panelW, panelH, UiTokens.R_XL);
-        context.drawCenteredString(font, title, width / 2, PANEL_TOP + 10, MidnightPalette.TEXT_PRIMARY);
-        context.drawString(font, Component.literal("Your waypoints sync when sharing is enabled."), innerX, PANEL_TOP + 28, MidnightPalette.TEXT_MUTED);
-        context.drawString(font, Component.literal("Per-waypoint share: Everyone / Friends / Only me"), innerX, PANEL_TOP + 40, MidnightPalette.TEXT_MUTED);
+        context.centeredText(font, title, width / 2, PANEL_TOP + 10, MidnightPalette.TEXT_PRIMARY);
+        context.text(font, Component.literal("Your waypoints sync when sharing is enabled."), innerX, PANEL_TOP + 28, MidnightPalette.TEXT_MUTED);
+        context.text(font, Component.literal("Per-waypoint share: Everyone / Friends / Only me"), innerX, PANEL_TOP + 40, MidnightPalette.TEXT_MUTED);
 
         List<Row> rows = buildRows();
         int visibleRows = Math.max(1, (listBottom - listTop + CARD_GAP) / ROW_STRIDE);
         if (rows.isEmpty()) {
-            context.drawString(font, Component.literal("No waypoints yet — create one in-world."), innerX, listTop + 8, MidnightPalette.TEXT_MUTED);
+            context.text(font, Component.literal("No waypoints yet — create one in-world."), innerX, listTop + 8, MidnightPalette.TEXT_MUTED);
         } else {
             for (int i = 0; i < visibleRows; i++) {
                 int idx = scroll + i;
@@ -270,13 +270,13 @@ public final class WaypointsScreen extends Screen {
         }
 
         if (!status.isEmpty()) {
-            context.drawCenteredString(font, Component.literal(status), width / 2, height - 44, UiTokens.EMERALD_500);
+            context.centeredText(font, Component.literal(status), width / 2, height - 44, UiTokens.EMERALD_500);
         }
         contextMenu.render(context, font, mouseX, mouseY);
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 
-    private void drawWaypointCard(GuiGraphics context, int x, int y, int w, Row row, boolean hovered) {
+    private void drawWaypointCard(GuiGraphicsExtractor context, int x, int y, int w, Row row, boolean hovered) {
         int rr = MidnightShapes.controlRadius(CARD_H);
         int fill = hovered ? MidnightPalette.PANEL_FILL_RAISED : MidnightPalette.PANEL_FILL;
         MidnightShapes.fillRoundedFrame(context, x, y, w, CARD_H, rr, fill, hovered ? MidnightPalette.BORDER_FOCUS : MidnightPalette.BORDER_LIGHT);
@@ -290,8 +290,8 @@ public final class WaypointsScreen extends Screen {
         int textMax = Math.max(48, w - (textX - x) - btnReserve - UiTokens.SP_3);
         String line1 = font.plainSubstrByWidth(row.title(), textMax);
         String line2 = font.plainSubstrByWidth(row.subtitle(), textMax);
-        context.drawString(font, Component.literal(line1), textX, y + UiTokens.SP_2 + 2, MidnightPalette.TEXT_PRIMARY);
-        context.drawString(font, Component.literal(line2), textX, y + UiTokens.SP_2 + 14, MidnightPalette.TEXT_SECONDARY);
+        context.text(font, Component.literal(line1), textX, y + UiTokens.SP_2 + 2, MidnightPalette.TEXT_PRIMARY);
+        context.text(font, Component.literal(line2), textX, y + UiTokens.SP_2 + 14, MidnightPalette.TEXT_SECONDARY);
 
         if (!row.editable()) {
             int tagW = 52;

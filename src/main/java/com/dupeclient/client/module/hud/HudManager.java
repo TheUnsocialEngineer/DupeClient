@@ -16,7 +16,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -180,7 +180,7 @@ public final class HudManager {
         bindWasDown = down;
     }
 
-    public void render(GuiGraphics context) {
+    public void render(GuiGraphicsExtractor context) {
         Minecraft client = Minecraft.getInstance();
         if (client == null || client.player == null || client.options == null) {
             return;
@@ -244,12 +244,12 @@ public final class HudManager {
         return sum / tpsSamples.size();
     }
 
-    private void drawScaledText(GuiGraphics context, Font tr, String text, int x, int y, int color) {
+    private void drawScaledText(GuiGraphicsExtractor context, Font tr, String text, int x, int y, int color) {
         float scale = (float) settings.textScale;
         context.pose().pushMatrix();
         context.pose().translate(x, y);
         context.pose().scale(scale, scale);
-        context.drawString(tr, text, 0, 0, color);
+        context.text(tr, text, 0, 0, color);
         context.pose().popMatrix();
     }
 

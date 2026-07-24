@@ -4,7 +4,7 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.modern.theme.MidnightShapes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.Util;
 
@@ -50,7 +50,7 @@ public final class GitHubRepoCard {
         return repoUrl;
     }
 
-    public void render(GuiGraphics context, Font tr, int x, int y, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor context, Font tr, int x, int y, int mouseX, int mouseY) {
         boolean hover = contains(mouseX, mouseY, x, y);
         int border = hover ? UiTokens.argb(0xAA, UiTokens.MINT_500) : 0xFF27272A;
         MidnightShapes.fillRoundedFrame(context, x, y, CARD_W, CARD_H, CARD_RADIUS, CARD_BG, border);
@@ -85,8 +85,8 @@ public final class GitHubRepoCard {
 
         int textX = x + 8 + ICON + 6;
         String shown = tr.plainSubstrByWidth(title, CARD_W - ICON - 22);
-        context.drawString(tr, shown, textX, y + 8, UiTokens.MINT_300);
-        context.drawString(tr, "View on GitHub", textX, y + 20, hover ? 0xFF93C5FD : 0xFF60A5FA);
+        context.text(tr, shown, textX, y + 8, UiTokens.MINT_300);
+        context.text(tr, "View on GitHub", textX, y + 20, hover ? 0xFF93C5FD : 0xFF60A5FA);
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int x, int y, int button) {

@@ -10,7 +10,7 @@ import org.lwjgl.glfw.GLFW;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -29,7 +29,7 @@ public final class HudPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
@@ -49,8 +49,8 @@ public final class HudPanel extends Panel {
 
         boolean active = HudManager.INSTANCE.isActive();
         int stateColor = active ? UiTokens.ACCENT : 0xFFFF9A7A;
-        context.drawString(tr, Component.literal("Overlay"), cx, cy, UiTokens.TEXT_DIM);
-        context.drawString(tr, Component.literal(active ? "Enabled" : "Disabled"), cx + 52, cy, stateColor);
+        context.text(tr, Component.literal("Overlay"), cx, cy, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(active ? "Enabled" : "Disabled"), cx + 52, cy, stateColor);
         cy += 16;
 
         UiComponents.drawPillActionButton(tr, context, cx, cy, cw, BTN_H, "Open HUD Editor", UiComponents.PillActionStyle.PRIMARY_BLUE);
@@ -72,7 +72,7 @@ public final class HudPanel extends Panel {
 
         height = bodyTopOffset() + 8 + CARD_H + 10;
         if (captureMode != CaptureMode.NONE) {
-            context.drawString(tr,
+            context.text(tr,
                     Component.literal("Press a key (ESC clears bind)"),
                     cx, y + height - 10, UiTokens.ACCENT);
             height += 10;

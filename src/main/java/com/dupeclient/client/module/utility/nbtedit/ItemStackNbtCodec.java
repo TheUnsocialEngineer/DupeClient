@@ -79,6 +79,6 @@ public final class ItemStackNbtCodec {
         if (stack == null || stack.isEmpty()) {
             return "empty";
         }
-        return stack.getCount() + "x " + stack.getItem().getName().getString();
+        return stack.getCount() + "x " + stack.getHoverName().getString();
     }
 }

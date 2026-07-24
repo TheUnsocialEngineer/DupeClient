@@ -8,7 +8,7 @@ import java.lang.reflect.Field;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -55,7 +55,7 @@ public class MultiplayerScreenMixin {
             int buttonHeight = 14;
             int rightX = screen.width - margin - buttonWidth;
             int bottomY = screen.height - 60;
-            self.addRenderableWidget(CustomButtonWidget.createSmall(
+            ((ScreenAccessor) self).uiUtils$addRenderableWidget(CustomButtonWidget.createSmall(
                     rightX,
                     bottomY + buttonHeight + spacing,
                     buttonWidth,
@@ -83,23 +83,23 @@ public class MultiplayerScreenMixin {
         int buttonHeight = 14;
         int bottomY = screen.height - 60;
 
-        self.addRenderableWidget(CustomButtonWidget.createSmall(margin, bottomY, buttonWidth, Component.nullToEmpty("Bypass"), button -> {
+        ((ScreenAccessor) self).uiUtils$addRenderableWidget(CustomButtonWidget.createSmall(margin, bottomY, buttonWidth, Component.nullToEmpty("Bypass"), button -> {
             SharedVariables.bypassResourcePack = !SharedVariables.bypassResourcePack;
             button.setMessage(Component.literal(SharedVariables.bypassResourcePack ? "§aBypass" : "Bypass"));
         }));
 
-        self.addRenderableWidget(CustomButtonWidget.createSmall(
+        ((ScreenAccessor) self).uiUtils$addRenderableWidget(CustomButtonWidget.createSmall(
                 margin, bottomY + buttonHeight + spacing, buttonWidth, Component.nullToEmpty("Deny"), button -> {
                     SharedVariables.resourcePackForceDeny = !SharedVariables.resourcePackForceDeny;
                     button.setMessage(Component.literal(SharedVariables.resourcePackForceDeny ? "§aDeny" : "Deny"));
                 }));
 
         int rightX = screen.width - margin - buttonWidth;
-        self.addRenderableWidget(CustomButtonWidget.createSmall(
+        ((ScreenAccessor) self).uiUtils$addRenderableWidget(CustomButtonWidget.createSmall(
                 rightX, bottomY, buttonWidth, Component.nullToEmpty("User"), button -> mc.setScreen(new UsernameScreen(self, mc))));
 
         if (!FabricLoader.getInstance().isModLoaded("viafabricplus")) {
-            self.addRenderableWidget(CustomButtonWidget.createSmall(
+            ((ScreenAccessor) self).uiUtils$addRenderableWidget(CustomButtonWidget.createSmall(
                     rightX,
                     bottomY + buttonHeight + spacing,
                     buttonWidth,
@@ -151,10 +151,10 @@ public class MultiplayerScreenMixin {
         }
 
         @Override
-        public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-            super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 30, 0xFFFFFF);
-            context.drawCenteredString(
+        public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+            super.extractRenderState(context, mouseX, mouseY, delta);
+            context.centeredText(this.font, this.title, this.width / 2, this.height / 2 - 30, 0xFFFFFF);
+            context.centeredText(
                     this.font, Component.literal(this.message), this.width / 2, this.height / 2, 0xFF5555);
         }
     }
@@ -200,10 +200,10 @@ public class MultiplayerScreenMixin {
         }
 
         @Override
-        public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-            super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
-            this.usernameField.render(context, mouseX, mouseY, delta);
+        public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+            super.extractRenderState(context, mouseX, mouseY, delta);
+            context.centeredText(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
+            this.usernameField.extractRenderState(context, mouseX, mouseY, delta);
         }
     }
 }

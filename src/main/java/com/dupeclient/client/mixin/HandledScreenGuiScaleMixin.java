@@ -15,14 +15,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -121,7 +121,7 @@ public abstract class HandledScreenGuiScaleMixin {
     private int dupeclient$scalePushes;
 
     @Unique
-    private void dupeclient$pushBackgroundScale(GuiGraphics context) {
+    private void dupeclient$pushBackgroundScale(GuiGraphicsExtractor context) {
         if (!HandledScreenGuiScale.isActive()) {
             return;
         }
@@ -130,7 +130,7 @@ public abstract class HandledScreenGuiScaleMixin {
     }
 
     @Unique
-    private void dupeclient$popOneScale(GuiGraphics context) {
+    private void dupeclient$popOneScale(GuiGraphicsExtractor context) {
         if (dupeclient$scalePushes <= 0) {
             return;
         }
@@ -139,52 +139,52 @@ public abstract class HandledScreenGuiScaleMixin {
     }
 
     @Unique
-    private void dupeclient$clearLeakedScales(GuiGraphics context) {
+    private void dupeclient$clearLeakedScales(GuiGraphicsExtractor context) {
         while (dupeclient$scalePushes > 0) {
             HandledScreenGuiScale.popScale(context);
             dupeclient$scalePushes--;
         }
     }
 
-    @Inject(method = "renderBackground", at = @At("HEAD"))
-    private void dupeclient$syncBeforeBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    @Inject(method = "extractBackground", at = @At("HEAD"))
+    private void dupeclient$syncBeforeBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         dupeclient$syncGuiPosition();
     }
 
     /** {@link AbstractContainerScreen#renderBg} is abstract; wrap the call from {@link AbstractContainerScreen#renderBackground}. */
     @Inject(
-            method = "renderBackground",
+            method = "extractBackground",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderBg(Lnet/minecraft/client/gui/GuiGraphics;FII)V",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderBg(Lnet/minecraft/client/gui/GuiGraphicsExtractor;FII)V",
                     shift = At.Shift.BEFORE))
-    private void dupeclient$scaleBackgroundHead(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void dupeclient$scaleBackgroundHead(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         dupeclient$pushBackgroundScale(context);
     }
 
     @Inject(
-            method = "renderBackground",
+            method = "extractBackground",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderBg(Lnet/minecraft/client/gui/GuiGraphics;FII)V",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderBg(Lnet/minecraft/client/gui/GuiGraphicsExtractor;FII)V",
                     shift = At.Shift.AFTER))
-    private void dupeclient$scaleBackgroundTail(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void dupeclient$scaleBackgroundTail(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         dupeclient$popOneScale(context);
     }
 
-    @Inject(method = "renderContents", at = @At("HEAD"))
-    private void dupeclient$syncBeforeMain(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    @Inject(method = "extractContents", at = @At("HEAD"))
+    private void dupeclient$syncBeforeMain(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         dupeclient$syncGuiPosition();
         dupeclient$layoutHandledWidgets();
     }
 
     @Inject(
-            method = "renderContents",
+            method = "extractContents",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderLabels(Lnet/minecraft/client/gui/GuiGraphics;II)V",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderLabels(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
                     shift = At.Shift.BEFORE))
-    private void dupeclient$scaleSlotsHead(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void dupeclient$scaleSlotsHead(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         if (HandledScreenGuiScale.isActive()) {
             HandledScreenGuiScale.pushScaleLocal(context, imageWidth, imageHeight);
             dupeclient$scalePushes++;
@@ -192,22 +192,22 @@ public abstract class HandledScreenGuiScaleMixin {
     }
 
     @Inject(
-            method = "renderContents",
+            method = "extractContents",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderSlotHighlightFront(Lnet/minecraft/client/gui/GuiGraphics;)V",
+                    target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderSlotHighlightFront(Lnet/minecraft/client/gui/GuiGraphicsExtractor;)V",
                     shift = At.Shift.AFTER))
-    private void dupeclient$scaleSlotsTail(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void dupeclient$scaleSlotsTail(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         dupeclient$popOneScale(context);
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void dupeclient$clearScaleStackAfterRender(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void dupeclient$clearScaleStackAfterRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         dupeclient$clearLeakedScales(context);
     }
 
-    @Inject(method = "renderBackground", at = @At("TAIL"))
-    private void dupeclient$clearScaleStackAfterBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    @Inject(method = "extractBackground", at = @At("TAIL"))
+    private void dupeclient$clearScaleStackAfterBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         dupeclient$clearLeakedScales(context);
     }
 
@@ -255,35 +255,35 @@ public abstract class HandledScreenGuiScaleMixin {
 
     // Scaled GUI: vanilla mis-labels panel clicks as THROW (-999).
     @ModifyVariable(
-            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ClickType;)V",
+            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V",
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 0)
-    private ClickType dupeclient$correctMisclassifiedThrow(
-            ClickType actionType, Slot slot, int slotId, int button) {
+    private ContainerInput dupeclient$correctMisclassifiedThrow(
+            ContainerInput actionType, Slot slot, int slotId, int button) {
         if (!HandledScreenGuiScale.isActive() || slot == null) {
             return actionType;
         }
         if (dupeclient$shiftClick) {
-            if (actionType == ClickType.PICKUP
-                    || (actionType == ClickType.THROW && slotId == -999)) {
-                return ClickType.QUICK_MOVE;
+            if (actionType == ContainerInput.PICKUP
+                    || (actionType == ContainerInput.THROW && slotId == -999)) {
+                return ContainerInput.QUICK_MOVE;
             }
             return actionType;
         }
-        if (actionType == ClickType.THROW && slotId == -999) {
-            return ClickType.PICKUP;
+        if (actionType == ContainerInput.THROW && slotId == -999) {
+            return ContainerInput.PICKUP;
         }
         return actionType;
     }
 
     /** Mirror vanilla quick-move stack bookkeeping when we remap shift clicks. */
     @Inject(
-            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ClickType;)V",
+            method = "slotClicked(Lnet/minecraft/world/inventory/Slot;IILnet/minecraft/world/inventory/ContainerInput;)V",
             at = @At("HEAD"))
     private void dupeclient$prepareQuickMoveStack(
-            Slot slot, int slotId, int button, ClickType actionType, CallbackInfo ci) {
-        if (!HandledScreenGuiScale.isActive() || actionType != ClickType.QUICK_MOVE || slot == null) {
+            Slot slot, int slotId, int button, ContainerInput actionType, CallbackInfo ci) {
+        if (!HandledScreenGuiScale.isActive() || actionType != ContainerInput.QUICK_MOVE || slot == null) {
             return;
         }
         lastQuickMoved = slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY;

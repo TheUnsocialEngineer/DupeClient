@@ -264,7 +264,7 @@ public final class PacketSnifferManager {
         String line = direction == PacketDirection.S2C ? "Blocked S2C: " + name : "Blocked C2S: " + name;
         MutableComponent msg = Component.literal("[PacketSniffer] ").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
                 .append(Component.literal(line).withStyle(ChatFormatting.GRAY));
-        client.player.displayClientMessage(msg, false);
+        client.player.sendSystemMessage(msg);
     }
 
     private static boolean isKeepAliveName(String name) {
@@ -460,7 +460,7 @@ public final class PacketSnifferManager {
         }
         MutableComponent line = Component.literal("[PacketSniffer] ").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
                 .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
-        client.player.displayClientMessage(line, false);
+        client.player.sendSystemMessage(line);
     }
 
     private void trimEntriesLocked() {

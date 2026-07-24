@@ -23,7 +23,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
@@ -223,7 +223,7 @@ public final class MacroRuntime {
             case CLICK_SLOT -> {
                 if (client.screen instanceof AbstractContainerScreen<?> hs) {
                     AbstractContainerMenu handler = hs.getMenu();
-                    ClickType action = MacroSlotActions.toVanilla(step.clickSlotAction);
+                    ContainerInput action = MacroSlotActions.toVanilla(step.clickSlotAction);
                     MacroAutomation.clickSlot(client, handler, step.clickSlotId, action, step.clickSlotButton);
                 }
                 yield true;

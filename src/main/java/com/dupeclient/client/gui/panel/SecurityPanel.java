@@ -9,7 +9,7 @@ import com.dupeclient.client.core.session.PresenceRosterSync;
 import com.dupeclient.client.module.serverpassword.ServerPasswordScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import com.dupeclient.client.module.security.SecurityManager;
 import com.dupeclient.client.module.security.SecurityProfileStore;
@@ -64,7 +64,7 @@ public final class SecurityPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (this.collapsed) {
             return;
@@ -86,8 +86,8 @@ public final class SecurityPanel extends Panel {
 
         if (HubModuleRules.viewerRestricted() || PresenceRosterSync.isRosterPending()) {
             int color = HubModuleRules.viewerRestricted() ? 0xFFFF9A6A : UiTokens.ACCENT;
-            context.drawString(tr, Component.literal("Staff roster: " + PresenceRosterSync.statusLine()), rx, row, color);
-            context.drawString(tr, Component.literal(HubModuleRules.blockReason()), rx, row + 11, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("Staff roster: " + PresenceRosterSync.statusLine()), rx, row, color);
+            context.text(tr, Component.literal(HubModuleRules.blockReason()), rx, row + 11, UiTokens.TEXT_DIM);
             row += 24;
         }
 
@@ -159,7 +159,7 @@ public final class SecurityPanel extends Panel {
             if (shown >= 3) {
                 break;
             }
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(entry.line(), rowInner)), rx, timelineY + shown * 10, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(entry.line(), rowInner)), rx, timelineY + shown * 10, UiTokens.TEXT_DIM);
             shown++;
         }
         row = timelineY + Math.max(1, shown) * 10 + 4;

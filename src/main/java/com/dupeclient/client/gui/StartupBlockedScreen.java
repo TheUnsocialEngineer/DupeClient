@@ -4,7 +4,7 @@ import com.dupeclient.client.core.session.SessionBootstrap;
 import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
@@ -60,24 +60,24 @@ public final class StartupBlockedScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
-        super.render(context, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        extractBackground(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
 
         int panelW = Math.min(520, this.width - 32);
         int x = (this.width - panelW) / 2;
         int y = Math.max(UiTokens.SP_4, (this.height - 360) / 2) - contentScroll;
 
-        context.drawCenteredString(this.font, Component.literal("STARTUP CHECK FAILED"), this.width / 2, y, 0xFFFF6B6B);
+        context.centeredText(this.font, Component.literal("STARTUP CHECK FAILED"), this.width / 2, y, 0xFFFF6B6B);
         y += 16;
-        context.drawCenteredString(this.font, Component.literal("DupeClient cannot run until this is resolved."), this.width / 2, y, UiTokens.SLATE_200);
+        context.centeredText(this.font, Component.literal("DupeClient cannot run until this is resolved."), this.width / 2, y, UiTokens.SLATE_200);
         y += 18;
 
         String reason = SessionBootstrap.INSTANCE.lastReason();
         drawWrapped(context, "Reason: " + reason, x, y, panelW, 0xFFFFB4B4);
         y += wrappedHeight(reason, panelW) + UiTokens.SP_3;
 
-        context.drawString(this.font, Component.literal("Related files:"), x, y, UiTokens.SLATE_200);
+        context.text(this.font, Component.literal("Related files:"), x, y, UiTokens.SLATE_200);
         y += 12;
         for (String fileLine : fileLines()) {
             drawWrapped(context, "• " + fileLine, x + UiTokens.SP_2, y, panelW - UiTokens.SP_2, 0xFF94A3B8);
@@ -85,11 +85,11 @@ public final class StartupBlockedScreen extends Screen {
         }
 
         y += UiTokens.SP_2;
-        context.drawString(this.font, Component.literal("Verify the mod jar is clean:"), x, y, UiTokens.SLATE_200);
+        context.text(this.font, Component.literal("Verify the mod jar is clean:"), x, y, UiTokens.SLATE_200);
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
         int overlay = UiTokens.argb(0xCC, 0x3A0A0A);
         context.fill(0, 0, this.width, this.height, overlay);
@@ -126,9 +126,9 @@ public final class StartupBlockedScreen extends Screen {
         return lines;
     }
 
-    private void drawWrapped(GuiGraphics context, String text, int x, int y, int maxWidth, int color) {
+    private void drawWrapped(GuiGraphicsExtractor context, String text, int x, int y, int maxWidth, int color) {
         for (var line : this.font.split(Component.literal(text), maxWidth)) {
-            context.drawString(this.font, line, x, y, color);
+            context.text(this.font, line, x, y, color);
             y += 10;
         }
     }

@@ -6,7 +6,7 @@ import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.overlay.IngameOverlayHost;
 import com.dupeclient.client.gui.render.UiNativeRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -64,18 +64,18 @@ public class ClientGuiScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         applyFullWindowBounds();
-        super.renderBackground(context, mouseX, mouseY, deltaTicks);
+        super.extractBackground(context, mouseX, mouseY, deltaTicks);
         UiDraw.fillMidnightBackground(context, this.width, this.height);
         hub.render(context, this.font, mouseX, mouseY, deltaTicks, this.width, this.height);
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         applyFullWindowBounds();
         hub.updateNavHover(mouseX, mouseY);
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class ClientGuiScreen extends Screen {
             return true;
         }
         for (Panel panel : DupeClient.getGuiManager().getPanels()) {
-            if (panel.isVisible() && panel.charTyped(charInput.codepoint(), charInput.modifiers())) {
+            if (panel.isVisible() && panel.charTyped(charInput.codepoint(), 0)) {
                 return true;
             }
         }

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class ServerProfileCard {
@@ -58,7 +58,7 @@ public final class ServerProfileCard {
         }
     }
 
-    public static void render(GuiGraphics context, Font tr) {
+    public static void render(GuiGraphicsExtractor context, Font tr) {
         if (!visible || LINES.isEmpty()) {
             return;
         }
@@ -74,7 +74,7 @@ public final class ServerProfileCard {
         int lineY = y;
         for (int i = 0; i < LINES.size(); i++) {
             ChatFormatting fmt = i == 0 ? ChatFormatting.AQUA : ChatFormatting.GRAY;
-            context.drawString(tr, Component.literal(LINES.get(i)).withStyle(fmt), x, lineY, 0xFFFFFF);
+            context.text(tr, Component.literal(LINES.get(i)).withStyle(fmt), x, lineY, 0xFFFFFF);
             lineY += 10;
         }
     }

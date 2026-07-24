@@ -600,7 +600,7 @@ public class PacketUtilsManager {
         Component msg = Component.literal(line).withStyle(ChatFormatting.GRAY);
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(msg, false);
+                client.player.sendSystemMessage(msg);
             }
         });
     }
@@ -633,7 +633,7 @@ public class PacketUtilsManager {
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(line, false);
+                client.player.sendSystemMessage(line);
             }
         });
     }

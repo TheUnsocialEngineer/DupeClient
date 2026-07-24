@@ -5,7 +5,7 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -44,7 +44,7 @@ public class Panel {
         this.height = height;
     }
 
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!visible) {
             return;
         }
@@ -66,13 +66,13 @@ public class Panel {
         context.fill(hx, hy + hh - 1, hx + hw, hy + hh, UiTokens.argb(0x88, UiTokens.MINT_500));
         UiDraw.ring(context, x, y, width, renderHeight, UiTokens.argb(0x66, UiTokens.SLATE_600));
 
-        context.drawString(
+        context.text(
                 Minecraft.getInstance().font,
                 title, x + UiTokens.SP_3, y + 8, UiTokens.TEXT
         );
 
         String marker = collapsed ? "›" : "⌄";
-        context.drawString(
+        context.text(
                 Minecraft.getInstance().font,
                 Component.literal(marker), x + width - UiTokens.SP_4, y + 8, UiTokens.MINT_300
         );

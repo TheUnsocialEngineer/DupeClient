@@ -127,7 +127,7 @@ public final class MacroKeyPress {
         keyboard.dupeclient$invokeOnKey(window, GLFW.GLFW_PRESS, input);
         Integer codepoint = codepointForKey(keyCode, modifiers);
         if (codepoint != null) {
-            keyboard.dupeclient$invokeOnChar(window, new CharacterEvent(codepoint, modifiers));
+            keyboard.dupeclient$invokeOnChar(window, new CharacterEvent(codepoint));
         }
         keyboard.dupeclient$invokeOnKey(window, GLFW.GLFW_RELEASE, input);
     }

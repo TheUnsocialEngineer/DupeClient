@@ -7,7 +7,7 @@ import com.dupeclient.client.module.waypoint.DupeClientWaypointManager;
 import com.dupeclient.client.module.waypoint.WaypointColors;
 import com.dupeclient.client.module.waypoint.WaypointShape;
 import com.dupeclient.client.module.waypoint.WaypointShareAudience;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -154,17 +154,17 @@ public final class WaypointEditScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, width, height);
         int panelH = height - 48;
         UiDraw.cardElevated(context, panelX, PANEL_TOP(), panelW, panelH, 10);
-        context.drawCenteredString(font, title, width / 2, PANEL_TOP() + 10, 0xFFE8EEF8);
-        context.drawString(font, Component.literal("Name"), innerX, PANEL_TOP() + 26, 0xFFAFC7FF);
-        context.drawString(font, Component.literal("Coordinates"), innerX, PANEL_TOP() + 54, 0xFFAFC7FF);
+        context.centeredText(font, title, width / 2, PANEL_TOP() + 10, 0xFFE8EEF8);
+        context.text(font, Component.literal("Name"), innerX, PANEL_TOP() + 26, 0xFFAFC7FF);
+        context.text(font, Component.literal("Coordinates"), innerX, PANEL_TOP() + 54, 0xFFAFC7FF);
         context.fill(innerX + innerW - 28, PANEL_TOP() + 118, innerX + innerW - 8, PANEL_TOP() + 138, 0xFF000000 | (colorArgb & 0x00FFFFFF));
         if (!status.isEmpty()) {
-            context.drawCenteredString(font, Component.literal(status), width / 2, height - 44, 0xFFF87171);
+            context.centeredText(font, Component.literal(status), width / 2, height - 44, 0xFFF87171);
         }
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 }

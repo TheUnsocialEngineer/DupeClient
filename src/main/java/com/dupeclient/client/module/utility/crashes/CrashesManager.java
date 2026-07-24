@@ -16,7 +16,7 @@ import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -262,11 +262,11 @@ public final class CrashesManager {
         }
 
         if (client.gameMode != null) {
-            client.gameMode.handleInventoryMouseClick(
+            client.gameMode.handleContainerInput(
                     client.player.inventoryMenu.containerId,
                     slot,
                     hotbarSlot,
-                    ClickType.SWAP,
+                    ContainerInput.SWAP,
                     client.player);
         }
         return hotbarSlot;
@@ -436,7 +436,7 @@ public final class CrashesManager {
                 .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(line, false);
+                client.player.sendSystemMessage(line);
             }
         });
     }

@@ -7,7 +7,7 @@ import com.mojang.realmsclient.RealmsMainScreen;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
@@ -53,7 +53,7 @@ public class DupeMainMenuScreen extends TitleScreen {
         int smallWidth = 150;
         int smallGap = 4;
         addRenderableWidget(new StylishButtonWidget(x, startY + 120, smallWidth, buttonHeight, Component.literal("Options"),
-                () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))));
+                () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options, false))));
         addRenderableWidget(new StylishButtonWidget(x + smallWidth + smallGap, startY + 120, smallWidth, buttonHeight, Component.literal("Quit Game"),
                 () -> this.minecraft.stop()));
     }
@@ -68,10 +68,10 @@ public class DupeMainMenuScreen extends TitleScreen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         disableSplashText();
-        super.render(context, mouseX, mouseY, delta);
-        context.drawString(this.font, Component.literal("DupeClient " + DupeClient.BUILD_TAG), 6, 6, 0xFFAED0FF);
+        super.extractRenderState(context, mouseX, mouseY, delta);
+        context.text(this.font, Component.literal("DupeClient " + DupeClient.BUILD_TAG), 6, 6, 0xFFAED0FF);
     }
 
     private void ensureStars() {
@@ -94,7 +94,7 @@ public class DupeMainMenuScreen extends TitleScreen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (appliedSettingsRevision != DupeClient.getVisualSettingsRevision()) {
             invalidateVisualCache();
             appliedSettingsRevision = DupeClient.getVisualSettingsRevision();

@@ -4,7 +4,7 @@ import com.dupeclient.client.gui.HandledScreenGuiScale;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,7 +24,7 @@ public abstract class InGameHudStatusEffectMixin {
     private Minecraft minecraft;
 
     @Inject(method = "renderEffects", at = @At("HEAD"))
-    private void dupeclient$offsetStatusEffectsHead(GuiGraphics context, DeltaTracker tickCounter, CallbackInfo ci) {
+    private void dupeclient$offsetStatusEffectsHead(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {
         int offset = effectOffset();
         if (offset > 0) {
             context.pose().translate(offset, 0.0f);
@@ -32,7 +32,7 @@ public abstract class InGameHudStatusEffectMixin {
     }
 
     @Inject(method = "renderEffects", at = @At("RETURN"))
-    private void dupeclient$offsetStatusEffectsReturn(GuiGraphics context, DeltaTracker tickCounter, CallbackInfo ci) {
+    private void dupeclient$offsetStatusEffectsReturn(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {
         int offset = effectOffset();
         if (offset > 0) {
             context.pose().translate(-offset, 0.0f);

@@ -1,9 +1,9 @@
 package com.dupeclient.client.module.macro;
 
 import java.util.Locale;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
-/** Editor cycle + parsing for {@link ClickType} names on {@link MacroStepType#CLICK_SLOT}. */
+/** Editor cycle + parsing for {@link ContainerInput} names on {@link MacroStepType#CLICK_SLOT}. */
 public final class MacroSlotActions {
     private static final String[] CYCLE = {
             "PICKUP",
@@ -33,7 +33,7 @@ public final class MacroSlotActions {
             }
         }
         try {
-            ClickType.valueOf(u);
+            ContainerInput.valueOf(u);
             return u;
         } catch (IllegalArgumentException e) {
             return "QUICK_MOVE";
@@ -50,11 +50,11 @@ public final class MacroSlotActions {
         return CYCLE[0];
     }
 
-    public static ClickType toVanilla(String raw) {
+    public static ContainerInput toVanilla(String raw) {
         try {
-            return ClickType.valueOf(normalize(raw));
+            return ContainerInput.valueOf(normalize(raw));
         } catch (IllegalArgumentException e) {
-            return ClickType.QUICK_MOVE;
+            return ContainerInput.QUICK_MOVE;
         }
     }
 }

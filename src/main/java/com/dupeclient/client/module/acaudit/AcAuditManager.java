@@ -32,7 +32,7 @@ import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 public final class AcAuditManager {
     public static final AcAuditManager INSTANCE = new AcAuditManager();
@@ -279,10 +279,10 @@ public final class AcAuditManager {
             case ZERO -> 0;
             case CUSTOM -> settings.manualClickCustomRev;
         };
-        ClickType action = resolveManualAction(settings.manualClickAction);
+        ContainerInput action = resolveManualAction(settings.manualClickAction);
         if (settings.manualClickPrePickupSlot >= 0) {
             client.getConnection().send(ClickSlotPackets.create(
-                    syncId, revision, settings.manualClickPrePickupSlot, 0, ClickType.PICKUP));
+                    syncId, revision, settings.manualClickPrePickupSlot, 0, ContainerInput.PICKUP));
         }
         int count = Math.max(1, settings.manualClickCount);
         for (int i = 0; i < count; i++) {
@@ -473,7 +473,7 @@ public final class AcAuditManager {
                 probe.revision,
                 (short) probe.slot,
                 (byte) probe.button,
-                ClickType.PICKUP,
+                ContainerInput.PICKUP,
                 new Int2ObjectArrayMap<>(),
                 HashedStack.EMPTY));
         slotSyncPacketsSent++;
@@ -558,15 +558,15 @@ public final class AcAuditManager {
         }
     }
 
-    private static ClickType resolveManualAction(AcAuditSettings.ManualClickAction action) {
+    private static ContainerInput resolveManualAction(AcAuditSettings.ManualClickAction action) {
         return switch (action) {
-            case PICKUP -> ClickType.PICKUP;
-            case QUICK_MOVE -> ClickType.QUICK_MOVE;
-            case SWAP -> ClickType.SWAP;
-            case CLONE -> ClickType.CLONE;
-            case THROW -> ClickType.THROW;
-            case QUICK_CRAFT -> ClickType.QUICK_CRAFT;
-            case PICKUP_ALL -> ClickType.PICKUP_ALL;
+            case PICKUP -> ContainerInput.PICKUP;
+            case QUICK_MOVE -> ContainerInput.QUICK_MOVE;
+            case SWAP -> ContainerInput.SWAP;
+            case CLONE -> ContainerInput.CLONE;
+            case THROW -> ContainerInput.THROW;
+            case QUICK_CRAFT -> ContainerInput.QUICK_CRAFT;
+            case PICKUP_ALL -> ContainerInput.PICKUP_ALL;
         };
     }
 
@@ -609,7 +609,7 @@ public final class AcAuditManager {
     private void feedback(String message) {
         Minecraft client = Minecraft.getInstance();
         if (client != null && client.player != null) {
-            client.player.displayClientMessage(Component.literal("[AC Audit] " + message).withStyle(ChatFormatting.AQUA), false);
+            client.player.sendSystemMessage(Component.literal("[AC Audit] " + message).withStyle(ChatFormatting.AQUA));
         }
     }
 

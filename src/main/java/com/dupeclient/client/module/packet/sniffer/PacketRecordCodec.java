@@ -49,7 +49,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -117,7 +117,7 @@ public final class PacketRecordCodec {
             return List.of(new PacketFieldModel("type", "String", typeName, false, String.class));
         }
         if (ServerboundContainerClickPacket.class.isAssignableFrom(clazz)) {
-            return List.of(new PacketFieldModel("type", "String", typeName, false, String.class), new PacketFieldModel("syncId", "int", "0", true, Integer.TYPE), new PacketFieldModel("revision", "int", "0", true, Integer.TYPE), new PacketFieldModel("slot", "short", "0", true, Short.TYPE), new PacketFieldModel("button", "byte", "0", true, Byte.TYPE), new PacketFieldModel("actionType", "SlotActionType", ClickType.PICKUP.name(), true, ClickType.class));
+            return List.of(new PacketFieldModel("type", "String", typeName, false, String.class), new PacketFieldModel("syncId", "int", "0", true, Integer.TYPE), new PacketFieldModel("revision", "int", "0", true, Integer.TYPE), new PacketFieldModel("slot", "short", "0", true, Short.TYPE), new PacketFieldModel("button", "byte", "0", true, Byte.TYPE), new PacketFieldModel("actionType", "SlotActionType", ContainerInput.PICKUP.name(), true, ContainerInput.class));
         }
         List<PacketFieldModel> classDesc = PacketClassCodec.describeType(typeName, clazz, client);
         if (!classDesc.isEmpty()) {
@@ -272,7 +272,7 @@ public final class PacketRecordCodec {
     }
 
     private static boolean isEditableType(Class<?> type, @Nullable Type genericType) {
-        if (type == String.class || type == Integer.TYPE || type == Integer.class || type == Short.TYPE || type == Short.class || type == Byte.TYPE || type == Byte.class || type == Long.TYPE || type == Long.class || type == Float.TYPE || type == Float.class || type == Double.TYPE || type == Double.class || type == Boolean.TYPE || type == Boolean.class || type == UUID.class || type == Identifier.class || type == RecipeDisplayId.class || type == BlockHitResult.class || type == ItemStack.class || type == Instant.class || type == Vec3i.class || type == GameType.class || type == Difficulty.class || type == Tag.class || type == MessageSignature.class || type == LastSeenMessages.Update.class || type.isEnum() || type == InteractionHand.class || type == BlockPos.class || type == Direction.class || type == Vec3.class || type == ClickType.class) {
+        if (type == String.class || type == Integer.TYPE || type == Integer.class || type == Short.TYPE || type == Short.class || type == Byte.TYPE || type == Byte.class || type == Long.TYPE || type == Long.class || type == Float.TYPE || type == Float.class || type == Double.TYPE || type == Double.class || type == Boolean.TYPE || type == Boolean.class || type == UUID.class || type == Identifier.class || type == RecipeDisplayId.class || type == BlockHitResult.class || type == ItemStack.class || type == Instant.class || type == Vec3i.class || type == GameType.class || type == Difficulty.class || type == Tag.class || type == MessageSignature.class || type == LastSeenMessages.Update.class || type.isEnum() || type == InteractionHand.class || type == BlockPos.class || type == Direction.class || type == Vec3.class || type == ContainerInput.class) {
             return true;
         }
         if (type.isArray()) {
@@ -433,7 +433,7 @@ public final class PacketRecordCodec {
         int revision = PacketRecordCodec.parseInt(fields, "revision", 0);
         int slot = PacketRecordCodec.parseInt(fields, "slot", 0);
         int button = PacketRecordCodec.parseLabeledInt("ClickSlotC2SPacket", "button", fields, "button", 0);
-        ClickType action = PacketRecordCodec.parseEnum(fields.get("actionType"), ClickType.class, ClickType.PICKUP);
+        ContainerInput action = PacketRecordCodec.parseEnum(fields.get("actionType"), ContainerInput.class, ContainerInput.PICKUP);
         return new ServerboundContainerClickPacket(syncId, revision, (short)slot, (byte)button, action, (Int2ObjectMap)new Int2ObjectArrayMap(), HashedStack.EMPTY);
     }
 
@@ -622,8 +622,8 @@ public final class PacketRecordCodec {
         if (type == Vec3.class) {
             return PacketRecordCodec.parseVec3d(value);
         }
-        if (type == ClickType.class) {
-            return ClickType.valueOf((String)value.toUpperCase(Locale.ROOT));
+        if (type == ContainerInput.class) {
+            return ContainerInput.valueOf((String)value.toUpperCase(Locale.ROOT));
         }
         Object registryValue = PacketRecordCodec.decodeRegistryValue(type, value);
         if (registryValue != null) {
@@ -955,8 +955,8 @@ public final class PacketRecordCodec {
         if (type == Vec3.class) {
             return "0.0,0.0,0.0";
         }
-        if (type == ClickType.class) {
-            return ClickType.PICKUP.name();
+        if (type == ContainerInput.class) {
+            return ContainerInput.PICKUP.name();
         }
         if (type == Identifier.class) {
             return "minecraft:stone";

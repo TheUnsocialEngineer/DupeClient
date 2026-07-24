@@ -3,7 +3,7 @@ package com.dupeclient.client.module.utility.nbtedit;
 import com.dupeclient.client.gui.overlay.EditableTextBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.KeyEvent;
@@ -129,7 +129,7 @@ public final class SnbtTextAreaWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         Minecraft client = Minecraft.getInstance();
         Font tr = client.font;
         context.fill(getX(), getY(), getX() + width, getY() + height, 0xCC0F172A);
@@ -151,7 +151,7 @@ public final class SnbtTextAreaWidget extends AbstractWidget {
                 break;
             }
             String line = lineAt(lineIdx);
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(line, width - 10)), getX() + 5, drawY, 0xFFE2E8F0);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(line, width - 10)), getX() + 5, drawY, 0xFFE2E8F0);
             drawY += LINE_HEIGHT;
         }
 

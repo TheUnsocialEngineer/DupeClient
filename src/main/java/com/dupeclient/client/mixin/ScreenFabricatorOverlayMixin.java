@@ -3,7 +3,7 @@ package com.dupeclient.client.mixin;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlayScreen;
 import com.dupeclient.client.gui.overlay.IngameOverlayHost;
 import com.dupeclient.client.module.packet.sniffer.PacketWorkbenchScreen;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.ProgressScreen;
@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Screen.class)
 public abstract class ScreenFabricatorOverlayMixin {
     @Inject(method = "render", at = @At("TAIL"))
-    private void dupeclient$renderModuleOverlays(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    private void dupeclient$renderModuleOverlays(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         Screen screen = (Screen) (Object) this;
         if (screen instanceof AbstractContainerScreen
                 || screen instanceof IngameModuleOverlayScreen

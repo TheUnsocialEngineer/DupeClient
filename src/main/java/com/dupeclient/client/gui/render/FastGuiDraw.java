@@ -1,6 +1,6 @@
 package com.dupeclient.client.gui.render;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * Low-allocation GUI line drawing (2px strokes, fewer {@code fill} calls than 1×1 rasterization).
@@ -9,7 +9,7 @@ public final class FastGuiDraw {
     private FastGuiDraw() {
     }
 
-    public static void drawLine(GuiGraphics context, int x0, int y0, int x1, int y1, int color) {
+    public static void drawLine(GuiGraphicsExtractor context, int x0, int y0, int x1, int y1, int color) {
         int dx = Math.abs(x1 - x0);
         int dy = Math.abs(y1 - y0);
         int sx = x0 < x1 ? 1 : -1;

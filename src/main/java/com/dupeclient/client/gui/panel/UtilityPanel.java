@@ -20,7 +20,7 @@ import org.lwjgl.glfw.GLFW;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class UtilityPanel extends Panel {
@@ -93,7 +93,7 @@ public final class UtilityPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
@@ -116,7 +116,7 @@ public final class UtilityPanel extends Panel {
         height = bodyTopOffset() + UiTokens.UI_GAP + contentHeight() + UiTokens.SP_3;
 
         if (captureMode != CaptureMode.NONE) {
-            context.drawString(
+            context.text(
                     tr,
                     Component.literal("Press key to bind (ESC = unbind)"),
                     layout.rx,
@@ -125,7 +125,7 @@ public final class UtilityPanel extends Panel {
         }
     }
 
-    private void drawSubTabs(Font tr, GuiGraphics context, int rx, int y, int inner) {
+    private void drawSubTabs(Font tr, GuiGraphicsExtractor context, int rx, int y, int inner) {
         int third = (inner - GAP * 2) / 3;
         int x0 = rx;
         int x1 = rx + third + GAP;
@@ -135,7 +135,7 @@ public final class UtilityPanel extends Panel {
         UiComponents.drawSegmentTab(tr, context, x2, y, third, SUBTAB_H, "Fuzzer", subTab() == UtilitySubTab.ECONOMY_FUZZER);
     }
 
-    private void renderEconomyFuzzer(Font tr, GuiGraphics context, Layout layout, float delta) {
+    private void renderEconomyFuzzer(Font tr, GuiGraphicsExtractor context, Layout layout, float delta) {
         EconomyFuzzerSettings s = economyFuzzerManager.getSettings();
         SqliFuzzerManager sqli = SqliFuzzerManager.INSTANCE;
         MinimessageFuzzerManager mini = MinimessageFuzzerManager.INSTANCE;
@@ -176,23 +176,23 @@ public final class UtilityPanel extends Panel {
             y = rowY(body, 5, rows);
             UiComponents.drawOptionToggle(tr, context, layout.rx, y, layout.inner, "Destructive SQLi payloads", sqli.isDestructivePayloadsEnabled(), smoothToggle("util.sqliDest", sqli.isDestructivePayloadsEnabled(), delta));
             y = rowY(body, 6, rows);
-            context.drawString(tr, Component.literal("Command: /" + (sqli.getCommand().isBlank() ? "(set in overlay)" : sqli.getCommand())), layout.rx, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("Command: /" + (sqli.getCommand().isBlank() ? "(set in overlay)" : sqli.getCommand())), layout.rx, y + 2, UiTokens.TEXT_DIM);
         } else if ("minimessage".equals(tab)) {
             UiComponents.drawOptionToggle(tr, context, layout.rx, y, layout.inner, "MiniMessage running", mini.isRunning(), smoothToggle("util.miniRun", mini.isRunning(), delta));
             y = rowY(body, 5, rows);
-            context.drawString(tr, Component.literal("Target: " + (mini.getTarget().isBlank() ? "(set in overlay)" : mini.getTarget())), layout.rx, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("Target: " + (mini.getTarget().isBlank() ? "(set in overlay)" : mini.getTarget())), layout.rx, y + 2, UiTokens.TEXT_DIM);
             y = rowY(body, 6, rows);
-            context.drawString(tr, Component.literal("Send: " + mini.sendModeLabel()), layout.rx, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("Send: " + mini.sendModeLabel()), layout.rx, y + 2, UiTokens.TEXT_DIM);
         } else {
             UiComponents.drawOptionToggle(
                     tr, context, layout.rx, y, layout.inner, "Economy enabled", s.enabled,
                     smoothToggle("util.fuzzOn", s.enabled, delta));
             y = rowY(body, 5, rows);
-            context.drawString(tr, Component.literal("Pay command: /" + (s.payCommand == null || s.payCommand.isBlank() ? "pay" : s.payCommand)), layout.rx, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("Pay command: /" + (s.payCommand == null || s.payCommand.isBlank() ? "pay" : s.payCommand)), layout.rx, y + 2, UiTokens.TEXT_DIM);
         }
     }
 
-    private void renderChatGames(Font tr, GuiGraphics context, Layout layout, float delta) {
+    private void renderChatGames(Font tr, GuiGraphicsExtractor context, Layout layout, float delta) {
         ChatGamesSettings s = chatGamesManager.getSettings();
         int cardTop = layout.cardTop;
         int cardH = chatGamesCardHeight();
@@ -228,7 +228,7 @@ public final class UtilityPanel extends Panel {
                 smoothToggle("util.cgLeave", s.disableOnLeave, delta));
     }
 
-    private void renderCrashes(Font tr, GuiGraphics context, Layout layout, float delta) {
+    private void renderCrashes(Font tr, GuiGraphicsExtractor context, Layout layout, float delta) {
         CrashesSettings s = crashesManager.getSettings();
 
         int chestH = chestCardHeight();
@@ -644,7 +644,7 @@ public final class UtilityPanel extends Panel {
 
     private void drawBindRow(
             Font tr,
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int x,
             int y,
             int w,
@@ -659,7 +659,7 @@ public final class UtilityPanel extends Panel {
 
     private void drawIntSlider(
             Font tr,
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int x,
             int y,
             int w,

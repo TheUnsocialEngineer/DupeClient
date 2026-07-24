@@ -2,7 +2,7 @@ package com.dupeclient.client.mixin;
 
 import com.dupeclient.client.gui.HandledScreenGuiScale;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.EffectsInInventory;
 import org.spongepowered.asm.mixin.Final;
@@ -36,7 +36,7 @@ public abstract class StatusEffectsDisplayMixin {
     }
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void dupeclient$translateEffectColumnHead(GuiGraphics context, int mouseX, int mouseY, CallbackInfo ci) {
+    private void dupeclient$translateEffectColumnHead(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         int offset = effectOffset();
         if (offset > 0) {
             context.pose().translate(offset, 0.0f);
@@ -44,7 +44,7 @@ public abstract class StatusEffectsDisplayMixin {
     }
 
     @Inject(method = "render", at = @At("RETURN"))
-    private void dupeclient$translateEffectColumnReturn(GuiGraphics context, int mouseX, int mouseY, CallbackInfo ci) {
+    private void dupeclient$translateEffectColumnReturn(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         int offset = effectOffset();
         if (offset > 0) {
             context.pose().translate(-offset, 0.0f);

@@ -1,6 +1,6 @@
 package com.dupeclient.client.gui.overlay;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * Draggable in-game panel (Packet Fabricator style) shown while playing, with input priority over the world.
@@ -39,7 +39,7 @@ public interface IngameModuleOverlay {
                 && mouseY < overlayY() + panelHeight();
     }
 
-    void render(GuiGraphics context, int mouseX, int mouseY, float delta);
+    void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta);
 
     /** @return true if the event was consumed (blocks game input). */
     boolean mouseClicked(double mouseX, double mouseY, int button);

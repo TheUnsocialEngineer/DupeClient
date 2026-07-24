@@ -66,14 +66,15 @@ import com.dupeclient.client.module.waypoint.DupeClientWaypointManager;
 import com.dupeclient.client.module.waypoint.WaypointWorldRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +136,7 @@ public final class DupeClient implements ClientModInitializer {
             LookNbtCommand.register(dispatcher);
             NbtEditCommand.register(dispatcher);
             ServerPasswordCommands.register(dispatcher);
-            dispatcher.register(ClientCommandManager.literal("serversearch").executes(ctx -> {
+            dispatcher.register(ClientCommands.literal("serversearch").executes(ctx -> {
                 if (SlashCommandGate.blockExploit(ctx.getSource())) {
                     return 0;
                 }
@@ -145,8 +146,8 @@ public final class DupeClient implements ClientModInitializer {
                 }
                 return 1;
             }));
-            dispatcher.register(ClientCommandManager.literal("server")
-                    .then(ClientCommandManager.literal("plugins").executes(ctx -> {
+            dispatcher.register(ClientCommands.literal("server")
+                    .then(ClientCommands.literal("plugins").executes(ctx -> {
                         if (SlashCommandGate.blockExploit(ctx.getSource())) {
                             return 0;
                         }
@@ -209,10 +210,10 @@ public final class DupeClient implements ClientModInitializer {
             }
         });
 
-        HudRenderCallback.EVENT.register((context, tickCounter) -> {
-            HudManager.INSTANCE.render(context);
-            IngameOverlayHost.renderOnHud(context, tickCounter);
-            WaypointWorldRenderer.renderHud(context, tickCounter);
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "main"), (graphics, deltaTracker) -> {
+            HudManager.INSTANCE.render(graphics);
+            IngameOverlayHost.renderOnHud(graphics, deltaTracker);
+            WaypointWorldRenderer.renderHud(graphics, deltaTracker);
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> UiNativeRenderer.ensureReady());
 
@@ -220,7 +221,7 @@ public final class DupeClient implements ClientModInitializer {
     }
 
     private static void registerDupedbCommands(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-        var dupedb = ClientCommandManager.literal("dupedb")
+        var dupedb = ClientCommands.literal("dupedb")
                 .executes(ctx -> {
                     if (SlashCommandGate.blockExploit(ctx.getSource())) {
                         return 0;
@@ -228,45 +229,45 @@ public final class DupeClient implements ClientModInitializer {
                     DupedbManager.INSTANCE.startScan(false);
                     return 1;
                 })
-                .then(ClientCommandManager.literal("scan").executes(ctx -> {
+                .then(ClientCommands.literal("scan").executes(ctx -> {
                     if (SlashCommandGate.blockExploit(ctx.getSource())) {
                         return 0;
                     }
                     DupedbManager.INSTANCE.startScan(false);
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("login").executes(ctx -> {
+                .then(ClientCommands.literal("login").executes(ctx -> {
                     DupedbManager.INSTANCE.startLoginFlow();
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("token")
-                        .then(ClientCommandManager.argument("value", StringArgumentType.greedyString())
+                .then(ClientCommands.literal("token")
+                        .then(ClientCommands.argument("value", StringArgumentType.greedyString())
                                 .executes(ctx -> {
                                     DupedbManager.INSTANCE.setPersonalAccessToken(
                                             StringArgumentType.getString(ctx, "value"));
                                     return 1;
                                 })))
-                .then(ClientCommandManager.literal("appid")
-                        .then(ClientCommandManager.argument("slug", StringArgumentType.word())
+                .then(ClientCommands.literal("appid")
+                        .then(ClientCommands.argument("slug", StringArgumentType.word())
                                 .executes(ctx -> {
                                     DupedbManager.INSTANCE.setOAuthAppId(
                                             StringArgumentType.getString(ctx, "slug"));
                                     return 1;
                                 })))
-                .then(ClientCommandManager.literal("developer").executes(ctx -> {
+                .then(ClientCommands.literal("developer").executes(ctx -> {
                     DupedbManager.INSTANCE.openDeveloperSettingsPage();
                     ctx.getSource().sendFeedback(net.minecraft.network.chat.Component.literal("[DupeDB] Opening developer settings"));
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("plugins").executes(ctx -> {
+                .then(ClientCommands.literal("plugins").executes(ctx -> {
                     DupedbManager.INSTANCE.startScan(false);
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("search").executes(ctx -> {
+                .then(ClientCommands.literal("search").executes(ctx -> {
                     DupedbManager.INSTANCE.startScan(false);
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("status").executes(ctx -> {
+                .then(ClientCommands.literal("status").executes(ctx -> {
                     if (DupedbManager.INSTANCE.isAuthenticated()) {
                         ctx.getSource().sendFeedback(net.minecraft.network.chat.Component.literal("[DupeDB] Authenticated"));
                     } else {
@@ -275,19 +276,19 @@ public final class DupeClient implements ClientModInitializer {
                     }
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("revoke").executes(ctx -> {
+                .then(ClientCommands.literal("revoke").executes(ctx -> {
                     DupedbManager.INSTANCE.clearToken();
                     DupedbManager.INSTANCE.openSettingsPage();
                     ctx.getSource().sendFeedback(net.minecraft.network.chat.Component.literal("[DupeDB] Token cleared"));
                     return 1;
                 }))
-                .then(ClientCommandManager.literal("mode")
-                        .then(ClientCommandManager.literal("auto").executes(ctx -> {
+                .then(ClientCommands.literal("mode")
+                        .then(ClientCommands.literal("auto").executes(ctx -> {
                             DupedbManager.INSTANCE.getSettings().mode = DupedbMode.AUTO;
                             DupedbManager.INSTANCE.save();
                             return 1;
                         }))
-                        .then(ClientCommandManager.literal("command").executes(ctx -> {
+                        .then(ClientCommands.literal("command").executes(ctx -> {
                             DupedbManager.INSTANCE.getSettings().mode = DupedbMode.COMMAND;
                             DupedbManager.INSTANCE.save();
                             return 1;
@@ -423,7 +424,7 @@ public final class DupeClient implements ClientModInitializer {
             return;
         }
         if (client.screen instanceof ClientGuiScreen hub) {
-            hub.close();
+            hub.onClose();
             return;
         }
         IngameOverlayHost.hideAllOverlays();

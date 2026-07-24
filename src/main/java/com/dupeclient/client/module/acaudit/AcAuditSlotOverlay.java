@@ -2,7 +2,7 @@ package com.dupeclient.client.module.acaudit;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -13,7 +13,7 @@ public final class AcAuditSlotOverlay {
     private AcAuditSlotOverlay() {
     }
 
-    public static void render(AbstractContainerScreen<?> screen, GuiGraphics context, int guiX, int guiY, int backgroundHeight, Slot focusedSlot) {
+    public static void render(AbstractContainerScreen<?> screen, GuiGraphicsExtractor context, int guiX, int guiY, int backgroundHeight, Slot focusedSlot) {
         AcAuditSettings settings = AcAuditManager.INSTANCE.getSettings();
         if (!settings.enabled || !settings.rawSlotOverlayEnabled) {
             return;
@@ -24,11 +24,11 @@ public final class AcAuditSlotOverlay {
         AbstractContainerMenu handler = screen.getMenu();
 
         for (Slot slot : handler.slots) {
-            context.drawString(tr, String.valueOf(slot.index), guiX + slot.x, guiY + slot.y, color, shadow);
+            context.text(tr, String.valueOf(slot.index), guiX + slot.x, guiY + slot.y, color, shadow);
         }
 
         if (settings.slotOverlayShowSyncId) {
-            context.drawString(tr,
+            context.text(tr,
                     "syncId " + handler.containerId + "  rev " + handler.getStateId(),
                     guiX,
                     guiY - 10,
@@ -40,7 +40,7 @@ public final class AcAuditSlotOverlay {
             ItemStack stack = focusedSlot.getItem();
             String line = "slot " + focusedSlot.index + ": "
                     + (stack.isEmpty() ? "(empty)" : BuiltInRegistries.ITEM.getKey(stack.getItem()) + " x" + stack.getCount());
-            context.drawString(tr, line, guiX, guiY + backgroundHeight + 2, color, shadow);
+            context.text(tr, line, guiX, guiY + backgroundHeight + 2, color, shadow);
         }
     }
 }

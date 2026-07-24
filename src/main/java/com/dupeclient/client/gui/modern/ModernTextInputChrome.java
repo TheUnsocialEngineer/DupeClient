@@ -3,7 +3,7 @@ package com.dupeclient.client.gui.modern;
 import com.dupeclient.client.gui.modern.theme.MidnightPalette;
 import com.dupeclient.client.gui.modern.theme.MidnightShapes;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -27,7 +27,7 @@ public final class ModernTextInputChrome {
     private ModernTextInputChrome() {
     }
 
-    public static void drawField(GuiGraphics context, int x, int y, int w, int h, boolean focused) {
+    public static void drawField(GuiGraphicsExtractor context, int x, int y, int w, int h, boolean focused) {
         int height = Math.max(MIN_HEIGHT, h);
         int radius = MidnightShapes.controlRadius(height);
         if (focused) {
@@ -41,12 +41,12 @@ public final class ModernTextInputChrome {
         }
     }
 
-    public static void drawPlaceholder(Font tr, GuiGraphics context, int x, int y, int maxWidth, String placeholder) {
+    public static void drawPlaceholder(Font tr, GuiGraphicsExtractor context, int x, int y, int maxWidth, String placeholder) {
         if (placeholder == null || placeholder.isEmpty()) {
             return;
         }
         String shown = tr.plainSubstrByWidth(placeholder, Math.max(4, maxWidth));
-        context.drawString(tr, Component.literal(shown), x, y, PLACEHOLDER_COLOR);
+        context.text(tr, Component.literal(shown), x, y, PLACEHOLDER_COLOR);
     }
 
     public static int textY(int fieldY, int fieldH) {

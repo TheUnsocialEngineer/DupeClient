@@ -467,36 +467,29 @@ public final class PacketClassCodec {
     }
 
     private static List<PacketFieldModel> describePlayerInteractEntity(ServerboundInteractPacket packet) {
-        InteractCapture capture = new InteractCapture();
-        packet.dispatch(capture);
+        Vec3 loc = packet.location();
+        String interactType = loc.lengthSqr() > 1.0E-8 ? "INTERACT_AT" : "INTERACT";
         List<PacketFieldModel> rows = new ArrayList<>();
         rows.add(typeField(PacketUtils.getPacketTypeName(packet)));
-        rows.add(new PacketFieldModel("interactType", "String", capture.interactType, true, String.class));
-        rows.add(new PacketFieldModel("entityId", "int", Integer.toString(readInteractEntityId(packet)), true, int.class));
-        rows.add(new PacketFieldModel("sneaking", "boolean", Boolean.toString(packet.isUsingSecondaryAction()), true, boolean.class));
-        rows.add(new PacketFieldModel("hand", "Hand", capture.hand.name(), true, InteractionHand.class));
-        rows.add(new PacketFieldModel("targetX", "double", Double.toString(capture.targetX), true, double.class));
-        rows.add(new PacketFieldModel("targetY", "double", Double.toString(capture.targetY), true, double.class));
-        rows.add(new PacketFieldModel("targetZ", "double", Double.toString(capture.targetZ), true, double.class));
+        rows.add(new PacketFieldModel("interactType", "String", interactType, true, String.class));
+        rows.add(new PacketFieldModel("entityId", "int", Integer.toString(packet.entityId()), true, int.class));
+        rows.add(new PacketFieldModel("sneaking", "boolean", Boolean.toString(packet.usingSecondaryAction()), true, boolean.class));
+        rows.add(new PacketFieldModel("hand", "Hand", packet.hand().name(), true, InteractionHand.class));
+        rows.add(new PacketFieldModel("targetX", "double", Double.toString(loc.x), true, double.class));
+        rows.add(new PacketFieldModel("targetY", "double", Double.toString(loc.y), true, double.class));
+        rows.add(new PacketFieldModel("targetZ", "double", Double.toString(loc.z), true, double.class));
         return rows;
     }
 
     private static Packet<?> buildPlayerInteractEntity(Map<String, String> fields, @Nullable Minecraft client)
             throws PacketRecordCodec.PacketBuildException {
-        String interactType = fields.getOrDefault("interactType", "ATTACK").trim().toUpperCase();
         Entity entity = resolveEntity(fields, client);
         boolean sneaking = Boolean.parseBoolean(fields.getOrDefault("sneaking", "false"));
         InteractionHand hand = InteractionHand.valueOf(fields.getOrDefault("hand", InteractionHand.MAIN_HAND.name()).trim().toUpperCase());
-        return switch (interactType) {
-            case "INTERACT" -> ServerboundInteractPacket.createInteractionPacket(entity, sneaking, hand);
-            case "INTERACT_AT" -> {
-                double x = Double.parseDouble(fields.getOrDefault("targetX", "0"));
-                double y = Double.parseDouble(fields.getOrDefault("targetY", "0"));
-                double z = Double.parseDouble(fields.getOrDefault("targetZ", "0"));
-                yield ServerboundInteractPacket.createInteractionPacket(entity, sneaking, hand, new Vec3(x, y, z));
-            }
-            default -> ServerboundInteractPacket.createAttackPacket(entity, sneaking);
-        };
+        double x = Double.parseDouble(fields.getOrDefault("targetX", "0"));
+        double y = Double.parseDouble(fields.getOrDefault("targetY", "0"));
+        double z = Double.parseDouble(fields.getOrDefault("targetZ", "0"));
+        return new ServerboundInteractPacket(entity.getId(), hand, new Vec3(x, y, z), sneaking);
     }
 
     private static List<PacketFieldModel> describeClientCommand(ServerboundPlayerCommandPacket packet) {
@@ -570,44 +563,6 @@ public final class PacketClassCodec {
                 fields.getOrDefault("line2", ""),
                 fields.getOrDefault("line3", ""),
                 fields.getOrDefault("line4", ""));
-    }
-
-    private static int readInteractEntityId(ServerboundInteractPacket packet) {
-        try {
-            Field field = ServerboundInteractPacket.class.getDeclaredField("entityId");
-            field.setAccessible(true);
-            return field.getInt(packet);
-        } catch (ReflectiveOperationException e) {
-            return 0;
-        }
-    }
-
-    private static final class InteractCapture implements ServerboundInteractPacket.Handler {
-        String interactType = "ATTACK";
-        InteractionHand hand = InteractionHand.MAIN_HAND;
-        double targetX;
-        double targetY;
-        double targetZ;
-
-        @Override
-        public void onInteraction(InteractionHand hand) {
-            interactType = "INTERACT";
-            this.hand = hand;
-        }
-
-        @Override
-        public void onInteraction(InteractionHand hand, Vec3 pos) {
-            interactType = "INTERACT_AT";
-            this.hand = hand;
-            targetX = pos.x;
-            targetY = pos.y;
-            targetZ = pos.z;
-        }
-
-        @Override
-        public void onAttack() {
-            interactType = "ATTACK";
-        }
     }
 
     private enum CustomKind {

@@ -1,7 +1,7 @@
 package com.dupeclient.client.mixin;
 
 import net.minecraft.client.gui.render.GuiRenderer;
-import net.minecraft.client.renderer.CachedPerspectiveProjectionMatrixBuffer;
+import net.minecraft.client.renderer.ProjectionMatrixBuffer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.fog.FogRenderer;
@@ -17,7 +17,7 @@ public interface GameRendererAccessor {
     FogRenderer dupeclient$fogRenderer();
 
     @Accessor("hud3dProjectionMatrixBuffer")
-    CachedPerspectiveProjectionMatrixBuffer dupeclient$hudProjectionMatrix();
+    ProjectionMatrixBuffer dupeclient$hudProjectionMatrix();
 
     @Accessor("guiRenderer")
     GuiRenderer dupeclient$guiRenderer();

@@ -15,7 +15,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -395,18 +395,18 @@ public final class MacroAutomation {
         if (client.player == null || client.gameMode == null || slot == null) {
             return;
         }
-        clickSlot(client, handler, slot.index, ClickType.QUICK_MOVE, 0);
+        clickSlot(client, handler, slot.index, ContainerInput.QUICK_MOVE, 0);
     }
 
     public static void clickSlot(
             Minecraft client,
             AbstractContainerMenu handler,
             int slotId,
-            ClickType action,
+            ContainerInput action,
             int button) {
         if (client.player == null || client.gameMode == null || handler == null || action == null) {
             return;
         }
-        client.gameMode.handleInventoryMouseClick(handler.containerId, slotId, button, action, client.player);
+        client.gameMode.handleContainerInput(handler.containerId, slotId, button, action, client.player);
     }
 }

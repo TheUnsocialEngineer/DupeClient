@@ -5,7 +5,7 @@ import com.dupeclient.client.config.VisualSettings;
 import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -127,16 +127,16 @@ public class DupeClientSettingsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (parent instanceof DupeMainMenuScreen menu) {
-            menu.renderBackground(context, mouseX, mouseY, delta);
+            menu.extractBackground(context, mouseX, mouseY, delta);
         } else {
             UiDraw.fillMidnightBackground(context, this.width, this.height);
         }
         context.fill(0, 0, this.width, this.height, UiTokens.argb(0x66, UiTokens.SLATE_950));
         int tY = Mth.clamp(this.height / 2 - 120, 8, 80);
-        context.drawCenteredString(this.font, this.title, this.width / 2, tY, UiTokens.TEXT);
-        super.render(context, mouseX, mouseY, delta);
+        context.centeredText(this.font, this.title, this.width / 2, tY, UiTokens.TEXT);
+        super.extractRenderState(context, mouseX, mouseY, delta);
     }
 
     @Override

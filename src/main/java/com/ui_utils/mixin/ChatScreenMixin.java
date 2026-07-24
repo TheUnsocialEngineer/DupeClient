@@ -22,7 +22,7 @@ public class ChatScreenMixin {
         String result = CommandSystem.execute(chatText.substring(SharedVariables.commandPrefix.length()));
         if (mc.player != null && result != null && !result.isEmpty()) {
             for (String line : result.split("\n")) {
-                mc.player.displayClientMessage(Component.literal(line), false);
+                mc.player.sendSystemMessage(Component.literal(line));
             }
         }
         mc.setScreen(null);

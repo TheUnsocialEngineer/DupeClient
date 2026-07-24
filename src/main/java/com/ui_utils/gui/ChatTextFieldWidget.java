@@ -24,8 +24,8 @@ public class ChatTextFieldWidget extends CustomTextFieldWidget {
             if (message.equalsIgnoreCase(toggleCmd)) {
                 SharedVariables.enabled = !SharedVariables.enabled;
                 if (MC.player != null) {
-                    MC.player.displayClientMessage(
-                            Component.literal("§7UI-Utils: " + (SharedVariables.enabled ? "ON" : "OFF")), false);
+                    MC.player.sendSystemMessage(
+                            Component.literal("§7UI-Utils: " + (SharedVariables.enabled ? "ON" : "OFF")));
                 }
                 setValue("");
                 return true;
@@ -35,7 +35,7 @@ public class ChatTextFieldWidget extends CustomTextFieldWidget {
                     String result = CommandSystem.execute(message.substring(SharedVariables.commandPrefix.length()));
                     if (MC.player != null && result != null && !result.isEmpty()) {
                         for (String line : result.split("\n")) {
-                            MC.player.displayClientMessage(Component.literal(line), false);
+                            MC.player.sendSystemMessage(Component.literal(line));
                         }
                     }
                 } else if (MC.getConnection() != null) {

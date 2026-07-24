@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
@@ -90,7 +90,7 @@ public final class UiNativeRenderer {
         shape.texture.close();
     }
 
-    public static void fillRoundedRect(GuiGraphics context, int x, int y, int w, int h, int rad, int argb) {
+    public static void fillRoundedRect(GuiGraphicsExtractor context, int x, int y, int w, int h, int rad, int argb) {
         if (w <= 0 || h <= 0) {
             return;
         }
@@ -108,7 +108,7 @@ public final class UiNativeRenderer {
         }
     }
 
-    public static void fillDisk(GuiGraphics context, int cx, int cy, int r, int argb) {
+    public static void fillDisk(GuiGraphicsExtractor context, int cx, int cy, int r, int argb) {
         if (r <= 0) {
             return;
         }
@@ -125,7 +125,7 @@ public final class UiNativeRenderer {
         blitShape(context, shape, cx - r, cy - r, d, d);
     }
 
-    private static boolean ensureDraw(GuiGraphics context, int x, int y, int w, int h, int rr, int argb) {
+    private static boolean ensureDraw(GuiGraphicsExtractor context, int x, int y, int w, int h, int rr, int argb) {
         ensureReady();
         if (!ready) {
             return false;
@@ -141,7 +141,7 @@ public final class UiNativeRenderer {
         return true;
     }
 
-    private static void drawCorner(GuiGraphics context, int x, int y, int r, int argb, Corner corner) {
+    private static void drawCorner(GuiGraphicsExtractor context, int x, int y, int r, int argb, Corner corner) {
         CachedShape shape = getCorner(r, argb, corner);
         if (shape == null) {
             return;
@@ -149,13 +149,13 @@ public final class UiNativeRenderer {
         blitShape(context, shape, x, y, r, r);
     }
 
-    private static void blitShape(GuiGraphics context, CachedShape shape, int x, int y, int w, int h) {
+    private static void blitShape(GuiGraphicsExtractor context, CachedShape shape, int x, int y, int w, int h) {
         int s = shape.size;
         context.blit(RenderPipelines.GUI_TEXTURED, shape.id, x, y, 0.0f, 0.0f, w, h, s, s);
     }
 
     /** Software path — no texture filtering (safe for translucent sidebar pills). */
-    private static void fillRoundedRectSoftware(GuiGraphics c, int x, int y, int w, int h, int rr, int argb) {
+    private static void fillRoundedRectSoftware(GuiGraphicsExtractor c, int x, int y, int w, int h, int rr, int argb) {
         c.fill(x + rr, y, x + w - rr, y + h, argb);
         c.fill(x, y + rr, x + rr, y + h - rr, argb);
         c.fill(x + w - rr, y + rr, x + w, y + h - rr, argb);
@@ -165,7 +165,7 @@ public final class UiNativeRenderer {
         fillQuarterSoftware(c, x + w - rr, y + h - rr, rr, argb, Corner.BOTTOM_RIGHT);
     }
 
-    private static void fillQuarterSoftware(GuiGraphics c, int left, int top, int rr, int argb, Corner corner) {
+    private static void fillQuarterSoftware(GuiGraphicsExtractor c, int left, int top, int rr, int argb, Corner corner) {
         int r2 = rr * rr;
         double cx;
         double cy;

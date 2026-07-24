@@ -6,7 +6,7 @@ import com.dupeclient.client.gui.overlay.AbstractDraggableOverlay;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -83,7 +83,7 @@ public final class ChatGamesOverlay extends AbstractDraggableOverlay implements 
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
@@ -95,7 +95,7 @@ public final class ChatGamesOverlay extends AbstractDraggableOverlay implements 
 
         context.fill(px, py, px + PANEL_W, py + PANEL_H, 0xE018181B);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, 0xFF27272A);
-        context.drawString(tr, Component.literal("Chat Games"), px + 6, py + 2, 0xFF60A5FA);
+        context.text(tr, Component.literal("Chat Games"), px + 6, py + 2, 0xFF60A5FA);
 
         int rx = px + 8;
         int inner = PANEL_W - 16;

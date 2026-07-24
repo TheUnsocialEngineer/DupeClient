@@ -3,7 +3,7 @@ package com.dupeclient.client.module.dupedb.search;
 import com.dupeclient.client.gui.modern.UiTokens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -32,7 +32,7 @@ public class ScannerActionButton extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         int x1 = getX();
         int y1 = getY();
         int x2 = x1 + getWidth();
@@ -54,7 +54,7 @@ public class ScannerActionButton extends AbstractWidget {
         Font tr = Minecraft.getInstance().font;
         int color = active ? 0xFFF8FAFC : UiTokens.SLATE_500;
         int ty = y1 + (getHeight() - 8) / 2;
-        context.drawCenteredString(tr, getMessage(), x1 + getWidth() / 2, ty, color);
+        context.centeredText(tr, getMessage(), x1 + getWidth() / 2, ty, color);
     }
 
     @Override

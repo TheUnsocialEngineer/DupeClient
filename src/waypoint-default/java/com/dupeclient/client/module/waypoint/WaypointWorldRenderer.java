@@ -9,13 +9,13 @@ import com.dupeclient.client.module.waypoint.WaypointShape;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -38,13 +38,13 @@ public final class WaypointWorldRenderer {
     }
 
     public static void register() {
-        WorldRenderEvents.AFTER_ENTITIES.register(WaypointWorldRenderer::renderWorld);
+        LevelRenderEvents.AFTER_SOLID_FEATURES.register(WaypointWorldRenderer::renderWorld);
     }
 
     /*
      * WARNING - Removed try catching itself - possible behaviour change.
      */
-    private static void renderWorld(WorldRenderContext context) {
+    private static void renderWorld(LevelRenderContext context) {
         if (!Boolean.TRUE.equals(DupeClientPresenceConfigManager.get().showSharedWaypointsInWorld)) {
             return;
         }
@@ -52,15 +52,15 @@ public final class WaypointWorldRenderer {
         if (client == null || client.player == null || client.level == null) {
             return;
         }
-        MultiBufferSource consumers = context.consumers();
+        MultiBufferSource consumers = context.bufferSource();
         if (consumers == null) {
             return;
         }
         GameRenderer gameRenderer = context.gameRenderer();
         Camera camera = gameRenderer.getMainCamera();
-        float tickDelta = camera.getPartialTickTime();
+        float tickDelta = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
         Vec3 cam = client.player.getEyePosition(tickDelta);
-        PoseStack matrices = context.matrices();
+        PoseStack matrices = context.poseStack();
         matrices.pushPose();
         try {
             Matrix4f matrix = matrices.last().pose();
@@ -100,7 +100,7 @@ public final class WaypointWorldRenderer {
         }
     }
 
-    public static void renderHud(GuiGraphics context, DeltaTracker tickCounter) {
+    public static void renderHud(GuiGraphicsExtractor context, DeltaTracker tickCounter) {
     }
 
     private static void drawWorldLabel(PoseStack matrices, Font textRenderer, MultiBufferSource consumers, Camera camera, Vec3 cam, String text, float wx, float wy, float wz, int color) {

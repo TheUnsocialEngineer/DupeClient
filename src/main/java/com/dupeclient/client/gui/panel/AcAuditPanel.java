@@ -10,7 +10,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class AcAuditPanel extends Panel {
@@ -49,7 +49,7 @@ public final class AcAuditPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
@@ -92,11 +92,11 @@ public final class AcAuditPanel extends Panel {
                 smoothToggle("ac.leave", s.disableOnLeave, delta));
 
         int hintY = y4 + TOGGLE_H + UiTokens.UI_GAP;
-        context.drawString(tr, Component.literal("Diagnostics & probes — use in-game overlay"), rx, hintY, 0xFF9CA3AF);
+        context.text(tr, Component.literal("Diagnostics & probes — use in-game overlay"), rx, hintY, 0xFF9CA3AF);
 
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (captureMode != CaptureMode.IDLE) {
-            context.drawString(
+            context.text(
                     tr,
                     Component.literal("Press key for " + captureMode.label + " (ESC to unbind)"),
                     x + 8,
@@ -176,7 +176,7 @@ public final class AcAuditPanel extends Panel {
     }
 
     private void drawBindRow(
-            Font tr, GuiGraphics context, int x, int y, int w, String label, int keyCode, CaptureMode mode) {
+            Font tr, GuiGraphicsExtractor context, int x, int y, int w, String label, int keyCode, CaptureMode mode) {
         boolean listening = captureMode == mode;
         UiComponents.drawPillKeybind(
                 tr, context, x, y, w, KEYBIND_H, label,

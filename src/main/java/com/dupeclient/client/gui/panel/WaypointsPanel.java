@@ -10,7 +10,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class WaypointsPanel extends Panel {
@@ -23,14 +23,14 @@ public final class WaypointsPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!SocialHubRules.socialUiAllowed()) {
             super.render(context, mouseX, mouseY, delta);
             var tr = Minecraft.getInstance().font;
             int cx = x + width / 2;
             int cy = y + height / 2 - 14;
-            context.drawCenteredString(tr, Component.literal("Waypoints require social access."), cx, cy, 0xFF8FA3B8);
-            context.drawCenteredString(tr, Component.literal(SocialHubRules.blockReason()), cx, cy + 12, 0xFF64748B);
+            context.centeredText(tr, Component.literal("Waypoints require social access."), cx, cy, 0xFF8FA3B8);
+            context.centeredText(tr, Component.literal(SocialHubRules.blockReason()), cx, cy + 12, 0xFF64748B);
             return;
         }
         super.render(context, mouseX, mouseY, delta);
@@ -69,7 +69,7 @@ public final class WaypointsPanel extends Panel {
 
         height = bodyTopOffset() + UiTokens.UI_GAP + sectionH + UiTokens.SP_3;
         if (captureMode != CaptureMode.NONE) {
-            context.drawString(tr, Component.literal("Press key for Waypoints (ESC = unbind)"), rx, y + height - 11, 0xFFFFC877);
+            context.text(tr, Component.literal("Press key for Waypoints (ESC = unbind)"), rx, y + height - 11, 0xFFFFC877);
         }
     }
 

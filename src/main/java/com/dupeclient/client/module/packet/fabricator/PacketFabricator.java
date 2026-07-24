@@ -9,7 +9,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 /** Builds and sends fabricated inventory click packets (YungLight fabricator backend). */
 public final class PacketFabricator {
@@ -145,7 +145,7 @@ public final class PacketFabricator {
         FabricatorAction action = currentAction();
         FabricatorSlotAction slotAction = action.toSlotAction(s.fabricatorDropWholeStack, s.fabricatorClickButton);
         int button = action.resolveButton(s.fabricatorDropWholeStack, s.fabricatorClickButton);
-        ClickType type = slotAction.toVanilla();
+        ContainerInput type = slotAction.toVanilla();
         ServerboundContainerClickPacket packet = ClickSlotPackets.create(
                 handler.containerId,
                 handler.getStateId(),

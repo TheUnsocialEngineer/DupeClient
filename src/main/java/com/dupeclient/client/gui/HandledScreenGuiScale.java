@@ -3,7 +3,7 @@ package com.dupeclient.client.gui;
 import com.dupeclient.client.compat.ModCompat;
 import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.PacketUtilsSettings;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.world.inventory.Slot;
@@ -94,7 +94,7 @@ public final class HandledScreenGuiScale {
     }
 
     /** Scale around the panel center in absolute screen coordinates (for {@code drawBackground}). */
-    public static void pushScaleScreen(GuiGraphics context, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
+    public static void pushScaleScreen(GuiGraphicsExtractor context, int guiLeft, int guiTop, int backgroundWidth, int backgroundHeight) {
         float scale = getScale();
         if (scale <= 1.001f) {
             return;
@@ -107,7 +107,7 @@ public final class HandledScreenGuiScale {
     /**
      * Scale around the panel center in GUI-local coordinates (after {@code translate(x, y)} in {@code renderMain}).
      */
-    public static void pushScaleLocal(GuiGraphics context, int backgroundWidth, int backgroundHeight) {
+    public static void pushScaleLocal(GuiGraphicsExtractor context, int backgroundWidth, int backgroundHeight) {
         float scale = getScale();
         if (scale <= 1.001f) {
             return;
@@ -117,7 +117,7 @@ public final class HandledScreenGuiScale {
         applyScaleAround(context, centerX, centerY, scale);
     }
 
-    private static void applyScaleAround(GuiGraphics context, float centerX, float centerY, float scale) {
+    private static void applyScaleAround(GuiGraphicsExtractor context, float centerX, float centerY, float scale) {
         Matrix3x2fStack matrices = context.pose();
         matrices.pushMatrix();
         matrices.translate(centerX, centerY);
@@ -125,7 +125,7 @@ public final class HandledScreenGuiScale {
         matrices.translate(-centerX, -centerY);
     }
 
-    public static void popScale(GuiGraphics context) {
+    public static void popScale(GuiGraphicsExtractor context) {
         if (!isActive()) {
             return;
         }

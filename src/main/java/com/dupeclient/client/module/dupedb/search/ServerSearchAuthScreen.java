@@ -10,7 +10,7 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -257,22 +257,22 @@ public final class ServerSearchAuthScreen extends Screen {
       }
    }
 
-   public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-      super.render(context, mouseX, mouseY, deltaTicks);
+   public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
+      super.extractRenderState(context, mouseX, mouseY, deltaTicks);
       int cx = this.width / 2;
       int cy = this.height / 2;
-      context.drawCenteredString(this.font, this.headlineText, cx, cy - 50, -1);
+      context.centeredText(this.font, this.headlineText, cx, cy - 50, -1);
       if (this.phase == ServerSearchAuthScreen.Phase.AWAITING && this.pendingDevice != null) {
-         context.drawCenteredString(this.font, this.pendingDevice.userCode(), cx, cy - 26, -11144);
+         context.centeredText(this.font, this.pendingDevice.userCode(), cx, cy - 26, -11144);
          long secsLeft = Math.max(0L, (this.codeExpiresAtEpochMs - System.currentTimeMillis()) / 1000L);
-         context.drawCenteredString(this.font, "Code valid for " + secsLeft + "s", cx, cy - 12, -6250336);
+         context.centeredText(this.font, "Code valid for " + secsLeft + "s", cx, cy - 12, -6250336);
       } else if (!this.detailText.isEmpty()) {
          int color = this.phase != ServerSearchAuthScreen.Phase.NO_ACCESS && this.phase != ServerSearchAuthScreen.Phase.FAILED ? -6250336 : -32640;
-         context.drawCenteredString(this.font, this.detailText, cx, cy - 26, color);
+         context.centeredText(this.font, this.detailText, cx, cy - 26, color);
       }
 
       if (!this.hintText.isEmpty()) {
-         context.drawCenteredString(this.font, this.hintText, cx, cy + 84, -8748396);
+         context.centeredText(this.font, this.hintText, cx, cy + 84, -8748396);
       }
    }
 

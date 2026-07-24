@@ -7,7 +7,7 @@ import com.ui_utils.gui.CustomTextFieldWidget;
 import com.ui_utils.mixin.accessor.ScreenAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -44,7 +44,7 @@ public abstract class ScreenMixin {
     }
 
     @Inject(at = @At("TAIL"), method = "render")
-    public void uiutils$onRender(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+    public void uiutils$onRender(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         Screen screen = (Screen) (Object) this;
         if (!UiUtilsScreens.shouldRenderSyncPanel(screen)) {
             return;

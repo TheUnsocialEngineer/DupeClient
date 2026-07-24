@@ -6,7 +6,7 @@ import com.dupeclient.client.module.payall.PayAllManager;
 import com.dupeclient.client.module.payall.PayAllOverlay;
 import com.dupeclient.client.module.payall.PayAllSettings;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public class PayAllPanel extends Panel {
@@ -31,7 +31,7 @@ public class PayAllPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
@@ -67,10 +67,10 @@ public class PayAllPanel extends Panel {
 
         int y4 = y3 + TOGGLE_H + UiTokens.UI_GAP;
         PanelOverlayActions.drawOpenOverlayButton(tr, context, rx, y4, inner, "Open PayAll overlay");
-        context.drawString(tr, Component.literal("Targets and payouts are configured in the PayAll overlay."), rx, y4 + PanelOverlayActions.BTN_H + UiTokens.UI_GAP, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Targets and payouts are configured in the PayAll overlay."), rx, y4 + PanelOverlayActions.BTN_H + UiTokens.UI_GAP, UiTokens.TEXT_DIM);
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (capturingOverlayHotkey) {
-            context.drawString(
+            context.text(
                     tr,
                     Component.literal("Press key for overlay hotkey (ESC to unbind)"),
                     x + 8,

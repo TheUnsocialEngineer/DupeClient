@@ -18,7 +18,7 @@ import com.ui_utils.SharedVariables;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
@@ -258,11 +258,11 @@ implements IngameModuleOverlay {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         this.renderPanel(context, Minecraft.getInstance().font, mouseX, mouseY, delta);
     }
 
-    private void renderTabs(GuiGraphics context, Font tr, int px, int py, int innerW, FabricatorTab tab) {
+    private void renderTabs(GuiGraphicsExtractor context, Font tr, int px, int py, int innerW, FabricatorTab tab) {
         int half = (innerW - 5) / 2;
         this.hitTabFabricateX = px;
         this.hitTabFabricateY = py;
@@ -274,14 +274,14 @@ implements IngameModuleOverlay {
         UiComponents.drawSegmentTab(tr, context, this.hitTabDelayX, this.hitTabDelayY, this.hitTabDelayW, 14, "Delay", tab == FabricatorTab.DELAY);
     }
 
-    public void render(AbstractContainerScreen<?> screen, GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(AbstractContainerScreen<?> screen, GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!PacketFabricator.INSTANCE.settings().fabricatorEnabled) {
             return;
         }
         this.renderPanel(context, screen.getFont(), mouseX, mouseY, delta);
     }
 
-    private void renderPanel(GuiGraphics context, Font tr, int mouseX, int mouseY, float delta) {
+    private void renderPanel(GuiGraphicsExtractor context, Font tr, int mouseX, int mouseY, float delta) {
         PacketUtilsSettings s = PacketFabricator.INSTANCE.settings();
         if (!s.fabricatorEnabled || !s.fabricatorVisible) {
             return;
@@ -294,7 +294,7 @@ implements IngameModuleOverlay {
         context.fill(px, py, px + 300, py + ph, -535291877);
         context.fill(px, py, px + 300, py + 12, -14211286);
         int titleColor = tab == FabricatorTab.DELAY ? -10443270 : -13315175;
-        context.drawString(tr, (Component)Component.literal((String)"Packet Fabricator"), px + 6, py + 2, titleColor);
+        context.text(tr, (Component)Component.literal((String)"Packet Fabricator"), px + 6, py + 2, titleColor);
         this.drawTitleControls(context, tr, px, py, mouseX, mouseY);
         int tabY = py + 12 + 5;
         this.renderTabs(context, tr, px + 8, tabY, innerW, tab);
@@ -336,7 +336,7 @@ implements IngameModuleOverlay {
         PacketFabricatorOverlay.drawField(context, tr, valueX, y - 2, valueW, s.fabricatorItemName, this.focused == FocusedField.ITEM);
         PacketFabricatorOverlay.drawInputLabel(context, tr, "Times", px + 8, y += 20, this.focused == FocusedField.TIMES);
         PacketFabricatorOverlay.drawField(context, tr, valueX, y - 2, valueW, s.fabricatorTimes, this.focused == FocusedField.TIMES);
-        context.drawString(tr, (Component)Component.literal((String)"Settings"), px + 6, y += 16, -9735552);
+        context.text(tr, (Component)Component.literal((String)"Settings"), px + 6, y += 16, -9735552);
         this.hitBiggerContainersX = px + 6;
         this.hitBiggerContainersY = y += 12;
         this.hitBiggerContainersW = innerW;
@@ -363,11 +363,11 @@ implements IngameModuleOverlay {
         y += 14;
         String status = PacketFabricator.INSTANCE.getLastStatus();
         if (status != null && !status.isBlank()) {
-            context.drawString(tr, (Component)Component.literal((String)PacketFabricatorOverlay.trim(tr, status, innerW)), px + 6, y, -6511697);
+            context.text(tr, (Component)Component.literal((String)PacketFabricatorOverlay.trim(tr, status, innerW)), px + 6, y, -6511697);
             y += 10;
         }
         if (this.keyCapture != KeyCapture.NONE) {
-            context.drawString(tr, (Component)Component.literal((String)"Press key (ESC = unbind)"), px + 6, y, -14217);
+            context.text(tr, (Component)Component.literal((String)"Press key (ESC = unbind)"), px + 6, y, -14217);
             y += 10;
         }
         int btnY = py + ph - 16 - 6;
@@ -392,12 +392,12 @@ implements IngameModuleOverlay {
         PacketFabricatorOverlay.drawButton(context, tr, this.hitQueueX, btnY, half, 16, "Queue", mouseX, mouseY, true);
     }
 
-    private void drawTitleControls(GuiGraphics context, Font tr, int px, int py, int mouseX, int mouseY) {
+    private void drawTitleControls(GuiGraphicsExtractor context, Font tr, int px, int py, int mouseX, int mouseY) {
         this.hitCloseW = 12;
         this.hitCloseX = px + 300 - 14;
         this.hitCloseY = py + 1;
         boolean closeHover = mouseX >= this.hitCloseX && mouseX < this.hitCloseX + this.hitCloseW && mouseY >= this.hitCloseY && mouseY < this.hitCloseY + 10;
-        context.drawString(tr, (Component)Component.literal((String)"\u00d7"), this.hitCloseX, this.hitCloseY, closeHover ? -495247 : -9735552);
+        context.text(tr, (Component)Component.literal((String)"\u00d7"), this.hitCloseX, this.hitCloseY, closeHover ? -495247 : -9735552);
     }
 
     @Override
@@ -732,11 +732,11 @@ implements IngameModuleOverlay {
         }
     }
 
-    private static void drawLabel(GuiGraphics c, Font tr, String label, int x, int y) {
-        c.drawString(tr, (Component)Component.literal((String)label), x, y + 3, -6184534);
+    private static void drawLabel(GuiGraphicsExtractor c, Font tr, String label, int x, int y) {
+        c.text(tr, (Component)Component.literal((String)label), x, y + 3, -6184534);
     }
 
-    private static void drawMultiToggle(GuiGraphics c, Font tr, int x, int y, int w, boolean on) {
+    private static void drawMultiToggle(GuiGraphicsExtractor c, Font tr, int x, int y, int w, boolean on) {
         int bg = on ? -15445203 : -14211286;
         int border = on ? -13315175 : -11840157;
         c.fill(x, y, x + w, y + 18, bg);
@@ -746,64 +746,64 @@ implements IngameModuleOverlay {
         c.fill(x + w - 1, y, x + w, y + 18, border);
         String label = on ? "M+" : "M";
         int tw = tr.width(label);
-        c.drawString(tr, (Component)Component.literal((String)label), x + (w - tw) / 2, y + 5, on ? -13315175 : -6511697);
+        c.text(tr, (Component)Component.literal((String)label), x + (w - tw) / 2, y + 5, on ? -13315175 : -6511697);
     }
 
-    private static void drawInputLabel(GuiGraphics c, Font tr, String label, int x, int y, boolean focused) {
+    private static void drawInputLabel(GuiGraphicsExtractor c, Font tr, String label, int x, int y, boolean focused) {
         int color = focused ? -13315175 : -6184534;
         Object text = focused ? "> " + label : label;
-        c.drawString(tr, (Component)Component.literal((String)((String)text)), x, y + 4, color);
+        c.text(tr, (Component)Component.literal((String)((String)text)), x, y + 4, color);
     }
 
-    private static void drawField(GuiGraphics c, Font tr, int x, int y, int w, String value, boolean focused) {
+    private static void drawField(GuiGraphicsExtractor c, Font tr, int x, int y, int w, String value, boolean focused) {
         com.dupeclient.client.gui.modern.ModernTextInputChrome.drawField(c, x, y, w, 18, focused);
         String shown = value == null ? "" : value;
         String display = shown.isEmpty() ? (focused ? "" : " ") : PacketFabricatorOverlay.trim(tr, shown, w - 16);
         int textX = x + com.dupeclient.client.gui.modern.ModernTextInputChrome.PAD_X;
         int textY = com.dupeclient.client.gui.modern.ModernTextInputChrome.textY(y, 18);
         int textColor = focused ? -1 : -1710101;
-        c.drawString(tr, (Component)Component.literal((String)(display.isEmpty() ? " " : display)), textX, textY, textColor);
+        c.text(tr, (Component)Component.literal((String)(display.isEmpty() ? " " : display)), textX, textY, textColor);
         if (focused && com.dupeclient.client.gui.modern.ModernTextInputChrome.caretVisible()) {
             int caretX = textX + tr.width(display.isEmpty() ? "" : display);
             c.fill(caretX, textY - 1, caretX + 1, textY + 9, com.dupeclient.client.gui.modern.ModernTextInputChrome.CARET_COLOR);
         }
     }
 
-    private static void drawSettingToggle(GuiGraphics c, Font tr, int x, int y, int w, String label, boolean on) {
-        c.drawString(tr, (Component)Component.literal((String)label), x, y + 2, -6184534);
+    private static void drawSettingToggle(GuiGraphicsExtractor c, Font tr, int x, int y, int w, String label, boolean on) {
+        c.text(tr, (Component)Component.literal((String)label), x, y + 2, -6184534);
         String state = on ? "ON" : "OFF";
         int sw = tr.width(state) + 10;
         int sx = x + w - sw;
         int color = on ? -13315175 : -11382181;
         c.fill(sx, y, x + w, y + 12, -14737629);
-        c.drawString(tr, (Component)Component.literal((String)state), sx + 5, y + 2, color);
+        c.text(tr, (Component)Component.literal((String)state), sx + 5, y + 2, color);
     }
 
-    private static void drawSettingValue(GuiGraphics c, Font tr, int x, int y, int w, String label, String value) {
-        c.drawString(tr, (Component)Component.literal((String)label), x, y + 2, -6184534);
+    private static void drawSettingValue(GuiGraphicsExtractor c, Font tr, int x, int y, int w, String label, String value) {
+        c.text(tr, (Component)Component.literal((String)label), x, y + 2, -6184534);
         int vx = x + w - 72;
         c.fill(vx, y, x + w, y + 12, -14211286);
         String shown = PacketFabricatorOverlay.trim(tr, value, 64);
-        c.drawString(tr, (Component)Component.literal((String)shown), vx + 4, y + 2, -1710101);
+        c.text(tr, (Component)Component.literal((String)shown), vx + 4, y + 2, -1710101);
     }
 
-    private static void drawSettingBind(GuiGraphics c, Font tr, int x, int y, int w, String label, int keyCode, boolean listening) {
-        c.drawString(tr, (Component)Component.literal((String)label), x, y + 2, -6184534);
+    private static void drawSettingBind(GuiGraphicsExtractor c, Font tr, int x, int y, int w, String label, int keyCode, boolean listening) {
+        c.text(tr, (Component)Component.literal((String)label), x, y + 2, -6184534);
         int vx = x + w - 72;
         int border = listening ? -14217 : -12632250;
         c.fill(vx, y, x + w, y + 12, -15790318);
         c.fill(vx, y, x + w, y + 1, border);
-        c.drawString(tr, (Component)Component.literal((String)PacketFabricatorOverlay.trim(tr, PacketFabricatorOverlay.keyName(keyCode), 64)), vx + 4, y + 2, listening ? -14217 : -1710101);
+        c.text(tr, (Component)Component.literal((String)PacketFabricatorOverlay.trim(tr, PacketFabricatorOverlay.keyName(keyCode), 64)), vx + 4, y + 2, listening ? -14217 : -1710101);
     }
 
-    private static void drawButton(GuiGraphics c, Font tr, int x, int y, int w, int h, String label, int mx, int my, boolean enabled) {
+    private static void drawButton(GuiGraphicsExtractor c, Font tr, int x, int y, int w, int h, String label, int mx, int my, boolean enabled) {
         boolean hover = enabled && mx >= x && mx < x + w && my >= y && my < y + h;
         boolean bl = hover;
         int bg = !enabled ? -15066594 : (hover ? -12632250 : -14211286);
         int fg = enabled ? -1710101 : -11382181;
         c.fill(x, y, x + w, y + h, bg);
         int tw = tr.width(label);
-        c.drawString(tr, (Component)Component.literal((String)label), x + Math.max(4, (w - tw) / 2), y + 4, fg);
+        c.text(tr, (Component)Component.literal((String)label), x + Math.max(4, (w - tw) / 2), y + 4, fg);
     }
 
     private static boolean inBtn(double mx, double my, int x, int y, int w) {

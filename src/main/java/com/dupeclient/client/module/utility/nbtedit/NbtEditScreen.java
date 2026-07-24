@@ -11,7 +11,7 @@ import com.dupeclient.client.gui.widget.StylishSearchableDropdownWidget;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -165,12 +165,12 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         return width - PAD * 2 - 8;
     }
 
-    private void drawLabel(GuiGraphics context, Font tr, String text, int row) {
-        context.drawString(tr, text, INNER_X, labelY(row), UiTokens.SLATE_300, false);
+    private void drawLabel(GuiGraphicsExtractor context, Font tr, String text, int row) {
+        context.text(tr, text, INNER_X, labelY(row), UiTokens.SLATE_300, false);
     }
 
-    private void drawLabelAt(GuiGraphics context, Font tr, String text, int row, int x) {
-        context.drawString(tr, text, x, labelY(row), UiTokens.SLATE_300, false);
+    private void drawLabelAt(GuiGraphicsExtractor context, Font tr, String text, int row, int x) {
+        context.text(tr, text, x, labelY(row), UiTokens.SLATE_300, false);
     }
 
     private void switchTab(Tab next) {
@@ -804,25 +804,25 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, width, height);
         UiDraw.cardElevated(context, 8, 8, width - 16, height - 16, UiTokens.R_XL);
 
         Font tr = font;
-        context.drawString(tr, "NBT Editor", PAD, PAD, UiTokens.TEXT, false);
-        context.drawString(tr, ItemStackNbtCodec.itemSummary(workingStack), PAD, PAD + 14, UiTokens.MINT_300, false);
+        context.text(tr, "NBT Editor", PAD, PAD, UiTokens.TEXT, false);
+        context.text(tr, ItemStackNbtCodec.itemSummary(workingStack), PAD, PAD + 14, UiTokens.MINT_300, false);
 
         if (tab == Tab.GENERAL) {
             drawGeneralChrome(context, tr);
         } else if (tab == Tab.ENCHANTS) {
-            context.drawString(tr, "Search enchantment · adjust level with +/-", INNER_X, contentY - 10,
+            context.text(tr, "Search enchantment · adjust level with +/-", INNER_X, contentY - 10,
                     UiTokens.SLATE_300, false);
         } else if (tab == Tab.LORE) {
-            context.drawString(tr, "Lore lines render italic in-game", INNER_X, contentY - 10,
+            context.text(tr, "Lore lines render italic in-game", INNER_X, contentY - 10,
                     UiTokens.SLATE_300, false);
         }
 
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
 
         if (tab == Tab.ENCHANTS) {
             for (StylishSearchableDropdownWidget dropdown : enchantDropdowns) {
@@ -831,12 +831,12 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
         }
 
         if (!status.isBlank()) {
-            context.drawCenteredString(tr, Component.literal(status), width / 2, height - 12,
+            context.centeredText(tr, Component.literal(status), width / 2, height - 12,
                     status.toLowerCase(Locale.ROOT).contains("fail") ? 0xFFF87171 : UiTokens.MINT_300);
         }
     }
 
-    private void drawGeneralChrome(GuiGraphics context, Font tr) {
+    private void drawGeneralChrome(GuiGraphicsExtractor context, Font tr) {
         int half = (innerWidth() - GAP) / 2;
         drawLabel(context, tr, "Stack count", 0);
         drawLabel(context, tr, "Custom display name", 1);

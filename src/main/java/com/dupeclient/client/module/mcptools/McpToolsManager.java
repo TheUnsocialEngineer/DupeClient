@@ -699,7 +699,7 @@ public final class McpToolsManager {
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(line, false);
+                client.player.sendSystemMessage(line);
             }
         });
     }

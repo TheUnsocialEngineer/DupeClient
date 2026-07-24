@@ -16,8 +16,8 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.network.chat.Component;
@@ -116,7 +116,7 @@ public final class SearchableDropdown {
     }
 
     public void render(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font tr,
             int x,
             int y,
@@ -134,7 +134,7 @@ public final class SearchableDropdown {
         drawField(context, tr, x, y, w, h, shown, open || searchFocused);
         String chevron = open ? "⌄" : "›";
         int chevronX = x + w - tr.width(chevron) - 6;
-        context.drawString(tr, Component.literal(chevron), chevronX, y + (h - 8) / 2, MidnightPalette.TEXT_MUTED);
+        context.text(tr, Component.literal(chevron), chevronX, y + (h - 8) / 2, MidnightPalette.TEXT_MUTED);
 
         if (open) {
             // Keep hitboxes current even before popup paint (scroll/click between frames).
@@ -159,7 +159,7 @@ public final class SearchableDropdown {
 
     /** Draws only the expanded search + list (call after the rest of the panel so it paints on top). */
     public void renderPopupLayer(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font tr,
             List<String> options,
             double mouseX,
@@ -170,7 +170,7 @@ public final class SearchableDropdown {
     }
 
     private void renderPopup(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font tr,
             List<String> options,
             double mouseX,
@@ -223,13 +223,13 @@ public final class SearchableDropdown {
                 PlayerSkin skin = skinForName(client, name);
                 int ay = rowY + (rh - AVATAR) / 2;
                 if (skin != null) {
-                    PlayerFaceRenderer.draw(context, skin, textX, ay, AVATAR);
+                    PlayerFaceExtractor.extractRenderState(context, skin, textX, ay, AVATAR);
                 }
                 textX += AVATAR + 4;
             }
             int maxText = Math.max(4, listX + listW - textX - 6);
             String rowText = tr.plainSubstrByWidth(name, maxText);
-            context.drawString(
+            context.text(
                     tr, Component.literal(rowText), textX, rowY + (rh - 8) / 2, MidnightPalette.TEXT_PRIMARY);
         }
 
@@ -368,21 +368,21 @@ public final class SearchableDropdown {
     }
 
     private void drawField(
-            GuiGraphics context, Font tr, int x, int y, int w, int h, String text, boolean focused) {
+            GuiGraphicsExtractor context, Font tr, int x, int y, int w, int h, String text, boolean focused) {
         if (modernChrome) {
             ModernTextInputChrome.drawField(context, x, y, w, h, focused);
             String shown = tr.plainSubstrByWidth(text == null ? "" : text, Math.max(4, w - 20));
-            context.drawString(tr, Component.literal(shown), x + ModernTextInputChrome.PAD_X, ModernTextInputChrome.textY(y, h), ModernTextInputChrome.TEXT_COLOR);
+            context.text(tr, Component.literal(shown), x + ModernTextInputChrome.PAD_X, ModernTextInputChrome.textY(y, h), ModernTextInputChrome.TEXT_COLOR);
             return;
         }
         int bg = 0xFF18181F;
         int border = focused ? 0xFF6A9EFF : 0xFF3A4A5E;
         drawSquareBox(context, x, y, w, h, bg, border);
         String shown = tr.plainSubstrByWidth(text == null ? "" : text, Math.max(4, w - 14));
-        context.drawString(tr, Component.literal(shown), x + 5, y + (h - 8) / 2, 0xFFE5E7EB);
+        context.text(tr, Component.literal(shown), x + 5, y + (h - 8) / 2, 0xFFE5E7EB);
     }
 
-    private static void drawSquareBox(GuiGraphics context, int x, int y, int w, int h, int fill, int border) {
+    private static void drawSquareBox(GuiGraphicsExtractor context, int x, int y, int w, int h, int fill, int border) {
         context.fill(x, y, x + w, y + h, fill);
         context.fill(x, y, x + w, y + 1, border);
         context.fill(x, y + h - 1, x + w, y + h, border);

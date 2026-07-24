@@ -6,7 +6,7 @@ import com.dupeclient.client.module.mcptools.McpToolsManager;
 import com.dupeclient.client.module.mcptools.McpToolsOverlay;
 import com.dupeclient.client.module.mcptools.McpToolsSettings;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class McpToolsPanel extends Panel {
@@ -31,7 +31,7 @@ public final class McpToolsPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
             return;
@@ -71,11 +71,11 @@ public final class McpToolsPanel extends Panel {
         String hint = manager.isSyncing()
                 ? manager.syncStatus()
                 : "Configure bots, join, and movement in the MCPTools overlay.";
-        context.drawString(tr, Component.literal(hint), rx, hintY, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(hint), rx, hintY, UiTokens.TEXT_DIM);
 
         height = bodyTopOffset() + UiTokens.UI_GAP + cardH + UiTokens.SP_2;
         if (capturingOverlayHotkey) {
-            context.drawString(
+            context.text(
                     tr,
                     Component.literal("Press key for overlay hotkey (ESC to unbind)"),
                     x + 8,

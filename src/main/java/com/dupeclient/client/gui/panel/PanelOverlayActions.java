@@ -5,7 +5,7 @@ import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlay;
 import com.dupeclient.client.gui.overlay.IngameOverlayHost;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class PanelOverlayActions {
@@ -14,7 +14,7 @@ public final class PanelOverlayActions {
     private PanelOverlayActions() {
     }
 
-    public static void drawOpenOverlayButton(Font tr, GuiGraphics context, int x, int y, int width, String label) {
+    public static void drawOpenOverlayButton(Font tr, GuiGraphicsExtractor context, int x, int y, int width, String label) {
         UiComponents.drawPillActionButton(tr, context, x, y, width, BTN_H, label);
     }
 
@@ -27,11 +27,11 @@ public final class PanelOverlayActions {
         overlay.setOverlayVisible(true);
     }
 
-    public static void drawStatusLine(Font tr, GuiGraphics context, int x, int y, int width, String line) {
+    public static void drawStatusLine(Font tr, GuiGraphicsExtractor context, int x, int y, int width, String line) {
         if (line == null || line.isBlank()) {
             return;
         }
         String trimmed = line.length() > 80 ? line.substring(0, 77) + "…" : line;
-        context.drawString(tr, Component.literal(trimmed), x, y, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(trimmed), x, y, UiTokens.TEXT_DIM);
     }
 }

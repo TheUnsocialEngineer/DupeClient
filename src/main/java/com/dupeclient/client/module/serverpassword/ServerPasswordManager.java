@@ -727,7 +727,7 @@ public final class ServerPasswordManager {
     private static void notifyPlayer(Component text) {
         Minecraft client = Minecraft.getInstance();
         if (client != null && client.player != null) {
-            client.player.displayClientMessage(text, false);
+            client.player.sendSystemMessage(text);
         }
     }
 

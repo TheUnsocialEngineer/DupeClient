@@ -4,7 +4,7 @@ import com.dupeclient.client.gui.modern.ModernTextInputChrome;
 import com.dupeclient.client.gui.modern.UiTokens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
@@ -47,7 +47,7 @@ public class StylishTextFieldWidget extends EditBox {
     }
 
     @Override
-    public void renderWidget(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         int outerX = getX();
         int outerY = getY();
         int outerW = getWidth();
@@ -74,7 +74,7 @@ public class StylishTextFieldWidget extends EditBox {
         setWidth(Math.max(4, outerW - TEXT_PAD_X * 2));
         setHeight(TEXT_H);
 
-        super.renderWidget(context, mouseX, mouseY, deltaTicks);
+        super.extractWidgetRenderState(context, mouseX, mouseY, deltaTicks);
 
         setX(outerX);
         setY(outerY);

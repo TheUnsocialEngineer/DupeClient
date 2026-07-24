@@ -7,16 +7,17 @@ import com.dupeclient.client.module.packet.fabricator.PacketFabricatorOverlay;
 import com.ui_utils.features.PluginScanner;
 import com.ui_utils.gui.CustomButtonWidget;
 import com.ui_utils.gui.UITheme;
+import com.ui_utils.mixin.accessor.ScreenAccessor;
 import java.lang.reflect.Method;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
@@ -47,7 +48,7 @@ public class MainClient implements ClientModInitializer {
 
         UpdateUtils.checkForUpdates();
 
-        restoreScreenKey = KeyBindingHelper.registerKeyBinding(
+        restoreScreenKey = KeyMappingHelper.registerKeyMapping(
                 new KeyMapping("Restore Screen", GLFW.GLFW_KEY_V, UI_UTILS_CATEGORY));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -67,23 +68,21 @@ public class MainClient implements ClientModInitializer {
         });
     }
 
-    public static void createText(Minecraft mc, GuiGraphics context, Font textRenderer) {
+    public static void createText(Minecraft mc, GuiGraphicsExtractor context, Font textRenderer) {
         UITheme.drawPanel(context, 153, 4, 56, 24);
         if (mc.player != null && mc.player.containerMenu != null) {
-            context.drawString(
+            context.text(
                     textRenderer,
                     "Sync: " + mc.player.containerMenu.containerId,
                     157,
                     7,
-                    UITheme.TEXT,
-                    false);
-            context.drawString(
+                    UITheme.TEXT);
+            context.text(
                     textRenderer,
                     "Rev: " + mc.player.containerMenu.getStateId(),
                     157,
                     17,
-                    UITheme.TEXT,
-                    false);
+                    UITheme.TEXT);
         }
     }
 
@@ -94,12 +93,14 @@ public class MainClient implements ClientModInitializer {
         int h = 18;
         int spacing = 2;
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y, w, Component.nullToEmpty("Close without packet"), button -> {
+        ScreenAccessor access = (ScreenAccessor) screen;
+
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y, w, Component.nullToEmpty("Close without packet"), button -> {
             PacketUtilsManager.INSTANCE.moduleFeedback("UI Utils: close without packet (overlay).");
             mc.setScreen(null);
         }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + h + spacing, w, Component.nullToEmpty("Desync"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + h + spacing, w, Component.nullToEmpty("Desync"), button -> {
             if (mc.getConnection() != null && mc.player != null) {
                 mc.getConnection()
                         .send(new ServerboundContainerClosePacket(mc.player.containerMenu.containerId));
@@ -107,7 +108,7 @@ public class MainClient implements ClientModInitializer {
             }
         }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(
                 x,
                 y + (h + spacing) * 2,
                 w,
@@ -120,7 +121,7 @@ public class MainClient implements ClientModInitializer {
                             "UI Utils send live packets " + (SharedVariables.sendUIPackets ? "ON" : "OFF"));
                 }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(
                 x,
                 y + (h + spacing) * 3,
                 w,
@@ -131,7 +132,7 @@ public class MainClient implements ClientModInitializer {
                     button.setMessage(Component.nullToEmpty("Delay packets: " + SharedVariables.delayUIPackets));
                 }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 4, w, Component.nullToEmpty("Leave & Send Packets"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 4, w, Component.nullToEmpty("Leave & Send Packets"), button -> {
             int queued = SharedVariables.delayedUIPackets.size();
             SharedVariables.delayUIPackets = false;
             if (mc.getConnection() != null) {
@@ -156,9 +157,9 @@ public class MainClient implements ClientModInitializer {
                             "Clickslot fabricator "
                                     + (PacketFabricatorOverlay.INSTANCE.isModuleEnabled() ? "ON" : "OFF"));
                 });
-        screen.addRenderableWidget(fabricatorButton);
+        access.uiUtils$addRenderableWidget(fabricatorButton);
 
-        screen.addRenderableWidget(CustomButtonWidget.create(
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(
                 x,
                 y + (h + spacing) * 6,
                 w,
@@ -172,30 +173,30 @@ public class MainClient implements ClientModInitializer {
                             "Slot ID overlay " + (settings.slotIdsOverlayEnabled ? "ON" : "OFF"));
                 }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 7, w, Component.nullToEmpty("Copy GUI Title JSON"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 7, w, Component.nullToEmpty("Copy GUI Title JSON"), button -> {
             if (mc.screen != null) {
                 Component title = mc.screen.getTitle();
                 String json = getTextAsJson(title, mc);
                 mc.keyboardHandler.setClipboard(json);
                 if (mc.player != null) {
-                    mc.player.displayClientMessage(Component.literal("§7[§c*§7] §7Copied GUI title JSON to clipboard"), false);
+                    mc.player.sendSystemMessage(Component.literal("§7[§c*§7] §7Copied GUI title JSON to clipboard"));
                 }
             }
         }));
 
         int halfW = (w - spacing) / 2;
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 8, halfW, Component.nullToEmpty("Save GUI"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 8, halfW, Component.nullToEmpty("Save GUI"), button -> {
             if (mc.player != null) {
                 SharedVariables.storedScreen = mc.screen;
                 SharedVariables.storedScreenHandler = mc.player.containerMenu;
                 SharedVariables.savedScreens.put("default", mc.screen);
                 SharedVariables.savedScreenHandlers.put("default", mc.player.containerMenu);
-                mc.player.displayClientMessage(Component.literal("§7[§c*§7] §7GUI saved"), false);
+                mc.player.sendSystemMessage(Component.literal("§7[§c*§7] §7GUI saved"));
             }
         }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(
                 x + halfW + spacing, y + (h + spacing) * 8, halfW, Component.nullToEmpty("Load GUI"), button -> {
                     if (SharedVariables.storedScreen != null
                             && SharedVariables.storedScreenHandler != null
@@ -205,30 +206,30 @@ public class MainClient implements ClientModInitializer {
                     }
                 }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 9, halfW, Component.nullToEmpty("Clear Queue"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 9, halfW, Component.nullToEmpty("Clear Queue"), button -> {
             int count = SharedVariables.delayedUIPackets.size();
             SharedVariables.delayedUIPackets.clear();
             if (mc.player != null) {
-                mc.player.displayClientMessage(
-                        Component.literal("§7[§c*§7] §7Cleared §c" + count + " §7packets"), false);
+                mc.player.sendSystemMessage(
+                        Component.literal("§7[§c*§7] §7Cleared §c" + count + " §7packets"));
             }
         }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(
                 x + halfW + spacing,
                 y + (h + spacing) * 9,
                 halfW,
                 Component.nullToEmpty("Queue: 0"),
                 button -> button.setMessage(Component.nullToEmpty("Queue: " + SharedVariables.delayedUIPackets.size()))));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 10, halfW, Component.nullToEmpty("Resync Inv"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 10, halfW, Component.nullToEmpty("Resync Inv"), button -> {
             if (mc.getConnection() != null && mc.player != null) {
                 mc.player.containerMenu.sendAllDataToRemote();
-                mc.player.displayClientMessage(Component.literal("§7[§c*§7] §7Inventory resynced"), false);
+                mc.player.sendSystemMessage(Component.literal("§7[§c*§7] §7Inventory resynced"));
             }
         }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(
                 x + halfW + spacing, y + (h + spacing) * 10, halfW, Component.nullToEmpty("Disconnect"), button -> {
                     if (mc.getConnection() != null) {
                         mc.getConnection().getConnection().disconnect(Component.literal("Disconnected"));
@@ -250,59 +251,57 @@ public class MainClient implements ClientModInitializer {
                             }
                         }
                         if (mc.player != null) {
-                            mc.player.displayClientMessage(
-                                    Component.literal("§7[§c*§7] §7Spammed §c" + sent + " §7packets"), false);
+                            mc.player.sendSystemMessage(
+                                    Component.literal("§7[§c*§7] §7Spammed §c" + sent + " §7packets"));
                         }
                     } else if (mc.player != null) {
-                        mc.player.displayClientMessage(Component.literal("§7[§c*§7] §cNo packets in queue"), false);
+                        mc.player.sendSystemMessage(Component.literal("§7[§c*§7] §cNo packets in queue"));
                     }
                 });
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 11, 30, Component.nullToEmpty("-"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 11, 30, Component.nullToEmpty("-"), button -> {
             if (SharedVariables.spamCount > 1) {
                 SharedVariables.spamCount--;
                 spamButton.setMessage(Component.nullToEmpty("Spam (x" + SharedVariables.spamCount + ")"));
             }
         }));
 
-        screen.addRenderableWidget(spamButton);
+        access.uiUtils$addRenderableWidget(spamButton);
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x + w - 30, y + (h + spacing) * 11, 30, Component.nullToEmpty("+"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x + w - 30, y + (h + spacing) * 11, 30, Component.nullToEmpty("+"), button -> {
             if (SharedVariables.spamCount < 100) {
                 SharedVariables.spamCount++;
                 spamButton.setMessage(Component.nullToEmpty("Spam (x" + SharedVariables.spamCount + ")"));
             }
         }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 12, halfW, Component.nullToEmpty("Send One"), button -> {
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 12, halfW, Component.nullToEmpty("Send One"), button -> {
             if (mc.getConnection() != null && !SharedVariables.delayedUIPackets.isEmpty()) {
                 Packet<?> packet = SharedVariables.delayedUIPackets.remove(0);
                 mc.getConnection().send(packet);
                 if (mc.player != null) {
-                    mc.player.displayClientMessage(
+                    mc.player.sendSystemMessage(
                             Component.literal("§7[§c*§7] §7Sent 1 packet §7(§c"
                                     + SharedVariables.delayedUIPackets.size()
-                                    + "§7 left)"),
-                            false);
+                                    + "§7 left)"));
                 }
             } else if (mc.player != null) {
-                mc.player.displayClientMessage(Component.literal("§7[§c*§7] §cNo packets in queue"), false);
+                mc.player.sendSystemMessage(Component.literal("§7[§c*§7] §cNo packets in queue"));
             }
         }));
 
-        screen.addRenderableWidget(CustomButtonWidget.create(
+        access.uiUtils$addRenderableWidget(CustomButtonWidget.create(
                 x + halfW + spacing, y + (h + spacing) * 12, halfW, Component.nullToEmpty("Pop Last"), button -> {
                     if (!SharedVariables.delayedUIPackets.isEmpty()) {
                         SharedVariables.delayedUIPackets.remove(SharedVariables.delayedUIPackets.size() - 1);
                         if (mc.player != null) {
-                            mc.player.displayClientMessage(
+                            mc.player.sendSystemMessage(
                                     Component.literal("§7[§c*§7] §7Removed last packet §7(§c"
                                             + SharedVariables.delayedUIPackets.size()
-                                            + "§7 left)"),
-                                    false);
+                                            + "§7 left)"));
                         }
                     } else if (mc.player != null) {
-                        mc.player.displayClientMessage(Component.literal("§7[§c*§7] §cNo packets in queue"), false);
+                        mc.player.sendSystemMessage(Component.literal("§7[§c*§7] §cNo packets in queue"));
                     }
                 }));
     }

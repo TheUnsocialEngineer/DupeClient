@@ -2,7 +2,7 @@ package com.dupeclient.client.mixin;
 
 import com.dupeclient.client.gui.HandledScreenGuiScale;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,15 +13,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Scales the survival-inventory player preview with the rest of the scaled {@link InventoryScreen} GUI.
- * {@link InventoryScreen#extractRenderState} is static in 1.21.11, so callbacks here must be static too.
+ * {@link InventoryScreen#render} is static in 1.21.11, so callbacks here must be static too.
  */
 @Mixin(InventoryScreen.class)
 public abstract class InventoryScreenGuiScaleMixin {
     @Inject(
-            method = "renderEntityInInventoryFollowsMouse(Lnet/minecraft/client/gui/GuiGraphics;IIIIIFFFLnet/minecraft/world/entity/LivingEntity;)V",
+            method = "renderEntityInInventoryFollowsMouse(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIIIIFFFLnet/minecraft/world/entity/LivingEntity;)V",
             at = @At("HEAD"))
     private static void dupeclient$scalePlayerModelHead(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int x1,
             int y1,
             int x2,
@@ -44,10 +44,10 @@ public abstract class InventoryScreenGuiScaleMixin {
     }
 
     @Inject(
-            method = "renderEntityInInventoryFollowsMouse(Lnet/minecraft/client/gui/GuiGraphics;IIIIIFFFLnet/minecraft/world/entity/LivingEntity;)V",
+            method = "renderEntityInInventoryFollowsMouse(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIIIIFFFLnet/minecraft/world/entity/LivingEntity;)V",
             at = @At("RETURN"))
     private static void dupeclient$scalePlayerModelTail(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int x1,
             int y1,
             int x2,

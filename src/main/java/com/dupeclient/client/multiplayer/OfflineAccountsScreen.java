@@ -7,8 +7,8 @@ import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -137,22 +137,22 @@ public class OfflineAccountsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, width, height);
         int panelH = height - 48;
         UiDraw.cardElevated(context, panelX, PANEL_TOP, panelW, panelH, 10);
 
-        context.drawCenteredString(font, title, width / 2, PANEL_TOP + 10, 0xFFE8EEF8);
+        context.centeredText(font, title, width / 2, PANEL_TOP + 10, 0xFFE8EEF8);
 
         String current = minecraft != null ? minecraft.getUser().getName() : "";
-        context.drawString(font, Component.literal("Signed in as "), innerX, PANEL_TOP + 28, 0xFF8FA3B8);
-        context.drawString(font, Component.literal(current), innerX + font.width("Signed in as "), PANEL_TOP + 28, 0xFF4ADE80);
+        context.text(font, Component.literal("Signed in as "), innerX, PANEL_TOP + 28, 0xFF8FA3B8);
+        context.text(font, Component.literal(current), innerX + font.width("Signed in as "), PANEL_TOP + 28, 0xFF4ADE80);
 
-        context.drawString(font, Component.literal("Add account"), innerX, PANEL_TOP + 48, 0xFFAFC7FF);
+        context.text(font, Component.literal("Add account"), innerX, PANEL_TOP + 48, 0xFFAFC7FF);
 
         int visibleRows = Math.max(1, (listBottom - listTop) / ROW_H);
         if (!accounts.isEmpty()) {
-            context.drawString(font, Component.literal("Saved accounts"), innerX, listTop - 12, 0xFFAFC7FF);
+            context.text(font, Component.literal("Saved accounts"), innerX, listTop - 12, 0xFFAFC7FF);
         }
 
         Minecraft mc = minecraft;
@@ -174,18 +174,18 @@ public class OfflineAccountsScreen extends Screen {
 
             if (mc != null) {
                 PlayerSkin skin = OfflineAccountSkins.texturesFor(mc, account);
-                PlayerFaceRenderer.draw(context, skin, innerX + 4, rowY + 5, HEAD_SIZE);
+                PlayerFaceExtractor.extractRenderState(context, skin, innerX + 4, rowY + 5, HEAD_SIZE);
             }
 
             int nameX = innerX + 28;
             int nameColor = active ? 0xFF4ADE80 : 0xFFE8EEF8;
-            context.drawString(font, Component.literal(account.username()), nameX, rowY + 6, nameColor);
+            context.text(font, Component.literal(account.username()), nameX, rowY + 6, nameColor);
             String sub = active ? "Active" : "Offline";
-            context.drawString(font, Component.literal(sub), nameX, rowY + 16, 0xFF8FA3B8);
+            context.text(font, Component.literal(sub), nameX, rowY + 16, 0xFF8FA3B8);
         }
 
         if (accounts.isEmpty()) {
-            context.drawCenteredString(
+            context.centeredText(
                 font,
                 Component.literal("No saved accounts yet"),
                 width / 2,
@@ -195,9 +195,9 @@ public class OfflineAccountsScreen extends Screen {
         }
 
         if (!status.isEmpty()) {
-            context.drawCenteredString(font, Component.literal(status), width / 2, height - 44, 0xFF00E676);
+            context.centeredText(font, Component.literal(status), width / 2, height - 44, 0xFF00E676);
         }
 
-        super.render(context, mouseX, mouseY, deltaTicks);
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
     }
 }

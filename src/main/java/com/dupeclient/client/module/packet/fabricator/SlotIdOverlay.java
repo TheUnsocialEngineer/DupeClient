@@ -4,7 +4,7 @@ import com.dupeclient.client.module.packet.PacketUtilsManager;
 import com.dupeclient.client.module.packet.PacketUtilsSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -24,7 +24,7 @@ public final class SlotIdOverlay {
     private SlotIdOverlay() {
     }
 
-    public static void renderSlot(AbstractContainerScreen<?> screen, GuiGraphics context, Slot slot) {
+    public static void renderSlot(AbstractContainerScreen<?> screen, GuiGraphicsExtractor context, Slot slot) {
         PacketUtilsSettings settings = PacketUtilsManager.INSTANCE.getSettings();
         if (!settings.slotIdsOverlayEnabled || slot == null) {
             return;
@@ -58,7 +58,7 @@ public final class SlotIdOverlay {
     }
 
     private static void drawCornerLabel(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font tr,
             int slotLeft,
             int slotTop,
@@ -83,7 +83,7 @@ public final class SlotIdOverlay {
         matrices.pushMatrix();
         matrices.translate(bx + 1, by + 1);
         matrices.scale(LABEL_SCALE, LABEL_SCALE);
-        context.drawString(tr, Component.literal(text), 0, 0, textColor);
+        context.text(tr, Component.literal(text), 0, 0, textColor);
         matrices.popMatrix();
     }
 }

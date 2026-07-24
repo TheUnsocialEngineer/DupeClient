@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -150,24 +150,24 @@ public final class MacroPromptScreen extends Screen {
 
     private void feedback(String msg, ChatFormatting color) {
         if (minecraft != null && minecraft.player != null) {
-            minecraft.player.displayClientMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
-                    .append(Component.literal(msg).withStyle(color)), false);
+            minecraft.player.sendSystemMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
+                    .append(Component.literal(msg).withStyle(color)));
         }
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, width, height);
         context.fill(0, 0, width, 40, 0xCC0A0E14);
         context.fill(0, 39, width, 40, 0x66334155);
-        context.drawCenteredString(font, title, width / 2, 14, UiTokens.ACCENT);
-        context.drawCenteredString(font,
+        context.centeredText(font, title, width / 2, 14, UiTokens.ACCENT);
+        context.centeredText(font,
                 Component.literal("Separate steps with commas or \"then\" — chat, GUI moves, waits, closes"),
                 width / 2, 26, UiTokens.TEXT_DIM);
 
         int previewH = Math.max(96, previewBottom - previewTop);
         UiComponents.drawSurfaceCard(context, contentLeft, previewTop, contentWidth, previewH);
-        context.drawString(font, Component.literal("Step preview"), contentLeft + 12, previewTop + 8, UiTokens.ACCENT);
+        context.text(font, Component.literal("Step preview"), contentLeft + 12, previewTop + 8, UiTokens.ACCENT);
 
         List<String> lines = buildPreviewLines();
         int lineY = previewTop + 22;
@@ -176,20 +176,20 @@ public final class MacroPromptScreen extends Screen {
         for (int i = start; i < lines.size() && i < start + maxLines; i++) {
             String line = lines.get(i);
             int color = line.startsWith("!") ? 0xFFFF8A80 : (line.startsWith("·") ? UiTokens.TEXT_DIM : UiTokens.TEXT);
-            context.drawString(font, Component.literal(line), contentLeft + 14, lineY, color);
+            context.text(font, Component.literal(line), contentLeft + 14, lineY, color);
             lineY += 11;
         }
         if (lines.size() > maxLines) {
-            context.drawString(font,
+            context.text(font,
                     Component.literal("Scroll preview · " + lines.size() + " lines"),
                     contentLeft + 14, previewTop + previewH - 14, UiTokens.TEXT_DIM);
         } else if (lines.isEmpty()) {
             MidnightShapes.fillRoundedRect(context, contentLeft + 12, previewTop + 24, contentWidth - 24, 32, 6, 0x33000000);
-            context.drawCenteredString(font, Component.literal("Type a prompt above to see steps"),
+            context.centeredText(font, Component.literal("Type a prompt above to see steps"),
                     contentLeft + contentWidth / 2, previewTop + 36, UiTokens.TEXT_DIM);
         }
 
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
     }
 
     private List<String> buildPreviewLines() {

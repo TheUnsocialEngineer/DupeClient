@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class AcAuditOverlay extends AbstractDraggableOverlay implements IngameModuleOverlay {
@@ -130,7 +130,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (!isActive()) {
             return;
         }
@@ -153,7 +153,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
 
         context.fill(px, py, px + PANEL_W, py + ph, PANEL_BG);
         context.fill(px, py, px + PANEL_W, py + TITLE_H, TITLE_BG);
-        context.drawString(tr, Component.literal("AC Audit"), px + PAD, py + 3, UiTokens.ACCENT);
+        context.text(tr, Component.literal("AC Audit"), px + PAD, py + 3, UiTokens.ACCENT);
 
         int stripY = py + TITLE_H + GAP;
         hitGithubX = px + PANEL_W - PAD - AcAuditGitHubCard.width();
@@ -184,7 +184,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
         }
 
         int logTop = bodyBottom + GAP;
-        context.drawString(tr, Component.literal("Log"), px + PAD, logTop, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Log"), px + PAD, logTop, UiTokens.TEXT_DIM);
         logTop += 10 + GAP;
         hitLogX = px + 4;
         hitLogY = logTop - 2;
@@ -194,7 +194,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
         renderLog(context, tr, px + PAD, logTop);
 
         int statusY = py + ph - PAD - 8;
-        context.drawString(
+        context.text(
                 tr,
                 Component.literal("Authorized use — own servers / consent"),
                 px + PAD,
@@ -202,7 +202,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
                 UiTokens.TEXT_DIM);
     }
 
-    private int renderMonitor(GuiGraphics context, Font tr, AcAuditMetrics m, int x, int y, int inner) {
+    private int renderMonitor(GuiGraphicsExtractor context, Font tr, AcAuditMetrics m, int x, int y, int inner) {
         int col = inner / 2;
         drawMetric(tr, context, x, y, "TPS", String.format(Locale.ROOT, "%.1f", m.tps));
         drawMetric(tr, context, x + col, y, "Ping", m.ping >= 0 ? m.ping + "ms" : "—");
@@ -214,10 +214,10 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
         drawMetric(tr, context, x + col, y, "Corrections", Integer.toString(m.correctionCount));
         y += METRIC_ROW;
         if (m.brand != null) {
-            context.drawString(tr, Component.literal("Brand"), x, y + 2, UiTokens.TEXT_DIM);
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(m.brand, inner - 8)), x, y + 12, 0xFFE5E7EB);
+            context.text(tr, Component.literal("Brand"), x, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(m.brand, inner - 8)), x, y + 12, 0xFFE5E7EB);
             y += METRIC_ROW;
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(m.platform, inner)), x, y + 4, 0xFF86EFAC);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(m.platform, inner)), x, y + 4, 0xFF86EFAC);
             y += CTRL_ROW;
         }
         if (m.correctionCount > 0) {
@@ -226,25 +226,25 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
             y += METRIC_ROW;
         }
         if (!m.anticheatPlugins.isEmpty()) {
-            context.drawString(tr, Component.literal("AC plugins"), x, y + 2, UiTokens.TEXT_DIM);
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(String.join(", ", m.anticheatPlugins), inner)), x, y + 12, 0xFFFF6B6B);
+            context.text(tr, Component.literal("AC plugins"), x, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(String.join(", ", m.anticheatPlugins), inner)), x, y + 12, 0xFFFF6B6B);
             y += METRIC_ROW;
         }
         if (!m.pluginNamespaces.isEmpty()) {
-            context.drawString(tr, Component.literal("Namespaces (" + m.discoveredCommandCount + " cmds)"), x, y + 2, UiTokens.TEXT_DIM);
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(String.join(", ", m.pluginNamespaces), inner)), x, y + 12, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("Namespaces (" + m.discoveredCommandCount + " cmds)"), x, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(String.join(", ", m.pluginNamespaces), inner)), x, y + 12, UiTokens.TEXT_DIM);
             y += METRIC_ROW;
         }
         if (!m.topPackets.isEmpty()) {
-            context.drawString(tr, Component.literal("Top S2C"), x, y + 2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("Top S2C"), x, y + 2, UiTokens.TEXT_DIM);
             y += 12;
             for (String line : m.topPackets) {
-                context.drawString(tr, Component.literal("  " + line), x, y, UiTokens.TEXT_DIM);
+                context.text(tr, Component.literal("  " + line), x, y, UiTokens.TEXT_DIM);
                 y += LOG_LINE_H;
             }
         }
         if (manager.getSettings().slotSyncProbeActive && m.slotSyncProbeTotal > 0) {
-            context.drawString(tr, Component.literal(String.format(Locale.ROOT,
+            context.text(tr, Component.literal(String.format(Locale.ROOT,
                     "Slot probe %d/%d %s", m.slotSyncProbeIndex + 1, m.slotSyncProbeTotal,
                     m.slotSyncProbeLabel != null ? m.slotSyncProbeLabel : "")), x, y + 2, 0xFFFBBF24);
             y += CTRL_ROW;
@@ -252,7 +252,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
         return y;
     }
 
-    private int renderProbes(GuiGraphics context, Font tr, AcAuditSettings s, int x, int y, int inner) {
+    private int renderProbes(GuiGraphicsExtractor context, Font tr, AcAuditSettings s, int x, int y, int inner) {
         int colW = (inner - GAP) / 2;
         int left = x;
         int right = x + colW + GAP;
@@ -354,7 +354,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
         return Math.max(ly, ry + BTN_H);
     }
 
-    private int renderSettings(GuiGraphics context, Font tr, AcAuditSettings s, int x, int y, int inner) {
+    private int renderSettings(GuiGraphicsExtractor context, Font tr, AcAuditSettings s, int x, int y, int inner) {
         int ctrlW = inner - LABEL_COL;
         drawToggleRow(context, tr, x, y, inner, "Log probe to chat", s.logProbeToChat, () -> {
             s.logProbeToChat = !s.logProbeToChat;
@@ -417,7 +417,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
         return y + TOGGLE_ROW;
     }
 
-    private void renderLog(GuiGraphics context, Font tr, int x, int y) {
+    private void renderLog(GuiGraphicsExtractor context, Font tr, int x, int y) {
         List<String> logs = manager.getLogLines();
         int maxScroll = Math.max(0, logs.size() - LOG_LINES);
         logScrollOffset = Math.max(0, Math.min(maxScroll, logScrollOffset));
@@ -426,7 +426,7 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
             int idx = start + i;
             String line = idx < logs.size() ? logs.get(idx) : "";
             int color = line.contains("Disconnect") || line.contains("AC plugin") ? 0xFFFF6B6B : UiTokens.TEXT_DIM;
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(line, PANEL_W - PAD * 2)), x, y, color);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(line, PANEL_W - PAD * 2)), x, y, color);
             y += LOG_LINE_H;
         }
     }
@@ -535,52 +535,52 @@ public final class AcAuditOverlay extends AbstractDraggableOverlay implements In
         manager.save();
     }
 
-    private void drawMetric(Font tr, GuiGraphics context, int x, int y, String label, String value) {
-        context.drawString(tr, Component.literal(label), x, y + 2, UiTokens.TEXT_DIM);
-        context.drawString(tr, Component.literal(value), x, y + 12, 0xFFE5E7EB);
+    private void drawMetric(Font tr, GuiGraphicsExtractor context, int x, int y, String label, String value) {
+        context.text(tr, Component.literal(label), x, y + 2, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(value), x, y + 12, 0xFFE5E7EB);
     }
 
-    private static void drawSectionHeader(Font tr, GuiGraphics context, int x, int y, String label) {
-        context.drawString(tr, Component.literal(label), x, y + 3, 0xFF86EFAC);
+    private static void drawSectionHeader(Font tr, GuiGraphicsExtractor context, int x, int y, String label) {
+        context.text(tr, Component.literal(label), x, y + 3, 0xFF86EFAC);
     }
 
-    private static void drawLabel(Font tr, GuiGraphics context, int x, int y, String label) {
-        context.drawString(tr, Component.literal(label), x, y + 4, UiTokens.TEXT_DIM);
+    private static void drawLabel(Font tr, GuiGraphicsExtractor context, int x, int y, String label) {
+        context.text(tr, Component.literal(label), x, y + 4, UiTokens.TEXT_DIM);
     }
 
-    private void drawToggleRow(GuiGraphics context, Font tr, int x, int y, int w, String label, boolean on, Runnable action) {
+    private void drawToggleRow(GuiGraphicsExtractor context, Font tr, int x, int y, int w, String label, boolean on, Runnable action) {
         UiComponents.drawOptionToggle(tr, context, x, y, w, label, on, on ? 1f : 0f);
         toggleHits.add(new ToggleHit(x, y, w, TOGGLE_ROW, action));
     }
 
-    private void drawActionButton(GuiGraphics context, Font tr, int x, int y, int w, int h, String label, Runnable action) {
+    private void drawActionButton(GuiGraphicsExtractor context, Font tr, int x, int y, int w, int h, String label, Runnable action) {
         drawMiniBtn(context, tr, x, y, w, h, label, true);
         buttonHits.add(new ButtonHit(x, y, w, h, action));
     }
 
-    private void drawCycleButton(GuiGraphics context, Font tr, int x, int y, int w, String value, Runnable action) {
+    private void drawCycleButton(GuiGraphicsExtractor context, Font tr, int x, int y, int w, String value, Runnable action) {
         int bg = 0xFF1F2937;
         int border = 0xFF374151;
         context.fill(x, y, x + w, y + BTN_H, bg);
         context.fill(x, y, x + w, y + 1, border);
-        context.drawCenteredString(tr, Component.literal(tr.plainSubstrByWidth(value, w - 6)), x + w / 2, y + 3, 0xFFE5E7EB);
+        context.centeredText(tr, Component.literal(tr.plainSubstrByWidth(value, w - 6)), x + w / 2, y + 3, 0xFFE5E7EB);
         cycleHits.add(new CycleHit(x, y, w, BTN_H, action));
     }
 
-    private void drawStepper(GuiGraphics context, Font tr, int x, int y, int w, int value, int min, int max, IntConsumer apply) {
+    private void drawStepper(GuiGraphicsExtractor context, Font tr, int x, int y, int w, int value, int min, int max, IntConsumer apply) {
         int btnW = SMALL_BTN;
         int minusX = x;
         int plusX = x + w - btnW;
         drawMiniBtn(context, tr, minusX, y, btnW, BTN_H, "-", true);
         drawMiniBtn(context, tr, plusX, y, btnW, BTN_H, "+", true);
-        context.drawCenteredString(tr, Component.literal(Integer.toString(value)), x + w / 2, y + 3, 0xFF86EFAC);
+        context.centeredText(tr, Component.literal(Integer.toString(value)), x + w / 2, y + 3, 0xFF86EFAC);
         stepperHits.add(new StepperHit(minusX, plusX, y, btnW, BTN_H, value, min, max, apply));
     }
 
-    private static void drawMiniBtn(GuiGraphics context, Font tr, int x, int y, int w, int h, String label, boolean enabled) {
+    private static void drawMiniBtn(GuiGraphicsExtractor context, Font tr, int x, int y, int w, int h, String label, boolean enabled) {
         context.fill(x, y, x + w, y + h, enabled ? 0xFF374151 : 0xFF1F2937);
         int tw = tr.width(label);
-        context.drawString(tr, Component.literal(label), x + (w - tw) / 2, y + 3, enabled ? 0xFFE5E7EB : UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal(label), x + (w - tw) / 2, y + 3, enabled ? 0xFFE5E7EB : UiTokens.TEXT_DIM);
     }
 
     private static String enumLabel(AcAuditSettings.SlotSyncField field) {

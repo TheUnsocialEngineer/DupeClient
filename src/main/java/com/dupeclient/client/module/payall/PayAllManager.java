@@ -198,7 +198,7 @@ public final class PayAllManager {
         }
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(line, false);
+                client.player.sendSystemMessage(line);
             }
         });
     }
@@ -210,7 +210,7 @@ public final class PayAllManager {
         MutableComponent line = payAllPrefix().copy().append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(line, false);
+                client.player.sendSystemMessage(line);
             }
         });
     }

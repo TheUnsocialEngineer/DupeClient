@@ -1,7 +1,7 @@
 package com.dupeclient.client.mixin;
 
 import com.dupeclient.client.gui.HandledScreenGuiScale;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.navigation.ScreenPosition;
@@ -68,7 +68,7 @@ public abstract class RecipeBookScreenGuiScaleMixin {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void dupeclient$layoutRecipeBookBeforeRender(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int mouseX,
             int mouseY,
             float delta,

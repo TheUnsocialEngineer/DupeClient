@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -68,12 +68,12 @@ public final class StylishSearchableDropdownWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         var tr = Minecraft.getInstance().font;
         dropdown.render(context, tr, getX(), getY(), getWidth(), getHeight(), options, mouseX, mouseY);
     }
 
-    public void renderPopupLayer(GuiGraphics context) {
+    public void renderPopupLayer(GuiGraphicsExtractor context) {
         var tr = Minecraft.getInstance().font;
         dropdown.renderPopupLayer(context, tr, options, 0, 0);
     }

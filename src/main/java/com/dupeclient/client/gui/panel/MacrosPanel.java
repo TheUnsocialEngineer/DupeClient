@@ -22,7 +22,7 @@ import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -100,7 +100,7 @@ public class MacrosPanel extends Panel {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         hits.clear();
         super.render(context, mouseX, mouseY, delta);
         if (collapsed) {
@@ -141,21 +141,21 @@ public class MacrosPanel extends Panel {
     }
 
     private void renderPlayTab(
-            GuiGraphics context, Font tr, Minecraft mc, int tx, int ty, int sw, int mouseX, int mouseY) {
+            GuiGraphicsExtractor context, Font tr, Minecraft mc, int tx, int ty, int sw, int mouseX, int mouseY) {
         String status = MacroEngine.INSTANCE.isRunning()
                 ? "Running: " + MacroEngine.INSTANCE.getRunLabel()
                 : "Idle — assign a run key or use Run";
         int statusColor = MacroEngine.INSTANCE.isRunning() ? 0xFF4ADE9A : UiTokens.ACCENT;
-        context.drawString(tr, Component.literal(status), tx, ty, statusColor);
+        context.text(tr, Component.literal(status), tx, ty, statusColor);
         ty += 12;
         String queue = MacroScheduler.getInstance().statusLine();
         if (!queue.isBlank()) {
-            context.drawString(tr, Component.literal(queue), tx, ty, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(queue), tx, ty, UiTokens.TEXT_DIM);
             ty += 10;
         }
         String conflict = MacroHotkeyConflicts.summaryLine();
         if (!conflict.isBlank()) {
-            context.drawString(tr, Component.literal(conflict), tx, ty, 0xFFFF9A6A);
+            context.text(tr, Component.literal(conflict), tx, ty, 0xFFFF9A6A);
             ty += 10;
         }
 
@@ -180,7 +180,7 @@ public class MacrosPanel extends Panel {
         }
         ty += BTN_H + GAP + 2;
 
-        context.drawString(tr, Component.literal("Macros"), tx, ty, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Macros"), tx, ty, UiTokens.TEXT_DIM);
         ty += 10;
 
         List<String> visible = sliceVisible(playListScroll);
@@ -188,18 +188,18 @@ public class MacrosPanel extends Panel {
             String id = visible.get(i);
             int ry = ty + i * (ROW_H + 2);
             if (id.startsWith("(")) {
-                context.drawString(tr, Component.literal(id), tx + 4, ry + 5, UiTokens.TEXT_DIM);
+                context.text(tr, Component.literal(id), tx + 4, ry + 5, UiTokens.TEXT_DIM);
                 continue;
             }
 
             boolean rowHot = mouseX >= tx && mouseX < tx + sw && mouseY >= ry && mouseY < ry + ROW_H;
-            UiComponents.drawListRowBack(context, tx, ry, sw, ROW_H, false);
+            UiComponents.drawListRowBack(context, tx, ry, sw, ROW_H, rowHot);
             if (rowHot) {
                 context.fill(tx + 1, ry + 1, tx + sw - 1, ry + ROW_H - 1, 0x22FFFFFF);
             }
 
             int labelMax = sw - BIND_W - ACTION_W * 3 - 24;
-            context.drawString(tr, Component.literal(tr.plainSubstrByWidth(id, Math.max(8, labelMax))), tx + 6, ry + 5, UiTokens.TEXT);
+            context.text(tr, Component.literal(tr.plainSubstrByWidth(id, Math.max(8, labelMax))), tx + 6, ry + 5, UiTokens.TEXT);
 
             int bx = tx + sw - BIND_W - ACTION_W * 3 - 8;
             boolean listening = id.equals(captureMacroIdOrNull);
@@ -207,7 +207,7 @@ public class MacrosPanel extends Panel {
             int fill = listening ? 0xCC5A2E1A : 0xC8121822;
             int edge = listening ? 0xFFFF9A6A : 0xFF3A4A5E;
             UiComponents.drawSlotField(context, bx, ry + 2, BIND_W, ROW_H - 4, fill, edge);
-            context.drawCenteredString(tr, Component.literal(bindText), bx + BIND_W / 2, ry + 5, 0xFFE6EEFF);
+            context.centeredText(tr, Component.literal(bindText), bx + BIND_W / 2, ry + 5, 0xFFE6EEFF);
             hits.add(bx, ry + 2, BIND_W, ROW_H - 4, () -> captureMacroIdOrNull = id);
 
             int ax = tx + sw - ACTION_W * 3 - 4;
@@ -234,9 +234,9 @@ public class MacrosPanel extends Panel {
     }
 
     private void renderStudioTab(
-            GuiGraphics context, Font tr, Minecraft mc, int tx, int ty, int sw, int mouseX, int mouseY) {
+            GuiGraphicsExtractor context, Font tr, Minecraft mc, int tx, int ty, int sw, int mouseX, int mouseY) {
         String keyLabel = KeybindManager.OPEN_MACRO_EDITOR_KEY.getTranslatedKeyMessage().getString();
-        context.drawString(tr, Component.literal("Editor key: " + keyLabel), tx, ty, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Editor key: " + keyLabel), tx, ty, UiTokens.TEXT_DIM);
         ty += 12;
 
         int third = (sw - GAP * 2) / 3;
@@ -301,7 +301,7 @@ public class MacrosPanel extends Panel {
         }
         ty += BTN_H + GAP + 2;
 
-        context.drawString(tr, Component.literal("Click to select · double-click to edit"), tx, ty, UiTokens.TEXT_DIM);
+        context.text(tr, Component.literal("Click to select · double-click to edit"), tx, ty, UiTokens.TEXT_DIM);
         ty += 10;
 
         List<String> visible = sliceVisible(studioListScroll);
@@ -310,7 +310,7 @@ public class MacrosPanel extends Panel {
             int ry = ty + i * (ROW_H + 2);
             String id = visible.get(i);
             if (id.startsWith("(")) {
-                context.drawString(tr, Component.literal(id), tx + 4, ry + 5, UiTokens.TEXT_DIM);
+                context.text(tr, Component.literal(id), tx + 4, ry + 5, UiTokens.TEXT_DIM);
                 continue;
             }
 
@@ -320,9 +320,9 @@ public class MacrosPanel extends Panel {
             if (rowHot && !sel) {
                 context.fill(tx + 1, ry + 1, tx + sw - 1, ry + ROW_H - 1, 0x18FFFFFF);
             }
-            context.drawString(tr, Component.literal(id), tx + 8, ry + 5, sel ? UiTokens.ACCENT : UiTokens.TEXT);
+            context.text(tr, Component.literal(id), tx + 8, ry + 5, sel ? UiTokens.ACCENT : UiTokens.TEXT);
             if (sel) {
-                context.drawString(tr, Component.literal("▸"), tx + sw - 12, ry + 5, UiTokens.MINT_300);
+                context.text(tr, Component.literal("▸"), tx + sw - 12, ry + 5, UiTokens.MINT_300);
             }
 
             final int g = global;
@@ -345,7 +345,7 @@ public class MacrosPanel extends Panel {
         }
     }
 
-    private static void drawRowAction(Font tr, GuiGraphics context, int x, int y, int w, int h, String label) {
+    private static void drawRowAction(Font tr, GuiGraphicsExtractor context, int x, int y, int w, int h, String label) {
         UiComponents.drawPillActionButton(tr, context, x, y, w, h, label, UiComponents.PillActionStyle.SECONDARY_SLATE);
     }
 
@@ -408,14 +408,14 @@ public class MacrosPanel extends Panel {
                 hotkeyRefreshCooldown = 0;
                 listRefreshCooldown = 0;
                 if (mc.player != null) {
-                    mc.player.displayClientMessage(Component.literal("[Macro] Deleted \"" + MacroStorage.filenameId(target) + "\".")
-                            .withStyle(ChatFormatting.GREEN), false);
+                    mc.player.sendSystemMessage(Component.literal("[Macro] Deleted \"" + MacroStorage.filenameId(target) + "\".")
+                            .withStyle(ChatFormatting.GREEN));
                 }
             } catch (Exception e) {
                 if (mc.player != null) {
                     String msg = e.getMessage() == null ? "Delete failed" : e.getMessage();
-                    mc.player.displayClientMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
-                            .append(Component.literal(msg).withStyle(ChatFormatting.RED)), false);
+                    mc.player.sendSystemMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
+                            .append(Component.literal(msg).withStyle(ChatFormatting.RED)));
                 }
             }
         }, Component.literal("Delete macro?"),
@@ -449,11 +449,11 @@ public class MacrosPanel extends Panel {
         Minecraft c = Minecraft.getInstance();
         if (c.player != null) {
             if (err != null) {
-                c.player.displayClientMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
-                        .append(Component.literal(err).withStyle(ChatFormatting.RED)), false);
+                c.player.sendSystemMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(err).withStyle(ChatFormatting.RED)));
             } else {
-                c.player.displayClientMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
-                        .append(Component.literal("Run key saved (" + keyName(key) + ").").withStyle(ChatFormatting.GREEN)), false);
+                c.player.sendSystemMessage(Component.literal("[Macro] ").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal("Run key saved (" + keyName(key) + ").").withStyle(ChatFormatting.GREEN)));
             }
         }
         return true;

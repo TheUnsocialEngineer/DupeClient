@@ -37,7 +37,7 @@ public final class DupedbSdk {
 
     /** Uses Minecraft's OS browser hook when AWT Desktop is unavailable in-game. */
     public static void registerMinecraftBrowserOpener() {
-        OAuthFlow.setBrowserOpener(url -> net.minecraft.util.Util.getOperatingSystem().open(url));
+        OAuthFlow.setBrowserOpener(url -> net.minecraft.util.Util.getPlatform().openUri(url));
     }
 
     public Path tokenStorePath() {

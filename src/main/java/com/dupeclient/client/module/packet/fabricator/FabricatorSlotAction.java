@@ -1,6 +1,6 @@
 package com.dupeclient.client.module.packet.fabricator;
 
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 
 /** Maps fabricator actions to vanilla slot action types. */
 public enum FabricatorSlotAction {
@@ -27,15 +27,15 @@ public enum FabricatorSlotAction {
         };
     }
 
-    public ClickType toVanilla() {
+    public ContainerInput toVanilla() {
         return switch (this) {
-            case PICKUP -> ClickType.PICKUP;
-            case QUICK_MOVE -> ClickType.QUICK_MOVE;
-            case SWAP -> ClickType.SWAP;
-            case CLONE -> ClickType.CLONE;
-            case THROW, DROP_ITEM, DROP_STACK -> ClickType.THROW;
-            case QUICK_CRAFT -> ClickType.QUICK_CRAFT;
-            case PICKUP_ALL -> ClickType.PICKUP_ALL;
+            case PICKUP -> ContainerInput.PICKUP;
+            case QUICK_MOVE -> ContainerInput.QUICK_MOVE;
+            case SWAP -> ContainerInput.SWAP;
+            case CLONE -> ContainerInput.CLONE;
+            case THROW, DROP_ITEM, DROP_STACK -> ContainerInput.THROW;
+            case QUICK_CRAFT -> ContainerInput.QUICK_CRAFT;
+            case PICKUP_ALL -> ContainerInput.PICKUP_ALL;
         };
     }
 }

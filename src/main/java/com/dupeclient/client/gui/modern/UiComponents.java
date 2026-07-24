@@ -6,7 +6,7 @@ import com.dupeclient.client.gui.modern.theme.MidnightShapes;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -44,35 +44,35 @@ public final class UiComponents {
         return lerpArgb(MidnightPalette.SIDEBAR_ACTIVE_L, MidnightPalette.SIDEBAR_ACTIVE_R, 0.45f);
     }
 
-    public static void drawSlotField(GuiGraphics c, int x, int y, int w, int h, int fill, int border) {
+    public static void drawSlotField(GuiGraphicsExtractor c, int x, int y, int w, int h, int fill, int border) {
         int rr = MidnightShapes.controlRadius(h);
         MidnightShapes.fillRoundedFrame(c, x, y, w, h, rr, fill, border);
     }
 
-    public static void drawSection(Font tr, GuiGraphics c, int x, int y, int w, int h, String title, boolean collapsed) {
+    public static void drawSection(Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String title, boolean collapsed) {
         int rr = MidnightShapes.surfaceRadius(w, h);
         UiDraw.cardElevated(c, x, y, w, h, rr);
         int headerH = UiTokens.CARD_CONTENT_TOP - 4;
         c.fill(x + 1, y + headerH, x + w - 1, y + headerH + 1, MidnightPalette.BORDER_LIGHT);
-        c.drawString(tr, Component.literal(title), x + UiTokens.SP_4, y + UiTokens.SP_3 + 2, MidnightPalette.TEXT_PRIMARY);
+        c.text(tr, Component.literal(title), x + UiTokens.SP_4, y + UiTokens.SP_3 + 2, MidnightPalette.TEXT_PRIMARY);
         String chevron = collapsed ? "›" : "⌄";
-        c.drawString(tr, Component.literal(chevron), x + w - UiTokens.SP_4 - 4, y + UiTokens.SP_3 + 2, MidnightPalette.TEXT_MUTED);
+        c.text(tr, Component.literal(chevron), x + w - UiTokens.SP_4 - 4, y + UiTokens.SP_3 + 2, MidnightPalette.TEXT_MUTED);
     }
 
     public static void drawSectionCard(
-            Font tr, GuiGraphics c, int x, int y, int w, int h, String title, boolean sectionCollapsed) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String title, boolean sectionCollapsed) {
         drawSection(tr, c, x, y, w, h, title, sectionCollapsed);
     }
 
-    public static void drawDropdownRow(Font tr, GuiGraphics c, int x, int y, int w, int h, String label) {
+    public static void drawDropdownRow(Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String label) {
         int rr = MidnightShapes.controlRadius(h);
         int fill = lerpArgb(MidnightPalette.CHROME_BOT, MidnightPalette.CHROME_TOP, 0.35f);
         MidnightShapes.fillRoundedFrame(c, x, y, w, h, rr, fill, MidnightPalette.BORDER_LIGHT);
-        c.drawString(tr, Component.literal(label), x + UiTokens.SP_3, y + (h - 8) / 2, MidnightPalette.TEXT_PRIMARY);
-        c.drawString(tr, Component.literal("⌄"), x + w - UiTokens.SP_3 - 4, y + (h - 8) / 2, MidnightPalette.TEXT_MUTED);
+        c.text(tr, Component.literal(label), x + UiTokens.SP_3, y + (h - 8) / 2, MidnightPalette.TEXT_PRIMARY);
+        c.text(tr, Component.literal("⌄"), x + w - UiTokens.SP_3 - 4, y + (h - 8) / 2, MidnightPalette.TEXT_MUTED);
     }
 
-    public static void drawInfoCard(Font tr, GuiGraphics c, int x, int y, int w, int h, String title) {
+    public static void drawInfoCard(Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String title) {
         if (title == null || title.isBlank()) {
             drawSurfaceCard(c, x, y, w, h);
         } else {
@@ -86,21 +86,21 @@ public final class UiComponents {
     }
 
     /** Card without a title band — hub panels already show the module name in the sidebar. */
-    public static void drawSurfaceCard(GuiGraphics c, int x, int y, int w, int h) {
+    public static void drawSurfaceCard(GuiGraphicsExtractor c, int x, int y, int w, int h) {
         UiDraw.cardElevated(c, x, y, w, h, MidnightShapes.surfaceRadius(w, h));
     }
 
-    public static void drawNavSectionLabel(Font tr, GuiGraphics c, int x, int y, int w, String label) {
-        c.drawString(tr, Component.literal(label.toUpperCase(Locale.ROOT)), x + UiTokens.SP_2, y, UiTokens.MINT_300);
+    public static void drawNavSectionLabel(Font tr, GuiGraphicsExtractor c, int x, int y, int w, String label) {
+        c.text(tr, Component.literal(label.toUpperCase(Locale.ROOT)), x + UiTokens.SP_2, y, UiTokens.MINT_300);
         c.fill(x, y + 10, x + w - UiTokens.SP_2, y + 11, UiTokens.argb(0x88, UiTokens.SLATE_600));
     }
 
-    public static void drawOptionToggle(Font tr, GuiGraphics c, int x, int y, int rowW, String label, boolean enabled) {
+    public static void drawOptionToggle(Font tr, GuiGraphicsExtractor c, int x, int y, int rowW, String label, boolean enabled) {
         drawOptionToggle(tr, c, x, y, rowW, label, enabled, enabled ? 1f : 0f);
     }
 
     public static void drawOptionToggle(
-            Font tr, GuiGraphics c, int x, int y, int rowW, String label, boolean enabled, float knobT) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int rowW, String label, boolean enabled, float knobT) {
         int tw = UiTokens.TOGGLE_TRACK_W;
         int th = UiTokens.TOGGLE_TRACK_H;
         int tx = x + rowW - tw;
@@ -118,37 +118,37 @@ public final class UiComponents {
 
         int labelMax = Math.max(8, rowW - tw - UiTokens.SP_4);
         String shown = tr.plainSubstrByWidth(label, labelMax);
-        c.drawString(tr, Component.literal(shown), x, y + (UiTokens.ROW_STEP - 8) / 2, MidnightPalette.TEXT_PRIMARY);
+        c.text(tr, Component.literal(shown), x, y + (UiTokens.ROW_STEP - 8) / 2, MidnightPalette.TEXT_PRIMARY);
     }
 
     public static void drawPillKeybind(
-            Font tr, GuiGraphics c, int x, int y, int w, int rowH, String label, String value, boolean hot) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int rowH, String label, String value, boolean hot) {
         drawPillKeybindEx(tr, c, x, y, w, rowH, label, value, hot, 98);
     }
 
     public static void drawPillKeybindEx(
-            Font tr, GuiGraphics c, int x, int y, int w, int rowH, String label, String value, boolean hot) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int rowH, String label, String value, boolean hot) {
         drawPillKeybindEx(tr, c, x, y, w, rowH, label, value, hot, 98);
     }
 
     public static void drawPillKeybindEx(
-            Font tr, GuiGraphics c, int x, int y, int w, int rowH, String label, String value, boolean hot, int bindW) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int rowH, String label, String value, boolean hot, int bindW) {
         int labelW = w - bindW - UiTokens.SP_2;
         String shown = tr.plainSubstrByWidth(label, Math.max(8, labelW));
-        c.drawString(tr, Component.literal(shown), x, y + (rowH - 8) / 2, MidnightPalette.TEXT_SECONDARY);
+        c.text(tr, Component.literal(shown), x, y + (rowH - 8) / 2, MidnightPalette.TEXT_SECONDARY);
         int bx = x + labelW + UiTokens.SP_2;
         int fill = hot ? MidnightPalette.PANEL_FILL_RAISED : MidnightPalette.PANEL_FILL;
         int edge = hot ? MidnightPalette.BORDER_FOCUS : MidnightPalette.BORDER_LIGHT;
         drawSlotField(c, bx, y, bindW, rowH, fill, edge);
-        c.drawCenteredString(tr, Component.literal(value), bx + bindW / 2, y + (rowH - 8) / 2, MidnightPalette.TEXT_PRIMARY);
+        c.centeredText(tr, Component.literal(value), bx + bindW / 2, y + (rowH - 8) / 2, MidnightPalette.TEXT_PRIMARY);
     }
 
-    public static void drawPillActionButton(Font tr, GuiGraphics c, int x, int y, int w, int h, String label) {
+    public static void drawPillActionButton(Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String label) {
         drawPillActionButton(tr, c, x, y, w, h, label, PillActionStyle.PRIMARY_MINT);
     }
 
     public static void drawPillActionButton(
-            Font tr, GuiGraphics c, int x, int y, int w, int h, String label, PillActionStyle style) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String label, PillActionStyle style) {
         int rr = MidnightShapes.controlRadius(h);
         switch (style) {
             case PRIMARY_BLUE -> {
@@ -166,24 +166,24 @@ public final class UiComponents {
                 MidnightShapes.fillRoundedFrame(c, x, y, w, h, rr, fill, lerpArgb(MidnightPalette.GREEN, 0x44FFFFFF, 0.2f));
             }
         }
-        c.drawCenteredString(tr, Component.literal(label), x + w / 2, y + (h - 8) / 2, MidnightPalette.TEXT_PRIMARY);
+        c.centeredText(tr, Component.literal(label), x + w / 2, y + (h - 8) / 2, MidnightPalette.TEXT_PRIMARY);
     }
 
-    public static void drawSegmentTab(Font tr, GuiGraphics c, int bx, int by, int tw, int th, String tabLabel, boolean active) {
+    public static void drawSegmentTab(Font tr, GuiGraphicsExtractor c, int bx, int by, int tw, int th, String tabLabel, boolean active) {
         int rr = MidnightShapes.controlRadius(th);
         if (active) {
             int fill = lerpArgb(MidnightPalette.BLUE_L, MidnightPalette.BLUE_R, 0.42f);
             MidnightShapes.fillRoundedFrame(c, bx, by, tw, th, rr, fill, MidnightPalette.alphaRgb(0x55, 0x3B82F6));
-            c.drawCenteredString(tr, Component.literal(tabLabel), bx + tw / 2, by + (th - 8) / 2, MidnightPalette.TEXT_PRIMARY);
+            c.centeredText(tr, Component.literal(tabLabel), bx + tw / 2, by + (th - 8) / 2, MidnightPalette.TEXT_PRIMARY);
         } else {
             MidnightShapes.fillRoundedFrame(c, bx, by, tw, th, rr, MidnightPalette.PANEL_FILL, MidnightPalette.BORDER_LIGHT);
-            c.drawCenteredString(tr, Component.literal(tabLabel), bx + tw / 2, by + (th - 8) / 2, MidnightPalette.TEXT_MUTED);
+            c.centeredText(tr, Component.literal(tabLabel), bx + tw / 2, by + (th - 8) / 2, MidnightPalette.TEXT_MUTED);
         }
     }
 
     public static void drawValueSlider(
             Font tr,
-            GuiGraphics c,
+            GuiGraphicsExtractor c,
             int x,
             int y,
             int w,
@@ -195,7 +195,7 @@ public final class UiComponents {
         int barX = x + 76;
         int valueW = 36;
         int barW = w - 82 - valueW;
-        c.drawString(tr, Component.literal(textLabel), x, y + 1, MidnightPalette.TEXT_SECONDARY);
+        c.text(tr, Component.literal(textLabel), x, y + 1, MidnightPalette.TEXT_SECONDARY);
         int track = MidnightPalette.CHROME_BOT;
         MidnightShapes.fillRoundedRect(c, barX, y + 3, barW, 6, 3, track);
         int fillW = (int) ((barW - 2) * t);
@@ -206,33 +206,33 @@ public final class UiComponents {
         int knobCy = y + 6;
         MidnightShapes.fillDisk(c, knobCx, knobCy, 5, active ? MidnightPalette.GREEN : MidnightPalette.TOGGLE_OFF);
         int tw0 = tr.width(valueText);
-        c.drawString(tr, Component.literal(valueText), barX + barW + valueW - tw0, y + 1, MidnightPalette.PATH_GREEN);
+        c.text(tr, Component.literal(valueText), barX + barW + valueW - tw0, y + 1, MidnightPalette.PATH_GREEN);
     }
 
-    public static void drawAccentLabel(Font tr, GuiGraphics c, int x, int y, String text) {
-        c.drawString(tr, Component.literal(text), x, y, MidnightPalette.PATH_GREEN);
+    public static void drawAccentLabel(Font tr, GuiGraphicsExtractor c, int x, int y, String text) {
+        c.text(tr, Component.literal(text), x, y, MidnightPalette.PATH_GREEN);
     }
 
-    public static void drawTextField(Font tr, GuiGraphics c, int x, int y, int w, int h, String value, boolean focused) {
+    public static void drawTextField(Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String value, boolean focused) {
         ModernTextInputChrome.drawField(c, x, y, w, h, focused);
         String v = value == null ? "" : value;
         int textX = x + ModernTextInputChrome.PAD_X;
         int textY = ModernTextInputChrome.textY(y, h);
         String shown = tr.plainSubstrByWidth(v, Math.max(4, w - ModernTextInputChrome.PAD_X * 2));
-        c.drawString(tr, Component.literal(shown), textX, textY, MidnightPalette.TEXT_PRIMARY);
+        c.text(tr, Component.literal(shown), textX, textY, MidnightPalette.TEXT_PRIMARY);
         if (focused && ModernTextInputChrome.caretVisible()) {
             int caretX = textX + tr.width(shown);
             c.fill(caretX, textY - 1, caretX + 1, textY + 9, ModernTextInputChrome.CARET_COLOR);
         }
     }
 
-    public static void drawInlineTextField(Font tr, GuiGraphics c, com.dupeclient.client.gui.widget.InlineTextField field) {
+    public static void drawInlineTextField(Font tr, GuiGraphicsExtractor c, com.dupeclient.client.gui.widget.InlineTextField field) {
         field.render(c, tr);
     }
 
     public static void drawLabeledValueSlider(
             Font tr,
-            GuiGraphics c,
+            GuiGraphicsExtractor c,
             int x,
             int y,
             int w,
@@ -250,7 +250,7 @@ public final class UiComponents {
 
     public static void drawLabeledValueSlider(
             Font tr,
-            GuiGraphics c,
+            GuiGraphicsExtractor c,
             int x,
             int y,
             int w,
@@ -266,13 +266,13 @@ public final class UiComponents {
         drawValueSlider(tr, c, x, y, w, Mth.clamp(t, 0.0, 1.0), label, valueDisplay, active);
     }
 
-    public static void drawListRowBack(GuiGraphics c, int x, int y, int w, int h, boolean selected) {
+    public static void drawListRowBack(GuiGraphicsExtractor c, int x, int y, int w, int h, boolean selected) {
         int fill = selected ? MidnightPalette.alphaRgb(0x55, 0x22C55E) : MidnightPalette.alphaRgb(0x35, 0x18181B);
         MidnightShapes.fillRoundedRect(c, x, y, w, h, MidnightShapes.controlRadius(h), fill);
     }
 
     public static void drawNavItem(
-            Font tr, GuiGraphics c, int x, int y, int w, int h, String label, boolean selected, boolean hovered) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String label, boolean selected, boolean hovered) {
         int r = MidnightShapes.controlRadius(h);
         if (selected) {
             MidnightShapes.fillRoundedFrame(
@@ -284,11 +284,11 @@ public final class UiComponents {
         int twLabel = tr.width(label);
         int lx = x + (w - twLabel) / 2;
         int col = selected ? MidnightPalette.TEXT_PRIMARY : MidnightPalette.TEXT_SECONDARY;
-        c.drawString(tr, Component.literal(label), lx, y + (h - 8) / 2, col);
+        c.text(tr, Component.literal(label), lx, y + (h - 8) / 2, col);
     }
 
     public static void drawNavPill(
-            Font tr, GuiGraphics c, int x, int y, int w, int h, String label, boolean selected, boolean hovered) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String label, boolean selected, boolean hovered) {
         drawNavItem(tr, c, x, y, w, h, label, selected, hovered);
     }
 
@@ -299,40 +299,40 @@ public final class UiComponents {
 
     /** Fabricator-style label + ON/OFF chip (right-aligned). */
     public static void drawFabricatorSettingToggle(
-            Font tr, GuiGraphics c, int x, int y, int w, String label, boolean on) {
-        c.drawString(tr, Component.literal(label), x, y + 2, 0xFFA1A1AA);
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, String label, boolean on) {
+        c.text(tr, Component.literal(label), x, y + 2, 0xFFA1A1AA);
         String state = on ? "ON" : "OFF";
         int sw = tr.width(state) + 10;
         int sx = x + w - sw;
         int color = on ? 0xFF34D399 : 0xFF52525B;
         c.fill(sx, y, x + w, y + FAB_SET_ROW, 0xFF27272A);
-        c.drawString(tr, Component.literal(state), sx + 5, y + 2, color);
+        c.text(tr, Component.literal(state), sx + 5, y + 2, color);
     }
 
     /** Fabricator-style label + clickable value box (right-aligned). */
     public static void drawFabricatorSettingValue(
-            Font tr, GuiGraphics c, int x, int y, int w, String label, String value) {
-        c.drawString(tr, Component.literal(label), x, y + 2, 0xFFA1A1AA);
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, String label, String value) {
+        c.text(tr, Component.literal(label), x, y + 2, 0xFFA1A1AA);
         int vx = x + w - FAB_VALUE_W;
         c.fill(vx, y, x + w, y + FAB_SET_ROW, 0xFF27272A);
         String shown = tr.plainSubstrByWidth(value == null ? "" : value, FAB_VALUE_W - 8);
-        c.drawString(tr, Component.literal(shown), vx + 4, y + 2, 0xFFE5E5E5);
+        c.text(tr, Component.literal(shown), vx + 4, y + 2, 0xFFE5E5E5);
     }
 
     /** Fabricator-style flat action button. */
     public static void drawFabricatorButton(
-            Font tr, GuiGraphics c, int x, int y, int w, int h, String label, int mouseX, int mouseY, boolean enabled) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, String label, int mouseX, int mouseY, boolean enabled) {
         boolean hover = enabled && mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
         int bg = !enabled ? 0xFF1E1E22 : (hover ? 0xFF3F3F46 : 0xFF27272A);
         int fg = enabled ? 0xFFE5E5E5 : 0xFF52525B;
         c.fill(x, y, x + w, y + h, bg);
         int tw = tr.width(label);
-        c.drawString(tr, Component.literal(label), x + (w - tw) / 2, y + (h - 8) / 2, fg);
+        c.text(tr, Component.literal(label), x + (w - tw) / 2, y + (h - 8) / 2, fg);
     }
 
     /** Title-bar pop-out toggle (segment tab). */
     public static void drawOverlayPopButton(
-            Font tr, GuiGraphics c, int x, int y, int w, int h, boolean popOut) {
+            Font tr, GuiGraphicsExtractor c, int x, int y, int w, int h, boolean popOut) {
         drawSegmentTab(tr, c, x, y, w, h, popOut ? "Pop" : "Lock", popOut);
     }
 
@@ -341,7 +341,7 @@ public final class UiComponents {
      */
     public static void drawPresenceUserCard(
             Font tr,
-            GuiGraphics c,
+            GuiGraphicsExtractor c,
             Minecraft mc,
             int x,
             int y,
@@ -366,7 +366,7 @@ public final class UiComponents {
         int ax = x + UiTokens.SP_3;
         int ay = y + (h - avatar) / 2;
         if (mc != null && skin != null) {
-            net.minecraft.client.gui.components.PlayerFaceRenderer.draw(c, skin, ax, ay, avatar);
+            net.minecraft.client.gui.components.PlayerFaceExtractor.extractRenderState(c, skin, ax, ay, avatar);
         }
 
         int textX = ax + avatar + UiTokens.SP_3;
@@ -376,18 +376,18 @@ public final class UiComponents {
 
         int nameColor = friend ? UiTokens.MINT_300 : MidnightPalette.TEXT_PRIMARY;
         String name = tr.plainSubstrByWidth(username, textMax);
-        c.drawString(tr, Component.literal(name), textX, y + UiTokens.SP_2 + 1, nameColor);
+        c.text(tr, Component.literal(name), textX, y + UiTokens.SP_2 + 1, nameColor);
 
         String uuid = tr.plainSubstrByWidth(uuidShort, textMax);
-        c.drawString(tr, Component.literal(uuid), textX, y + UiTokens.SP_2 + 12, MidnightPalette.TEXT_MUTED);
+        c.text(tr, Component.literal(uuid), textX, y + UiTokens.SP_2 + 12, MidnightPalette.TEXT_MUTED);
 
         int metaY = y + UiTokens.SP_2 + 23;
         if (serverLine != null && !serverLine.isBlank()) {
-            c.drawString(tr, Component.literal(tr.plainSubstrByWidth(serverLine, textMax)), textX, metaY, MidnightPalette.TEXT_SECONDARY);
+            c.text(tr, Component.literal(tr.plainSubstrByWidth(serverLine, textMax)), textX, metaY, MidnightPalette.TEXT_SECONDARY);
             metaY += 10;
         }
         if (coordsLine != null && !coordsLine.isBlank()) {
-            c.drawString(tr, Component.literal(tr.plainSubstrByWidth(coordsLine, textMax)), textX, metaY, MidnightPalette.PATH_GREEN);
+            c.text(tr, Component.literal(tr.plainSubstrByWidth(coordsLine, textMax)), textX, metaY, MidnightPalette.PATH_GREEN);
         }
 
         if (showJoin) {

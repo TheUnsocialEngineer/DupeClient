@@ -23,7 +23,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -173,7 +173,7 @@ extends Screen {
         return UiTokens.SP_2 + this.rows.size() * (CARD_H + CARD_GAP);
     }
 
-    private void drawToolbarTabs(GuiGraphics context, int mouseX, int mouseY) {
+    private void drawToolbarTabs(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         int cx = this.width / 2;
         int ty = TOOLBAR_Y;
         UiComponents.drawSegmentTab(this.font, context, cx + TAB_ALL_X, ty, TAB_ALL_W, TOOLBAR_H, "All", this.screenTab == ScreenTab.ALL);
@@ -206,7 +206,7 @@ extends Screen {
     }
 
     private void drawPlayerCard(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int cardX,
             int cardY,
             int cardW,
@@ -274,12 +274,12 @@ extends Screen {
         }
     }
 
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
     }
 
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(context, mouseX, mouseY, delta);
         this.drawToolbarTabs(context, mouseX, mouseY);
 
         int lx = UiTokens.SP_2;
@@ -306,8 +306,8 @@ extends Screen {
         String listTitle = this.screenTab == ScreenTab.ALL
                 ? "Online DupeClient users"
                 : "Users on your server";
-        context.drawString(this.font, Component.literal(listTitle), lx + LIST_INSET, listTop + UiTokens.SP_2 + 2, MidnightPalette.PATH_GREEN);
-        context.drawString(
+        context.text(this.font, Component.literal(listTitle), lx + LIST_INSET, listTop + UiTokens.SP_2 + 2, MidnightPalette.PATH_GREEN);
+        context.text(
                 this.font,
                 Component.literal("Right-click a card for actions"),
                 lx + LIST_INSET,
@@ -317,7 +317,7 @@ extends Screen {
         if (!this.loading && !this.rows.isEmpty()) {
             String count = this.rows.size() + (this.rows.size() == 1 ? " online" : " online");
             int countW = this.font.width(count);
-            context.drawString(
+            context.text(
                     this.font, Component.literal(count), lx + lw - countW - LIST_INSET, listTop + UiTokens.SP_2 + 2, MidnightPalette.TEXT_SECONDARY);
         }
 
@@ -329,7 +329,7 @@ extends Screen {
         context.enableScissor(lx + 1, listContentTop, lx + lw - 1, listBottom - 1);
         if (this.loading) {
             int cy = listContentTop + UiTokens.SP_3 - this.listScrollY;
-            context.drawCenteredString(this.font, Component.literal("Loading…"), this.width / 2, cy, MidnightPalette.TEXT_SECONDARY);
+            context.centeredText(this.font, Component.literal("Loading…"), this.width / 2, cy, MidnightPalette.TEXT_SECONDARY);
         } else if (this.rows.isEmpty()) {
             String msg = this.statusHint != null && !this.statusHint.isBlank()
                     ? this.statusHint
@@ -338,7 +338,7 @@ extends Screen {
                             : "API OK but list empty — enable presence + broadcastPresence, stay in-world so heartbeats run.");
             int ey = listContentTop + UiTokens.SP_3 - this.listScrollY;
             for (FormattedCharSequence line : this.font.split(Component.literal(msg), lw - LIST_INSET * 4)) {
-                context.drawCenteredString(this.font, line, this.width / 2, ey, UiTokens.MINT_400);
+                context.centeredText(this.font, line, this.width / 2, ey, UiTokens.MINT_400);
                 ey += 12;
             }
         } else {
@@ -358,7 +358,7 @@ extends Screen {
         this.contextMenu.render(context, this.font, mouseX, mouseY);
     }
 
-    private void drawSettingsPanel(GuiGraphics context, int tx, int top, int rowW, int areaH) {
+    private void drawSettingsPanel(GuiGraphicsExtractor context, int tx, int top, int rowW, int areaH) {
         int cardH = Math.min(SETTINGS_BLOCK_H, areaH);
         int cardY = top + Math.max(0, (areaH - cardH) / 2);
         UiComponents.drawSectionCard(this.font, context, tx, cardY, rowW, cardH, "Social settings", false);

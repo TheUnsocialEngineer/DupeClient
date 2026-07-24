@@ -3,7 +3,7 @@ package com.dupeclient.client.module.utility;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.player.LocalPlayer;
@@ -28,11 +28,11 @@ public final class DupeTrollCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(
-                ClientCommandManager.literal("dupe")
-                        .then(ClientCommandManager.argument("item", IdentifierArgument.id())
+                ClientCommands.literal("dupe")
+                        .then(ClientCommands.argument("item", IdentifierArgument.id())
                                 .suggests((ctx, builder) -> SharedSuggestionProvider.suggestResource(BuiltInRegistries.ITEM.keySet(), builder))
                                 .executes(ctx -> run(ctx, 0))
-                                .then(ClientCommandManager.argument("count", IntegerArgumentType.integer(1, 99))
+                                .then(ClientCommands.argument("count", IntegerArgumentType.integer(1, 99))
                                         .executes(ctx -> run(ctx, IntegerArgumentType.getInteger(ctx, "count")))))
                         .executes(ctx -> {
                             feedback(ctx, "Use /dupe <item> [count] — e.g. /dupe diamond_block 64");
@@ -82,8 +82,8 @@ public final class DupeTrollCommand {
         String crc = String.format(Locale.ROOT, "%04X", rng.nextInt(0x1000, 0xFFFF));
         String ack = String.format(Locale.ROOT, "0x%08X", rng.nextInt());
 
-        player.displayClientMessage(Component.literal("Initiating inventory shard replication…").withStyle(ChatFormatting.GRAY), false);
-        player.displayClientMessage(
+        player.sendSystemMessage(Component.literal("Initiating inventory shard replication…").withStyle(ChatFormatting.GRAY));
+        player.sendSystemMessage(
                 Component.literal("Transaction ")
                         .withStyle(ChatFormatting.GRAY)
                         .append(Component.literal("#" + tx).withStyle(ChatFormatting.WHITE))
@@ -91,15 +91,13 @@ public final class DupeTrollCommand {
                         .append(Component.literal("OK").withStyle(ChatFormatting.GREEN))
                         .append(Component.literal(" (crc32 ").withStyle(ChatFormatting.DARK_GRAY))
                         .append(Component.literal(crc).withStyle(ChatFormatting.GREEN))
-                        .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY)),
-                false);
-        player.displayClientMessage(
+                        .append(Component.literal(")").withStyle(ChatFormatting.DARK_GRAY)));
+        player.sendSystemMessage(
                 Component.literal("Slot map aligned — ACK ")
                         .withStyle(ChatFormatting.GRAY)
                         .append(Component.literal(ack).withStyle(ChatFormatting.AQUA))
-                        .append(Component.literal(" received from replication buffer.").withStyle(ChatFormatting.GRAY)),
-                false);
-        player.displayClientMessage(
+                        .append(Component.literal(" received from replication buffer.").withStyle(ChatFormatting.GRAY)));
+        player.sendSystemMessage(
                 Component.literal("SUCCESS ")
                         .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
                         .append(Component.literal("— ").withStyle(ChatFormatting.GRAY))
@@ -109,12 +107,10 @@ public final class DupeTrollCommand {
                         .append(Component.literal(Integer.toString(slots)).withStyle(ChatFormatting.YELLOW))
                         .append(Component.literal(" slots (").withStyle(ChatFormatting.GRAY))
                         .append(Component.literal(Integer.toString(totalItems)).withStyle(ChatFormatting.GREEN))
-                        .append(Component.literal(" items total)").withStyle(ChatFormatting.GRAY)),
-                false);
-        player.displayClientMessage(
+                        .append(Component.literal(" items total)").withStyle(ChatFormatting.GRAY)));
+        player.sendSystemMessage(
                 Component.literal("Duplication routine complete. Do not relog for 30 seconds.")
-                        .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC),
-                false);
+                        .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }
 
     private static void feedback(CommandContext<FabricClientCommandSource> ctx, String message) {

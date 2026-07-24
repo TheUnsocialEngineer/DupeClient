@@ -53,7 +53,7 @@ public class PluginScanner {
             Minecraft mc = Minecraft.getInstance();
             if (suggestions.isEmpty()) {
                 if (mc.player != null) {
-                    mc.player.displayClientMessage(Component.nullToEmpty((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found or blocked"), false);
+                    mc.player.sendSystemMessage(Component.nullToEmpty((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found or blocked"));
                 }
                 return;
             }
@@ -77,7 +77,7 @@ public class PluginScanner {
             return;
         }
         if (foundPlugins.isEmpty()) {
-            mc.player.displayClientMessage(Component.nullToEmpty((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found"), false);
+            mc.player.sendSystemMessage(Component.nullToEmpty((String)"\u00a77[\u00a7c*\u00a77] \u00a7cNo plugins found"));
             return;
         }
         foundPlugins.sort(String.CASE_INSENSITIVE_ORDER);
@@ -94,7 +94,7 @@ public class PluginScanner {
             if (i >= foundPlugins.size() - 1) continue;
             sb.append("\u00a77, ");
         }
-        mc.player.displayClientMessage(Component.nullToEmpty((String)sb.toString()), false);
+        mc.player.sendSystemMessage(Component.nullToEmpty((String)sb.toString()));
         foundPlugins.clear();
     }
 

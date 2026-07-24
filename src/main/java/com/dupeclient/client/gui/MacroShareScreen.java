@@ -9,7 +9,7 @@ import com.dupeclient.client.module.macro.MacroShare;
 import com.dupeclient.client.module.macro.MacroStorage;
 import com.dupeclient.client.module.utility.nbtedit.SnbtTextAreaWidget;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -158,16 +158,16 @@ public final class MacroShareScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, width, height);
         context.fill(0, 0, width, 40, 0xCC0A0E14);
         context.fill(0, 39, width, 40, 0x66334155);
-        context.drawCenteredString(font, title, width / 2, 14, UiTokens.ACCENT);
-        context.drawCenteredString(font,
+        context.centeredText(font, title, width / 2, 14, UiTokens.ACCENT);
+        context.centeredText(font,
                 Component.literal("Paste a DupeClient export bundle or raw macro JSON"),
                 width / 2, 26, UiTokens.TEXT_DIM);
-        super.render(context, mouseX, mouseY, delta);
-        context.drawString(font, Component.literal(statusLine), contentLeft, height - PAD - BTN_H - 14, statusColor);
+        super.extractRenderState(context, mouseX, mouseY, delta);
+        context.text(font, Component.literal(statusLine), contentLeft, height - PAD - BTN_H - 14, statusColor);
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.dupeclient.client.module.dupedb.p2w;
 
 import com.dupeclient.client.module.dupedb.P2wServerPolicy;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
@@ -31,20 +31,20 @@ public final class NonP2wDisclaimerScreen extends Screen {
 
     /** Solid overlay — vanilla blur is already applied once per frame by {@link Screen#render}. */
     @Override
-    public void renderBackground(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         context.fill(0, 0, this.width, this.height, 0xE0101018);
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(context, mouseX, mouseY, delta);
         drawDisclaimerText(context);
     }
 
-    private void drawDisclaimerText(GuiGraphics context) {
+    private void drawDisclaimerText(GuiGraphicsExtractor context) {
         int cx = this.width / 2;
-        context.drawCenteredString(this.font, Component.literal("Non-P2W Server"), cx, 48, 0xFF34D399);
-        context.drawCenteredString(this.font, Component.literal(this.server), cx, 68, 0xFFE5E7EB);
+        context.centeredText(this.font, Component.literal("Non-P2W Server"), cx, 48, 0xFF34D399);
+        context.centeredText(this.font, Component.literal(this.server), cx, 68, 0xFFE5E7EB);
         int y = 96;
         for (Component line : new Component[]{
                 Component.literal("This server is marked non pay-to-win by the DupeClient community."),
@@ -53,7 +53,7 @@ public final class NonP2wDisclaimerScreen extends Screen {
                 Component.literal("until you disconnect or leave this server."),
                 Component.literal("Re-enabling modules while connected is blocked.")
         }) {
-            context.drawCenteredString(this.font, line, cx, y, 0xFFF3F4F6);
+            context.centeredText(this.font, line, cx, y, 0xFFF3F4F6);
             y += 14;
         }
     }

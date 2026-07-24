@@ -3,7 +3,7 @@ package com.dupeclient.client.module.utility;
 import com.dupeclient.client.core.LookTargetNbtUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -20,10 +20,10 @@ public final class LookNbtCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
         dispatcher.register(
-            ClientCommandManager.literal("looknbt")
+            ClientCommands.literal("looknbt")
                 .executes(ctx -> run(ctx, false))
-                .then(ClientCommandManager.literal("print").executes(ctx -> run(ctx, true)))
-                .then(ClientCommandManager.literal("chat").executes(ctx -> run(ctx, true)))
+                .then(ClientCommands.literal("print").executes(ctx -> run(ctx, true)))
+                .then(ClientCommands.literal("chat").executes(ctx -> run(ctx, true)))
         );
     }
 

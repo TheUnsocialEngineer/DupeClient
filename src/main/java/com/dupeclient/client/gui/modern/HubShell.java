@@ -8,7 +8,7 @@ import com.dupeclient.client.core.session.HubModuleRules;
 import com.dupeclient.client.core.session.PresenceRosterSync;
 import java.util.List;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -206,7 +206,7 @@ public final class HubShell {
         }
     }
 
-    public void render(GuiGraphics context, Font tr, int mouseX, int mouseY, float deltaTicks, int viewW, int viewH) {
+    public void render(GuiGraphicsExtractor context, Font tr, int mouseX, int mouseY, float deltaTicks, int viewW, int viewH) {
         int vw = Math.max(1, viewW);
         int vh = Math.max(1, viewH);
         this.viewportW = vw;
@@ -216,16 +216,16 @@ public final class HubShell {
 
         if (reserveTopForVanillaCloseButton) {
             UiDraw.drawTopFullWidthBand(context, vw, UiTokens.APP_BAR_H);
-            context.drawString(tr, Component.literal("DupeClient"), UiTokens.SP_4, 12, UiTokens.SLATE_50);
-            context.drawString(tr, Component.literal("Modules"), UiTokens.SP_4, 24, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal("DupeClient"), UiTokens.SP_4, 12, UiTokens.SLATE_50);
+            context.text(tr, Component.literal("Modules"), UiTokens.SP_4, 24, UiTokens.TEXT_DIM);
             String buildLine = DupeClient.MOD_VERSION + " · " + DupeClient.BUILD_TAG;
             int buildW = tr.width(buildLine);
-            context.drawString(tr, Component.literal(buildLine), vw - buildW - UiTokens.SP_4, 18, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(buildLine), vw - buildW - UiTokens.SP_4, 18, UiTokens.TEXT_DIM);
             drawHubStatusLine(context, tr, vw);
         } else {
             String buildLine = DupeClient.MOD_VERSION + " · " + DupeClient.BUILD_TAG;
             int buildW = tr.width(buildLine);
-            context.drawString(tr, Component.literal(buildLine), vw - buildW - UiTokens.SP_4, UiTokens.SP_2, UiTokens.TEXT_DIM);
+            context.text(tr, Component.literal(buildLine), vw - buildW - UiTokens.SP_4, UiTokens.SP_2, UiTokens.TEXT_DIM);
             drawHubStatusLine(context, tr, vw);
         }
 
@@ -374,7 +374,7 @@ public final class HubShell {
         return null;
     }
 
-    private static void drawHubStatusLine(GuiGraphics context, Font tr, int vw) {
+    private static void drawHubStatusLine(GuiGraphicsExtractor context, Font tr, int vw) {
         String status;
         int color;
         if (HubModuleRules.viewerRestricted()) {
@@ -393,6 +393,6 @@ public final class HubShell {
             status = status.substring(0, 69) + "…";
         }
         int w = tr.width(status);
-        context.drawString(tr, Component.literal(status), Math.max(UiTokens.SP_4, (vw - w) / 2), UiTokens.SP_2 + 12, color);
+        context.text(tr, Component.literal(status), Math.max(UiTokens.SP_4, (vw - w) / 2), UiTokens.SP_2 + 12, color);
     }
 }

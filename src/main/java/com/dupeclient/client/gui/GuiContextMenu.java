@@ -6,7 +6,7 @@ import com.dupeclient.client.gui.modern.theme.MidnightShapes;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class GuiContextMenu {
@@ -46,7 +46,7 @@ public final class GuiContextMenu {
         open = true;
     }
 
-    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor context, Font textRenderer, int mouseX, int mouseY) {
         if (!open || entries.isEmpty()) {
             return;
         }
@@ -65,7 +65,7 @@ public final class GuiContextMenu {
                         MidnightShapes.controlRadius(ROW_H),
                         MidnightPalette.SIDEBAR_ACTIVE_R);
             }
-            context.drawString(
+            context.text(
                     textRenderer,
                     Component.literal(e.label()),
                     x + PAD_X,

@@ -8,7 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.KeyEvent;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -30,7 +30,7 @@ public abstract class HandledScreenMixin extends Screen {
     }
 
     @Shadow
-    protected abstract void slotClicked(Slot slot, int slotId, int button, ClickType actionType);
+    protected abstract void slotClicked(Slot slot, int slotId, int button, ContainerInput actionType);
 
     @Shadow
     @Nullable
@@ -83,14 +83,14 @@ public abstract class HandledScreenMixin extends Screen {
             cir.cancel();
         } else if (this.hoveredSlot != null && this.hoveredSlot.hasItem()) {
             if (mc.options.keyPickItem.matches(keyInput)) {
-                this.slotClicked(this.hoveredSlot, this.hoveredSlot.index, 0, ClickType.CLONE);
+                this.slotClicked(this.hoveredSlot, this.hoveredSlot.index, 0, ContainerInput.CLONE);
                 cir.setReturnValue(true);
                 cir.cancel();
                 return;
             }
             if (mc.options.keyDrop.matches(keyInput)) {
                 boolean controlDown = (keyInput.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
-                this.slotClicked(this.hoveredSlot, this.hoveredSlot.index, controlDown ? 1 : 0, ClickType.THROW);
+                this.slotClicked(this.hoveredSlot, this.hoveredSlot.index, controlDown ? 1 : 0, ContainerInput.THROW);
                 cir.setReturnValue(true);
                 cir.cancel();
             }

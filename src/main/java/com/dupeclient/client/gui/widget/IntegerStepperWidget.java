@@ -41,9 +41,11 @@ public final class IntegerStepperWidget {
         valueField = new StylishTextFieldWidget(textRenderer, valueX, y, valueW, height, Component.empty());
         valueField.setMaxLength(11);
         valueField.setCentered(true);
-        valueField.setFilter(IntegerStepperWidget::isPartialIntInput);
-        valueField.setValue(Integer.toString(clamp(initial)));
         valueField.setResponder(text -> {
+            if (!isPartialIntInput(text)) {
+                valueField.setValue(text.replaceAll("[^\\d-]", ""));
+                return;
+            }
             if (isCompleteInt(text)) {
                 int parsed = clamp(Integer.parseInt(text));
                 String shown = Integer.toString(parsed);
@@ -55,6 +57,7 @@ public final class IntegerStepperWidget {
                 }
             }
         });
+        valueField.setValue(Integer.toString(clamp(initial)));
         plusButton = new StylishButtonWidget(
                 x + width - buttonWidth, y, buttonWidth, height, Component.literal("+"), () -> bump(1, onChange));
     }

@@ -9,7 +9,7 @@ import com.dupeclient.client.module.hud.HudManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -80,7 +80,7 @@ extends Screen {
         return this.contextMenuOpen && mx >= (double)this.contextMenuX && mx < (double)(this.contextMenuX + this.contextMenuW) && my >= (double)this.contextMenuY && my < (double)(this.contextMenuY + this.contextMenuH);
     }
 
-    private void renderContextMenu(GuiGraphics context, int mouseX, int mouseY) {
+    private void renderContextMenu(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         if (!this.contextMenuOpen || this.contextMenuEntries.isEmpty()) {
             return;
         }
@@ -97,7 +97,7 @@ extends Screen {
             if (hot) {
                 context.fill(this.contextMenuX + 1, rowY, this.contextMenuX + this.contextMenuW - 1, rowY + 14, UiTokens.argb(170, -15293622));
             }
-            context.drawString(this.font, Component.literal(e.label()), this.contextMenuX + 8, rowY + 3, -460036);
+            context.text(this.font, Component.literal(e.label()), this.contextMenuX + 8, rowY + 3, -460036);
             rowY += 14;
         }
     }
@@ -177,17 +177,17 @@ extends Screen {
         return super.mouseDragged(click, deltaX, deltaY);
     }
 
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         UiDraw.fillMidnightBackground(context, this.width, this.height);
         int hintY = 8;
-        context.drawCenteredString(this.font, Component.literal("Right-click: add/remove HUD elements \u00b7 Esc: done \u00b7 drag labels to move"), this.width / 2, hintY, -7934036);
-        context.drawCenteredString(this.font, Component.literal("Negative x/y anchor right/bottom."), this.width / 2, hintY + 12, -7035976);
+        context.centeredText(this.font, Component.literal("Right-click: add/remove HUD elements \u00b7 Esc: done \u00b7 drag labels to move"), this.width / 2, hintY, -7934036);
+        context.centeredText(this.font, Component.literal("Negative x/y anchor right/bottom."), this.width / 2, hintY + 12, -7035976);
         this.renderElementsOverlay(context);
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
         this.renderContextMenu(context, mouseX, mouseY);
     }
 
-    private void renderElementsOverlay(GuiGraphics context) {
+    private void renderElementsOverlay(GuiGraphicsExtractor context) {
         Minecraft mc = this.minecraft;
         if (mc == null) {
             return;
@@ -206,7 +206,7 @@ extends Screen {
                 break;
             }
             if (def == null) continue;
-            context.drawString(this.font, def.textProvider().text(mc, HudManager.INSTANCE), x, y, -460036);
+            context.text(this.font, def.textProvider().text(mc, HudManager.INSTANCE), x, y, -460036);
         }
     }
 

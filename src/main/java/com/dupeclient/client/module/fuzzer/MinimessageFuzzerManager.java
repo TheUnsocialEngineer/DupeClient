@@ -212,7 +212,7 @@ public final class MinimessageFuzzerManager {
                 .append(Component.literal(message).withStyle(ChatFormatting.GRAY));
         client.execute(() -> {
             if (client.player != null) {
-                client.player.displayClientMessage(line, false);
+                client.player.sendSystemMessage(line);
             }
         });
     }
