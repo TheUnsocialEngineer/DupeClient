@@ -434,8 +434,15 @@ public final class PresenceRosterSync {
                 sessionNetworkVerified = false;
             } else {
                 applyStickyLock(viewer, viewerStaff, true);
+                if (isCacheFresh(now)) {
+                    sessionNetworkVerified = true;
+                    lastFetchOk = true;
+                    lastError = "";
+                }
             }
-            lastFetchOk = isCacheFresh(now);
+            if (!sessionNetworkVerified) {
+                lastFetchOk = isCacheFresh(now);
+            }
         } catch (Exception ignored) {
             tampered = true;
             stickyStaffLock = true;

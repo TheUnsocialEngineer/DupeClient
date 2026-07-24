@@ -36,6 +36,7 @@ public final class McpToolsManager {
     private volatile boolean moduleChatFeedback = true;
     private final McpToolsBotFleet botFleet = new McpToolsBotFleet();
     private final AtomicBoolean botJoinQueueCancelled = new AtomicBoolean(false);
+    private volatile boolean staffLockApplied;
 
     private McpToolsManager() {
     }
@@ -149,13 +150,17 @@ public final class McpToolsManager {
         if (!HubModuleRules.exploitFeaturesAllowed()) {
             if (running) {
                 stopRun("Access restricted.");
+            } else if (botFleet.hasAnyActive()) {
+                stopAllBots("Access restricted.");
+            } else {
+                botJoinQueueCancelled.set(true);
             }
-            stopAllBots("Access restricted.");
             if (settings.overlayVisible) {
                 McpToolsOverlay.INSTANCE.setOverlayVisible(false);
             }
             return;
         }
+        staffLockApplied = false;
         if (client.getWindow() == null || InputFocusGuards.shouldBlockOverlayToggleHotkeys(client)) {
             return;
         }
@@ -341,9 +346,10 @@ public final class McpToolsManager {
 
     public void stopAllBots(String reason) {
         botJoinQueueCancelled.set(true);
+        boolean hadBots = botFleet.hasAnyActive();
         botFleet.stopAll(this::appendLog);
         onFleetChanged();
-        if (reason != null && !reason.isBlank()) {
+        if (reason != null && !reason.isBlank() && hadBots) {
             appendLog(reason);
             moduleFeedback(reason);
         }
@@ -658,11 +664,29 @@ public final class McpToolsManager {
     }
 
     public void onStaffLock() {
-        stopAllBots("Staff lock — MCPTools stopped.");
-        stopRun(null);
-        settings.enabled = false;
-        settings.overlayVisible = false;
-        saveSettings();
+        boolean hadActivity = running || botFleet.hasAnyActive();
+        if (!staffLockApplied) {
+            staffLockApplied = true;
+            if (hadActivity) {
+                stopAllBots("Staff lock — MCPTools stopped.");
+            } else {
+                stopAllBots(null);
+            }
+            stopRun(null);
+            settings.enabled = false;
+            settings.overlayVisible = false;
+            saveSettings();
+            return;
+        }
+        if (hadActivity) {
+            if (running) {
+                stopRun(null);
+            } else {
+                stopAllBots(null);
+            }
+        } else {
+            botJoinQueueCancelled.set(true);
+        }
     }
 
     private static MutableText prefix() {

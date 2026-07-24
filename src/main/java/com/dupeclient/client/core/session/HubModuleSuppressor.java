@@ -26,10 +26,33 @@ public final class HubModuleSuppressor {
 
     public static void tick(@Nullable MinecraftClient client) {
         boolean restricted = HubModuleRules.viewerRestricted();
-        if (restricted) {
+        if (restricted && !lastRestricted) {
             suppressExploits(client);
+        } else if (restricted) {
+            suppressExploitsSilent(client);
         }
         lastRestricted = restricted;
+    }
+
+    private static void suppressExploitsSilent(@Nullable MinecraftClient client) {
+        if (client != null) {
+            MacroEngine.INSTANCE.stop(client);
+        }
+        MacroQuickPlay.disableForStaffLock();
+        PayAllManager.INSTANCE.cancelIfActive();
+        McpToolsManager.INSTANCE.onStaffLock();
+        EconomyFuzzerManager.INSTANCE.stop(null);
+        SqliFuzzerManager.INSTANCE.stop(null);
+        MinimessageFuzzerManager.INSTANCE.stop(null);
+        PacketSnifferManager.INSTANCE.setEnabled(false);
+        AcAuditManager.INSTANCE.setEnabled(false);
+        ChatGamesManager.INSTANCE.setEnabled(false);
+        CrashesManager.INSTANCE.setChestCrashEnabled(false);
+        CrashesManager.INSTANCE.setArmorPlaceEnabled(false);
+        FabricatorSendScheduler.INSTANCE.stop(null);
+        PacketFabricatorOverlay.INSTANCE.setVisible(false);
+        PacketReplayScheduler.INSTANCE.stop();
+        DupedbManager.INSTANCE.abortActiveScan();
     }
 
     public static boolean wasRestrictedLastTick() {
