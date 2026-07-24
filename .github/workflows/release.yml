@@ -35,7 +35,6 @@ jobs:
 
       - name: Build
         run: ./gradlew build -PskipVersionBump=true --no-daemon
-        continue-on-error: ${{ matrix.branch == '26.1' }}
 
       - name: Upload jar artifact
         if: success()
