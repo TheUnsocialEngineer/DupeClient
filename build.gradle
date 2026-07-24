@@ -46,6 +46,12 @@ sourceSets.main.java.srcDir(macroCyclingSrc)
 def screenshotBootstrapSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/screenshot-bootstrap-1210/java" : "src/screenshot-bootstrap-default/java"
 sourceSets.main.java.srcDir(screenshotBootstrapSrc)
 
+def guiSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/gui-1210/java" : "src/gui-default/java"
+sourceSets.main.java.srcDir(guiSrc)
+
+def waypointSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/waypoint-1210/java" : "src/waypoint-default/java"
+sourceSets.main.java.srcDir(waypointSrc)
+
 def generatedYarnLabelsDir = layout.buildDirectory.dir("generated/yarn-labels")
 sourceSets.main.resources.srcDir(generatedYarnLabelsDir)
 sourceSets.main.resources.exclude "dupeclient/yarn_labels.txt"
