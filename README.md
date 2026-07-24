@@ -195,9 +195,9 @@ Anticheat metrics overlay. See [AC Audit guide](docs/modules/ac-audit.md).
 
 ![Fuzzer overlay](docs/assets/screenshots/overlay-fuzzer.png)
 
-![Account Switcher](docs/assets/screenshots/scren-accounts.png)
+![Account Switcher](docs/assets/screenshots/screen-accounts.png)
 
-![Proxies](docs/assets/screenshots/scren-proxies.png)
+![Proxies](docs/assets/screenshots/screen-proxies.png)
 
 
 ## Building
