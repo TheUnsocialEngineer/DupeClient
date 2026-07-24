@@ -1,5 +1,7 @@
 # DupeClient Wiki
 
+**Live site:** [theunsocialengineer.github.io/DupeClient](https://theunsocialengineer.github.io/DupeClient/)
+
 DupeClient is a Fabric client mod for multiplayer research. This wiki covers installation, every hub module, overlays, and all client commands.
 
 ## Quick links
