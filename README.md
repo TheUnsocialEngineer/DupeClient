@@ -208,7 +208,19 @@ Anticheat metrics overlay. See [AC Audit guide](docs/modules/ac-audit.md).
 
 Clone the repository and use the Gradle wrapper (recommended).
 
-### Default build (Minecraft 1.21.11)
+## Branches
+
+Each Minecraft version has its own branch — check out the branch for the version you target, then run `./gradlew build`:
+
+| Branch | Minecraft | Jar suffix |
+|--------|-----------|------------|
+| [`1.21.11`](https://github.com/TheUnsocialEngineer/DupeClient/tree/1.21.11) | 1.21.11 | `+1.21.11` |
+| [`1.21.10`](https://github.com/TheUnsocialEngineer/DupeClient/tree/1.21.10) | 1.21.10 | `+1.21.10` |
+| [`26.1`](https://github.com/TheUnsocialEngineer/DupeClient/tree/26.1) | 26.1.x | `+26.1-26.1.2` |
+
+`main` tracks **1.21.11** (primary development). Version-specific Gradle settings live in `gradle.properties` on each branch; version-specific sources use `src/*-1210/` vs `src/*-default/` trees wired by `mc_sources_variant`.
+
+### Build (current branch)
 
 ```bash
 ./gradlew build
@@ -220,26 +232,19 @@ On Windows:
 gradlew.bat build
 ```
 
-Output: `build/libs/dupeclient-<mod_version>+1.21.11.jar` (remapped release jar).
+Output: `build/libs/dupeclient-<mod_version>+<version_suffix>.jar`.
 
-### Other Minecraft versions
+### Releases
 
-```bash
-./gradlew build -PmcTarget=mc12110
-./gradlew build -PmcTarget=mc12111
-./gradlew build -PmcTarget=mc261
-```
-
-Or use convenience tasks: `build12110`, `build12111`, `build261`, `buildAllMcTargets`.
+Tag any branch with `v*` (e.g. `v1.48.1`) to trigger [`.github/workflows/release.yml`](.github/workflows/release.yml), which builds all version branches and attaches every jar to one GitHub Release.
 
 ### Build options
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `mcTarget` | `mc12111` | Minecraft profile |
-| `skipVersionBump` | `true` | Keep `mod_version` unchanged on build |
-| `autoVersionBump` | `false` | Bump version on build when enabled |
-| `presenceApiBase` | `https://dupeclient-presence.vercel.app/api/client/presence` | Compile-time presence API base |
+| Property | Description |
+|----------|-------------|
+| `skipVersionBump` | Keep `mod_version` unchanged on build (default `true`) |
+| `autoVersionBump` | Bump version on build when enabled |
+| `presenceApiBase` | Compile-time presence API base |
 
 Copy `gradle.properties.example` to `gradle.properties.local` for local overrides (gitignored).
 

@@ -3,54 +3,21 @@ plugins {
     id "maven-publish"
 }
 
-def mcTarget = (findProperty("mcTarget") ?: findProperty("mc_target") ?: "mc12111").toString()
-def profiles = [
-        "mc12110": [
-                minecraftVersion      : "1.21.10",
-                yarnMappings          : "1.21.10+build.1",
-                loaderVersion         : "0.18.4",
-                fabricApiVersion      : "0.137.0+1.21.10",
-                modmenuVersion        : "16.0.0",
-                minecraftVersionRange : ">=1.21.10 <1.21.11",
-                versionSuffix         : "1.21.10"
-        ],
-        "mc12111": [
-                minecraftVersion      : "1.21.11",
-                yarnMappings          : "1.21.11+build.4",
-                loaderVersion         : "0.18.4",
-                fabricApiVersion      : "0.139.5+1.21.11",
-                modmenuVersion        : "16.0.0",
-                minecraftVersionRange : ">=1.21.11 <1.21.12",
-                versionSuffix         : "1.21.11"
-        ],
-        "mc261": [
-                minecraftVersion      : "26.1.2",
-                yarnMappings          : "26.1.2+build.1",
-                loaderVersion         : "0.18.5",
-                fabricApiVersion      : "0.146.1+26.1.2",
-                modmenuVersion        : "18.0.0-alpha.8",
-                minecraftVersionRange : ">=26.1 <26.2",
-                versionSuffix         : "26.1-26.1.2"
-        ]
-]
-def selectedProfile = profiles[mcTarget]
-if (selectedProfile == null) {
-    throw new GradleException("Unknown mcTarget '${mcTarget}'. Valid targets: ${profiles.keySet().join(', ')}")
-}
+def minecraftVersion = project.minecraft_version.toString()
+def yarnMappings = project.yarn_mappings.toString()
+def loaderVersion = project.loader_version.toString()
+def fabricApiVersion = project.fabric_api_version.toString()
+def modmenuVersion = project.modmenu_version.toString()
+def minecraftVersionRange = project.minecraft_version_range.toString()
+def versionSuffix = project.version_suffix.toString()
+def javaRelease = Integer.parseInt(project.java_version.toString())
+def mcSourcesVariant = (findProperty("mc_sources_variant") ?: "default").toString()
 
-def javaRelease = selectedProfile.minecraftVersion.startsWith("26.") ? 25 : 21
-
-def macroCyclingSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/macrocycling-1210/java" : "src/macrocycling-default/java"
-sourceSets.main.java.srcDir(macroCyclingSrc)
-
-def screenshotBootstrapSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/screenshot-bootstrap-1210/java" : "src/screenshot-bootstrap-default/java"
-sourceSets.main.java.srcDir(screenshotBootstrapSrc)
-
-def guiSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/gui-1210/java" : "src/gui-default/java"
-sourceSets.main.java.srcDir(guiSrc)
-
-def waypointSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/waypoint-1210/java" : "src/waypoint-default/java"
-sourceSets.main.java.srcDir(waypointSrc)
+def variantSuffix = mcSourcesVariant == "1210" ? "1210" : "default"
+sourceSets.main.java.srcDir("src/macrocycling-${variantSuffix == "1210" ? "1210" : "default"}/java")
+sourceSets.main.java.srcDir("src/screenshot-bootstrap-${variantSuffix == "1210" ? "1210" : "default"}/java")
+sourceSets.main.java.srcDir("src/gui-${variantSuffix == "1210" ? "1210" : "default"}/java")
+sourceSets.main.java.srcDir("src/waypoint-${variantSuffix == "1210" ? "1210" : "default"}/java")
 
 def generatedYarnLabelsDir = layout.buildDirectory.dir("generated/yarn-labels")
 sourceSets.main.resources.srcDir(generatedYarnLabelsDir)
@@ -68,10 +35,9 @@ def skipVersionBump = (findProperty("skipVersionBump") ?: "true").toString() == 
 def autoVersionBump = (findProperty("autoVersionBump") ?: "false").toString() == "true"
 def isVersionBumpTask = gradle.startParameter.taskNames.any { name ->
     def n = name.contains(":") ? name.substring(name.lastIndexOf(":") + 1) : name
-    n == "build" || n == "assemble" || n == "build12110" || n == "build12111" || n == "build261" || n == "buildAllMcTargets"
+    n == "build" || n == "assemble"
 }
 
-/** e.g. 1.2.38 -> 1.3.38 (increments the 0.1 / minor segment). */
 static String bumpModVersionByTenth(String current) {
     def parts = current.trim().split("\\.")
     if (parts.length >= 2) {
@@ -362,7 +328,7 @@ afterEvaluate {
     }
 }
 
-version = "${resolvedModVersion}+${selectedProfile.versionSuffix}"
+version = "${resolvedModVersion}+${versionSuffix}"
 group = project.maven_group
 
 base {
@@ -372,10 +338,9 @@ base {
 repositories {
     mavenCentral()
     maven { url = "https://maven.fabricmc.net/" }
-    maven { url = "https://maven.terraformersmc.com/releases/" } // ModMenu
+    maven { url = "https://maven.terraformersmc.com/releases/" }
     maven { url = "https://jitpack.io" }
-    maven { url = "https://maven.bawnorton.com/releases" } // MixinSquared
-    // Meteor Baritone fork (same builds linked from https://meteorclient.com)
+    maven { url = "https://maven.bawnorton.com/releases" }
     maven { url = "https://maven.meteordev.org/releases" }
     maven { url = "https://maven.meteordev.org/snapshots" }
     exclusiveContent {
@@ -385,6 +350,7 @@ repositories {
 }
 
 def dupedbApiVersion = "1.0.4"
+def baritoneVersion = (findProperty("baritone_version") ?: "1.21.10-SNAPSHOT").toString()
 
 configurations {
     dupedbApiSources
@@ -392,81 +358,36 @@ configurations {
 
 dependencies {
     dupedbApiSources "com.github.DupeDB:java-api:${dupedbApiVersion}:sources"
-    minecraft "com.mojang:minecraft:${selectedProfile.minecraftVersion}"
-    mappings "net.fabricmc:yarn:${selectedProfile.yarnMappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${selectedProfile.loaderVersion}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${selectedProfile.fabricApiVersion}"
+    minecraft "com.mojang:minecraft:${minecraftVersion}"
+    mappings "net.fabricmc:yarn:${yarnMappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${loaderVersion}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
 
-    // Meteor Baritone fork — compile-only for macro pathing reflection; not bundled at runtime (version must match MC).
-    modCompileOnly "meteordevelopment:baritone:1.21.10-SNAPSHOT"
+    modCompileOnly "meteordevelopment:baritone:${baritoneVersion}"
+    modCompileOnly "com.terraformersmc:modmenu:${modmenuVersion}"
 
-    // Optional runtime dependency; mixins are guarded by plugin checks.
-    modCompileOnly "com.terraformersmc:modmenu:${selectedProfile.modmenuVersion}"
-
-    // MixinSquared: cancel Meteor Client's broken AbstractSignEditScreenMixin so fallbacks stay intact (OpSec-style).
     annotationProcessor "com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.4"
     modImplementation include("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.4")
 
-    // SOCKS proxy handlers for multiplayer connections (not bundled — provided by Minecraft's Netty at runtime).
     compileOnly "io.netty:netty-handler-proxy:4.1.118.Final"
-
     modImplementation include("org.xerial:sqlite-jdbc:3.47.2.0")
 }
 
 processResources {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     inputs.property "version", project.version
-    inputs.property "minecraft_version", selectedProfile.minecraftVersion
-    inputs.property "minecraft_version_range", selectedProfile.minecraftVersionRange
-    inputs.property "loader_version", selectedProfile.loaderVersion
+    inputs.property "minecraft_version", minecraftVersion
+    inputs.property "minecraft_version_range", minecraftVersionRange
+    inputs.property "loader_version", loaderVersion
 
     filesMatching("fabric.mod.json") {
         expand(
                 "version": project.version,
-                "minecraft_version": selectedProfile.minecraftVersion,
-                "minecraft_version_range": selectedProfile.minecraftVersionRange,
-                "loader_version": selectedProfile.loaderVersion
+                "minecraft_version": minecraftVersion,
+                "minecraft_version_range": minecraftVersionRange,
+                "loader_version": loaderVersion
         )
     }
-}
-
-def build12110Inner = tasks.register("build12110Inner", GradleBuild) {
-    tasks = ["clean", "build"]
-    startParameter.projectProperties = ["mcTarget": "mc12110", "skipVersionBump": "true"]
-}
-
-tasks.register("build12110") {
-    group = "build"
-    description = "Build mod for Minecraft 1.21.10"
-    dependsOn build12110Inner
-}
-
-def build12111Inner = tasks.register("build12111Inner", GradleBuild) {
-    tasks = ["clean", "build"]
-    startParameter.projectProperties = ["mcTarget": "mc12111", "skipVersionBump": "true"]
-}
-
-tasks.register("build12111") {
-    group = "build"
-    description = "Build mod for Minecraft 1.21.11"
-    dependsOn build12111Inner
-}
-
-def build261Inner = tasks.register("build261Inner", GradleBuild) {
-    tasks = ["clean", "build"]
-    startParameter.projectProperties = ["mcTarget": "mc261", "skipVersionBump": "true"]
-}
-
-tasks.register("build261") {
-    group = "build"
-    description = "Build mod for Minecraft 26.1.x"
-    dependsOn build261Inner
-}
-
-tasks.register("buildAllMcTargets") {
-    group = "build"
-    description = "Build for 1.21.10, 1.21.11, and 26.1"
-    dependsOn("build12110", "build12111", "build261")
 }
 
 def captureScreenshotsDir = layout.projectDirectory.dir("docs/assets/screenshots").asFile.absolutePath.replace('\\', '/')
