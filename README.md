@@ -1,6 +1,6 @@
 # DupeClient
 
-DupeClient is a Fabric client mod with an in-game module hub, overlays, and tooling for multiplayer research. It combines DupeDB integration, packet utilities, macros, security features, social presence, and related modules in one client-side package.
+DupeClient is a Dupe/Exploit hunting focuse Fabric client mod with an in-game module hub, overlays, and tooling for multiplayer research. It combines DupeDB integration, packet utilities, macros, security features, social presence, and related modules in one client-side package.
 
 **Full wiki:** [theunsocialengineer.github.io/DupeClient](https://theunsocialengineer.github.io/DupeClient/)
 
