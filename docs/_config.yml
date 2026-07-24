@@ -2,6 +2,8 @@ title: DupeClient Wiki
 description: Full usage guide for the DupeClient Fabric mod
 theme: jekyll-theme-cayman
 markdown: GFM
+baseurl: "/DupeClient"
+url: "https://theunsocialengineer.github.io"
 plugins:
   - jekyll-relative-links
 relative_links:

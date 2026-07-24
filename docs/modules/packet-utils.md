@@ -2,7 +2,7 @@
 
 Packet queue, fabricator, and sniffer tools.
 
-![Packet Utils panel](assets/screenshots/panel-packet-utils.png)
+![Packet Utils panel]({{ site.baseurl }}/assets/screenshots/panel-packet-utils.png)
 
 ## Subsystems
 
@@ -14,7 +14,7 @@ Delay, desync, and advanced module toggles in the hub panel. Configure packet ki
 
 Build inventory click packets from an overlay.
 
-![Packet fabricator overlay](assets/screenshots/overlay-fabricator.png)
+![Packet fabricator overlay]({{ site.baseurl }}/assets/screenshots/overlay-fabricator.png)
 
 - Fabricate tab: slot, action, times, send/queue.
 - Delay tab: packet delay settings.
@@ -24,7 +24,7 @@ Build inventory click packets from an overlay.
 
 Log, filter, block, replay, and diff packets.
 
-![Packet sniffer overlay](assets/screenshots/overlay-sniffer.png)
+![Packet sniffer overlay]({{ site.baseurl }}/assets/screenshots/overlay-sniffer.png)
 
 Right-click a log line:
 

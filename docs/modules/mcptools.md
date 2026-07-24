@@ -2,9 +2,9 @@
 
 Bot tooling with local runner or remote execution. Bundle syncs from the presence manifest at `https://dupeclient-presence.vercel.app/api/client/presence/mcptools/manifest`.
 
-![MCPTools panel](assets/screenshots/panel-mcp-tools.png)
+![MCPTools panel]({{ site.baseurl }}/assets/screenshots/panel-mcp-tools.png)
 
-![MCPTools overlay](assets/screenshots/overlay-mcptools.png)
+![MCPTools overlay]({{ site.baseurl }}/assets/screenshots/overlay-mcptools.png)
 
 ## Features
 

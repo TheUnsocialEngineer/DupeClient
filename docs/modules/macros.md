@@ -2,9 +2,9 @@
 
 Graph-based automation with hotkeys, queue, and studio editor.
 
-![Macros panel](assets/screenshots/panel-macros.png)
+![Macros panel]({{ site.baseurl }}/assets/screenshots/panel-macros.png)
 
-![Macro studio](assets/screenshots/screen-macro-studio.png)
+![Macro studio]({{ site.baseurl }}/assets/screenshots/screen-macro-studio.png)
 
 ## Hub Play tab
 

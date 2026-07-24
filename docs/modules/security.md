@@ -2,7 +2,7 @@
 
 OpSec, staff detection, privacy, and vault access.
 
-![Security panel](assets/screenshots/panel-security.png)
+![Security panel]({{ site.baseurl }}/assets/screenshots/panel-security.png)
 
 ## OpSec
 
@@ -21,7 +21,7 @@ Alerts for staff join/leave, proximity, glow, and invisible entities. Staff time
 
 **Open password vault** opens encrypted server password storage.
 
-![Vault screen](assets/screenshots/screen-vault.png)
+![Vault screen]({{ site.baseurl }}/assets/screenshots/screen-vault.png)
 
 [/vault commands](../commands/vault.md)
 

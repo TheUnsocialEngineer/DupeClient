@@ -2,9 +2,9 @@
 
 Plugin discovery, DupeDB OAuth, exploit matching, and P2W scoring.
 
-![DupeDB panel](assets/screenshots/panel-dupedb.png)
+![DupeDB panel]({{ site.baseurl }}/assets/screenshots/panel-dupedb.png)
 
-![DupeDB overlay](assets/screenshots/overlay-dupedb.png)
+![DupeDB overlay]({{ site.baseurl }}/assets/screenshots/overlay-dupedb.png)
 
 ## Hub panel
 

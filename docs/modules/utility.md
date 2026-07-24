@@ -2,17 +2,17 @@
 
 Chat games, crash utilities, and fuzzers.
 
-![Utility panel](assets/screenshots/panel-utility.png)
+![Utility panel]({{ site.baseurl }}/assets/screenshots/panel-utility.png)
 
 ## Chat games
 
-![Chat games overlay](assets/screenshots/overlay-chat-games.png)
+![Chat games overlay]({{ site.baseurl }}/assets/screenshots/overlay-chat-games.png)
 
 Solver overlay for chat minigames on supported servers.
 
 ## Fuzzers
 
-![Fuzzer overlay](assets/screenshots/overlay-fuzzer.png)
+![Fuzzer overlay]({{ site.baseurl }}/assets/screenshots/overlay-fuzzer.png)
 
 Hub sub-tabs:
 
@@ -30,4 +30,4 @@ Exploit utilities are disabled on non-P2W registry servers.
 
 [/looknbt, /nbtedit, /dupe](../commands/utility.md)
 
-![NBT editor](assets/screenshots/screen-nbt-edit.png)
+![NBT editor]({{ site.baseurl }}/assets/screenshots/screen-nbt-edit.png)

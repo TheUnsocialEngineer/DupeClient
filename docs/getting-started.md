@@ -14,7 +14,7 @@ Optional: Mod Menu, baritone-meteor (macro and waypoint pathing).
 1. Join a multiplayer server or open a singleplayer world for local testing.
 2. Press **Right Control** to open the module hub.
 
-![Module hub](assets/screenshots/hub.png)
+![Module hub]({{ site.baseurl }}/assets/screenshots/hub.png)
 
 3. Pick a module from the left rail (wide layout) or top pills (compact layout).
 4. Toggle features and set hotkeys from each panel.

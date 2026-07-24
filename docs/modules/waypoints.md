@@ -2,9 +2,9 @@
 
 Personal and shared waypoints with audience control.
 
-![Waypoints panel](assets/screenshots/panel-waypoints.png)
+![Waypoints panel]({{ site.baseurl }}/assets/screenshots/panel-waypoints.png)
 
-![Waypoints screen](assets/screenshots/screen-waypoints.png)
+![Waypoints screen]({{ site.baseurl }}/assets/screenshots/screen-waypoints.png)
 
 ## Create and share
 

@@ -4,9 +4,9 @@ Online DupeClient users, friends, and shared server join.
 
 **Presence API:** `https://dupeclient-presence.vercel.app/api/client/presence`
 
-![Social panel](assets/screenshots/panel-social.png)
+![Social panel]({{ site.baseurl }}/assets/screenshots/panel-social.png)
 
-![Social screen](assets/screenshots/screen-social.png)
+![Social screen]({{ site.baseurl }}/assets/screenshots/screen-social.png)
 
 ## Screen tabs
 

@@ -18,6 +18,6 @@ Opens the server search auth screen for DupeDB server tooling.
 /serversearch
 ```
 
-![Server search screen](assets/screenshots/screen-server-search.png)
+![Server search screen]({{ site.baseurl }}/assets/screenshots/screen-server-search.png)
 
-![Server search sign-in](assets/screenshots/screen-server-search-auth.png)
+![Server search sign-in]({{ site.baseurl }}/assets/screenshots/screen-server-search-auth.png)

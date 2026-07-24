@@ -2,9 +2,9 @@
 
 Live anticheat and platform metrics while playing.
 
-![AC Audit panel](assets/screenshots/panel-ac-audit.png)
+![AC Audit panel]({{ site.baseurl }}/assets/screenshots/panel-ac-audit.png)
 
-![AC Audit overlay](assets/screenshots/overlay-ac-audit.png)
+![AC Audit overlay]({{ site.baseurl }}/assets/screenshots/overlay-ac-audit.png)
 
 ## Metrics
 

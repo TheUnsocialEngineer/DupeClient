@@ -4,64 +4,64 @@ Preview of the module hub, panels, overlays, and screens.
 
 ## Module hub
 
-![Module hub](assets/screenshots/hub.png)
+![Module hub]({{ site.baseurl }}/assets/screenshots/hub.png)
 
 ## Hub panels
 
-![DupeDB panel](assets/screenshots/panel-dupedb.png)
+![DupeDB panel]({{ site.baseurl }}/assets/screenshots/panel-dupedb.png)
 
-![Packet Utils panel](assets/screenshots/panel-packet-utils.png)
+![Packet Utils panel]({{ site.baseurl }}/assets/screenshots/panel-packet-utils.png)
 
-![PayAll panel](assets/screenshots/panel-payall.png)
+![PayAll panel]({{ site.baseurl }}/assets/screenshots/panel-payall.png)
 
-![MCPTools panel](assets/screenshots/panel-mcp-tools.png)
+![MCPTools panel]({{ site.baseurl }}/assets/screenshots/panel-mcp-tools.png)
 
-![Macros panel](assets/screenshots/panel-macros.png)
+![Macros panel]({{ site.baseurl }}/assets/screenshots/panel-macros.png)
 
-![HUD panel](assets/screenshots/panel-hud.png)
+![HUD panel]({{ site.baseurl }}/assets/screenshots/panel-hud.png)
 
-![Social panel](assets/screenshots/panel-social.png)
+![Social panel]({{ site.baseurl }}/assets/screenshots/panel-social.png)
 
-![Waypoints panel](assets/screenshots/panel-waypoints.png)
+![Waypoints panel]({{ site.baseurl }}/assets/screenshots/panel-waypoints.png)
 
-![Security panel](assets/screenshots/panel-security.png)
+![Security panel]({{ site.baseurl }}/assets/screenshots/panel-security.png)
 
-![AC Audit panel](assets/screenshots/panel-ac-audit.png)
+![AC Audit panel]({{ site.baseurl }}/assets/screenshots/panel-ac-audit.png)
 
-![Utility panel](assets/screenshots/panel-utility.png)
+![Utility panel]({{ site.baseurl }}/assets/screenshots/panel-utility.png)
 
 ## Overlays
 
-![DupeDB overlay](assets/screenshots/overlay-dupedb.png)
+![DupeDB overlay]({{ site.baseurl }}/assets/screenshots/overlay-dupedb.png)
 
-![Packet sniffer overlay](assets/screenshots/overlay-sniffer.png)
+![Packet sniffer overlay]({{ site.baseurl }}/assets/screenshots/overlay-sniffer.png)
 
-![Packet fabricator overlay](assets/screenshots/overlay-fabricator.png)
+![Packet fabricator overlay]({{ site.baseurl }}/assets/screenshots/overlay-fabricator.png)
 
-![PayAll overlay](assets/screenshots/overlay-payall.png)
+![PayAll overlay]({{ site.baseurl }}/assets/screenshots/overlay-payall.png)
 
-![MCPTools overlay](assets/screenshots/overlay-mcptools.png)
+![MCPTools overlay]({{ site.baseurl }}/assets/screenshots/overlay-mcptools.png)
 
-![AC Audit overlay](assets/screenshots/overlay-ac-audit.png)
+![AC Audit overlay]({{ site.baseurl }}/assets/screenshots/overlay-ac-audit.png)
 
-![Fuzzer overlay](assets/screenshots/overlay-fuzzer.png)
+![Fuzzer overlay]({{ site.baseurl }}/assets/screenshots/overlay-fuzzer.png)
 
-![Chat games overlay](assets/screenshots/overlay-chat-games.png)
+![Chat games overlay]({{ site.baseurl }}/assets/screenshots/overlay-chat-games.png)
 
 ## Screens
 
-![Social screen](assets/screenshots/screen-social.png)
+![Social screen]({{ site.baseurl }}/assets/screenshots/screen-social.png)
 
-![Waypoints screen](assets/screenshots/screen-waypoints.png)
+![Waypoints screen]({{ site.baseurl }}/assets/screenshots/screen-waypoints.png)
 
-![Macro studio](assets/screenshots/screen-macro-studio.png)
+![Macro studio]({{ site.baseurl }}/assets/screenshots/screen-macro-studio.png)
 
-![HUD editor](assets/screenshots/screen-hud-editor.png)
+![HUD editor]({{ site.baseurl }}/assets/screenshots/screen-hud-editor.png)
 
-![Vault screen](assets/screenshots/screen-vault.png)
+![Vault screen]({{ site.baseurl }}/assets/screenshots/screen-vault.png)
 
-![NBT editor](assets/screenshots/screen-nbt-edit.png)
+![NBT editor]({{ site.baseurl }}/assets/screenshots/screen-nbt-edit.png)
 
-![Server search screen](assets/screenshots/screen-server-search.png)
+![Server search screen]({{ site.baseurl }}/assets/screenshots/screen-server-search.png)
 
-![Server search sign-in](assets/screenshots/screen-server-search-auth.png)
+![Server search sign-in]({{ site.baseurl }}/assets/screenshots/screen-server-search-auth.png)

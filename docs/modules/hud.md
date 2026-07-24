@@ -2,9 +2,9 @@
 
 Custom on-screen HUD elements.
 
-![HUD panel](assets/screenshots/panel-hud.png)
+![HUD panel]({{ site.baseurl }}/assets/screenshots/panel-hud.png)
 
-![HUD editor](assets/screenshots/screen-hud-editor.png)
+![HUD editor]({{ site.baseurl }}/assets/screenshots/screen-hud-editor.png)
 
 ```
 /hud editor
