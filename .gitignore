@@ -44,14 +44,6 @@ _baritone_src/
 Pay-Everyone/
 ui-utils-advanced/
 
-# Presence server (tracked for Vercel deploy; ignore deps and secrets)
-REDACTED/node_modules/
-REDACTED/mcptools-bundle/node_modules/
-REDACTED/mcptools-bundle/.runtime/
-REDACTED/.env
-REDACTED/.env.local
-REDACTED/.vercel/
-
 # Local Yarn dumps
 mappings/
 

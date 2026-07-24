@@ -220,6 +220,8 @@ Each Minecraft version has its own branch — check out the branch for the versi
 
 `main` tracks **1.21.11** (primary development). Version-specific Gradle settings live in `gradle.properties` on each branch; version-specific sources use `src/*-1210/` vs `src/*-default/` trees wired by `mc_sources_variant`.
 
+See [docs/BRANCHES.md](docs/BRANCHES.md) for the full branching workflow.
+
 ### Build (current branch)
 
 ```bash
@@ -255,15 +257,6 @@ Copy `gradle.properties.example` to `gradle.properties.local` for local override
 - **Live wiki:** [https://theunsocialengineer.github.io/DupeClient/](https://theunsocialengineer.github.io/DupeClient/)
 
 Pages uses the **GitHub Actions** source (Settings → Pages → Build and deployment → Source: GitHub Actions). The workflow runs automatically when `docs/**` changes on `main`.
-
-### Presence API (private backend)
-
-Social presence, P2W registry, waypoints, and MCPTools bundle sync are served by a separate backend:
-
-- **Repo:** [TheUnsocialEngineer/REDACTED](https://github.com/TheUnsocialEngineer/REDACTED) (private)
-- **Deploy:** Vercel — see [`REDACTED/README.md`](REDACTED/README.md)
-- **Default client URL:** `https://dupeclient-presence.vercel.app/api/client/presence` (override at build time with `-PpresenceApiBase=...`)
-- **Health check:** `GET https://dupeclient-presence.vercel.app/api/client/presence/health`
 
 ## Repository layout
 
