@@ -1,0 +1,10 @@
+{
+  "formatVersion": 1,
+  "id": "example_linear",
+  "displayName": "Example (wait → say hi → close screen)",
+  "steps": [
+    { "type": "WAIT_TICKS", "ticks": 20 },
+    { "type": "SEND_CHAT", "text": "Macro example ran." },
+    { "type": "CLOSE_SCREEN" }
+  ]
+}

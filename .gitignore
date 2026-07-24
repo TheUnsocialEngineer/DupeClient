@@ -1,0 +1,79 @@
+# Gradle / Fabric
+.gradle/
+build/
+out/
+classes/
+run/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.code-workspace
+*.launch
+.settings/
+.classpath
+.project
+.factorypath
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and JVM crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# Node (not part of the mod build)
+node_modules/
+
+# Local-only trees (reference, decompile, backend services)
+.tools/
+tools/
+_decompiled/
+.tmp-decompile/
+.acaudit-ref/
+_opsec_ref/
+_baritone_src/
+Pay-Everyone/
+ui-utils-advanced/
+
+# Presence server (tracked for Vercel deploy; ignore deps and secrets)
+REDACTED/node_modules/
+REDACTED/mcptools-bundle/node_modules/
+REDACTED/mcptools-bundle/.runtime/
+REDACTED/.env
+REDACTED/.env.local
+REDACTED/.vercel/
+
+# Local Yarn dumps
+mappings/
+
+# Stray root artifacts
+/fabric.mod.json
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Scratch and notes
+hud.txt
+MacroEngine_restore.txt
+macro_engine_snippet.txt
+_bar_test.gradle
+
+# Local caches and secrets
+.dupedb_exploits_raw.json
+.dupedb_links.txt
+presence.json
+gradle.properties.local
+local.properties
+*.env
+.env.*
+
+# Optional machine-specific Gradle overrides
+gradle-local.properties

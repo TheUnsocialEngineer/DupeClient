@@ -1,0 +1,12 @@
+# Copy to gradle.properties.local for machine-specific overrides (gitignored).
+# Do not commit secrets or personal paths here.
+
+# Mod version bump on build (default in gradle.properties is skipVersionBump=true)
+# autoVersionBump=true
+# skipVersionBump=false
+
+# Minecraft target: mc12110 | mc12111 | mc261
+# mcTarget=mc12111
+
+# Override compile-time presence API URL baked into the jar
+# presenceApiBase=https://example.com/api/client/presence

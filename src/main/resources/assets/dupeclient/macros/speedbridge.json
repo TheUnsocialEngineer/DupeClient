@@ -1,0 +1,89 @@
+{
+  "formatVersion": 2,
+  "id": "speedbridge",
+  "displayName": "Speedbridge (slot 0 blocks, W+USE+SNEAK loop)",
+  "steps": [],
+  "nodes": [
+    {
+      "id": "st",
+      "type": "GRAPH_START",
+      "category": "Control",
+      "x": 80,
+      "y": 20,
+      "ticks": 0,
+      "text": ""
+    },
+    {
+      "id": "hb",
+      "type": "HOTBAR_SELECT",
+      "category": "utility",
+      "x": 80,
+      "y": 70,
+      "ticks": 0,
+      "text": "",
+      "hotbarSlot": 0
+    },
+    {
+      "id": "lp",
+      "type": "LOOK_PITCH",
+      "category": "utility",
+      "x": 80,
+      "y": 120,
+      "ticks": 72,
+      "text": "",
+      "walkFacing": "S"
+    },
+    {
+      "id": "rp",
+      "type": "REPEAT",
+      "category": "utility",
+      "x": 80,
+      "y": 170,
+      "ticks": 0,
+      "text": "",
+      "repeatShowNextPort": false
+    },
+    {
+      "id": "mv",
+      "type": "MOVE_FORWARD",
+      "category": "utility",
+      "x": 80,
+      "y": 240,
+      "ticks": 2,
+      "text": "",
+      "moveForwardMeasure": "TICKS",
+      "moveForwardBlocks": 1,
+      "walkFacing": "PLAYER",
+      "moveAuxHoldKeyId": "USE",
+      "moveAuxHoldKey2Id": "SNEAK"
+    },
+    {
+      "id": "pz",
+      "type": "WAIT_TICKS",
+      "category": "utility",
+      "x": 80,
+      "y": 290,
+      "ticks": 1,
+      "text": ""
+    },
+    {
+      "id": "en",
+      "type": "GRAPH_END",
+      "category": "Control",
+      "x": 80,
+      "y": 350,
+      "ticks": 0,
+      "text": ""
+    }
+  ],
+  "edges": [
+    { "from": "st", "to": "hb", "fromSlot": "" },
+    { "from": "hb", "to": "lp", "fromSlot": "" },
+    { "from": "lp", "to": "rp", "fromSlot": "" },
+    { "from": "rp", "to": "mv", "fromSlot": "loop" },
+    { "from": "rp", "to": "pz", "fromSlot": "next" },
+    { "from": "mv", "to": "pz", "fromSlot": "" },
+    { "from": "pz", "to": "en", "fromSlot": "" }
+  ],
+  "graphGroups": []
+}

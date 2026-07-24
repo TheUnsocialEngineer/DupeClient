@@ -1,0 +1,511 @@
+plugins {
+    id "fabric-loom" version "1.15.3"
+    id "maven-publish"
+}
+
+def mcTarget = (findProperty("mcTarget") ?: findProperty("mc_target") ?: "mc12111").toString()
+def profiles = [
+        "mc12110": [
+                minecraftVersion      : "1.21.10",
+                yarnMappings          : "1.21.10+build.1",
+                loaderVersion         : "0.18.4",
+                fabricApiVersion      : "0.137.0+1.21.10",
+                modmenuVersion        : "15.0.0-beta.3",
+                minecraftVersionRange : ">=1.21.10 <1.21.11",
+                versionSuffix         : "1.21.10"
+        ],
+        "mc12111": [
+                minecraftVersion      : "1.21.11",
+                yarnMappings          : "1.21.11+build.4",
+                loaderVersion         : "0.18.4",
+                fabricApiVersion      : "0.139.5+1.21.11",
+                modmenuVersion        : "16.0.0",
+                minecraftVersionRange : ">=1.21.11 <1.21.12",
+                versionSuffix         : "1.21.11"
+        ],
+        "mc261": [
+                minecraftVersion      : "26.1.2",
+                yarnMappings          : "26.1.2+build.1",
+                loaderVersion         : "0.18.5",
+                fabricApiVersion      : "0.146.1+26.1.2",
+                modmenuVersion        : "18.0.0-alpha.8",
+                minecraftVersionRange : ">=26.1 <26.2",
+                versionSuffix         : "26.1-26.1.2"
+        ]
+]
+def selectedProfile = profiles[mcTarget]
+if (selectedProfile == null) {
+    throw new GradleException("Unknown mcTarget '${mcTarget}'. Valid targets: ${profiles.keySet().join(', ')}")
+}
+
+def javaRelease = selectedProfile.minecraftVersion.startsWith("26.") ? 25 : 21
+
+def macroCyclingSrc = selectedProfile.minecraftVersion == "1.21.10" ? "src/macrocycling-1210/java" : "src/macrocycling-default/java"
+sourceSets.main.java.srcDir(macroCyclingSrc)
+
+def generatedYarnLabelsDir = layout.buildDirectory.dir("generated/yarn-labels")
+sourceSets.main.resources.srcDir(generatedYarnLabelsDir)
+sourceSets.main.resources.exclude "dupeclient/yarn_labels.txt"
+
+def generatedBuildConstantsDir = layout.buildDirectory.dir("generated/build-constants")
+sourceSets.main.java.srcDir(generatedBuildConstantsDir)
+
+def resolvedPresenceApiBase = (findProperty("presenceApiBase") ?: findProperty("presence_api_base") ?: "https://eokascanner.xyz/api/client/presence").toString().trim()
+while (resolvedPresenceApiBase.endsWith("/")) {
+    resolvedPresenceApiBase = resolvedPresenceApiBase.substring(0, resolvedPresenceApiBase.length() - 1)
+}
+
+def skipVersionBump = (findProperty("skipVersionBump") ?: "true").toString() == "true"
+def autoVersionBump = (findProperty("autoVersionBump") ?: "false").toString() == "true"
+def isVersionBumpTask = gradle.startParameter.taskNames.any { name ->
+    def n = name.contains(":") ? name.substring(name.lastIndexOf(":") + 1) : name
+    n == "build" || n == "assemble" || n == "build12110" || n == "build12111" || n == "build261" || n == "buildAllMcTargets"
+}
+
+/** e.g. 1.2.38 -> 1.3.38 (increments the 0.1 / minor segment). */
+static String bumpModVersionByTenth(String current) {
+    def parts = current.trim().split("\\.")
+    if (parts.length >= 2) {
+        def major = parts[0]
+        def minor = Integer.parseInt(parts[1]) + 1
+        if (parts.length >= 3) {
+            return "${major}.${minor}.${parts[2]}"
+        }
+        return "${major}.${minor}"
+    }
+    return new BigDecimal(current.trim()).add(new BigDecimal("0.1")).stripTrailingZeros().toPlainString()
+}
+
+static void persistModVersion(Project project, String nextVersion) {
+    def propsFile = project.layout.projectDirectory.file("gradle.properties").asFile
+    def text = propsFile.getText("UTF-8")
+    propsFile.setText(text.replaceFirst(/(?m)^mod_version=.*/, "mod_version=${nextVersion}"), "UTF-8")
+    project.ext.mod_version = nextVersion
+}
+
+def resolvedModVersion = project.mod_version.toString()
+if (isVersionBumpTask && autoVersionBump && !skipVersionBump) {
+    def previous = resolvedModVersion
+    def bumped = bumpModVersionByTenth(previous)
+    persistModVersion(project, bumped)
+    resolvedModVersion = bumped
+    logger.lifecycle("Mod version bumped: {} -> {}", previous, bumped)
+}
+
+tasks.register("generateBuildConstants") {
+    group = "build"
+    description = "Generate compile-time constants (presence API base, mod version, build tag)"
+    inputs.property("presenceApiBase", resolvedPresenceApiBase)
+    inputs.property("modVersion", resolvedModVersion)
+
+    outputs.file(generatedBuildConstantsDir.map { it.file("com/dupeclient/DupeBuildConstants.java") })
+
+    doLast {
+        def escapedApi = resolvedPresenceApiBase.replace("\\", "\\\\").replace("\"", "\\\"")
+        def escapedVersion = resolvedModVersion.replace("\\", "\\\\").replace("\"", "\\\"")
+        def buildDate = java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString()
+        def buildTag = "dc-${buildDate}-v${resolvedModVersion}"
+        def escapedTag = buildTag.replace("\\", "\\\\").replace("\"", "\\\"")
+        def outFile = generatedBuildConstantsDir.get().file("com/dupeclient/DupeBuildConstants.java").asFile
+        outFile.parentFile.mkdirs()
+        outFile.setText("""\
+package com.dupeclient;
+
+/** Generated by Gradle — do not edit. Override presence URL with -PpresenceApiBase=... */
+public final class DupeBuildConstants {
+    public static final String PRESENCE_API_BASE = "${escapedApi}";
+    public static final String MOD_VERSION = "${escapedVersion}";
+    public static final String BUILD_TAG = "${escapedTag}";
+
+    private DupeBuildConstants() {
+    }
+}
+""", "UTF-8")
+        logger.lifecycle("Generated build constants: MOD_VERSION={}, BUILD_TAG={}, PRESENCE_API_BASE={}", resolvedModVersion, buildTag, resolvedPresenceApiBase)
+    }
+}
+
+def dupedbApiSrcDir = layout.buildDirectory.dir("generated/dupedb-api-src")
+
+tasks.register("prepareDupedbApiSources", Sync) {
+    group = "build"
+    description = "Unpack DupeDB java-api sources (JitPack binary is Java 25; we compile at the project release)"
+    from configurations.dupedbApiSources.collect { zipTree(it) }
+    include "com/**"
+    exclude "**/module-info.java"
+    into dupedbApiSrcDir
+    outputs.dir dupedbApiSrcDir
+
+    doLast {
+        def oauthFlow = dupedbApiSrcDir.get().file("com/dupedb/api/auth/OAuthFlow.java").asFile
+        if (!oauthFlow.exists()) {
+            throw new GradleException("DupeDB OAuthFlow.java missing after unpack")
+        }
+        def text = oauthFlow.getText("UTF-8")
+        text = text.replace(
+                'final String redirectUri = "http://127.0.0.1:" + resolvedPort + "/callback";',
+                'final String redirectUri = "http://localhost:" + resolvedPort + "/dupedb-callback";'
+        )
+        text = text.replace(
+                'server.createContext("/callback",',
+                'server.createContext("/dupedb-callback",'
+        )
+        text = text.replace(
+                '''    public Credentials authenticateAndExchange() throws OAuthException {
+        if (!Desktop.isDesktopSupported()) {
+            throw new OAuthException("Desktop browser not available — cannot complete OAuth flow");
+        }
+
+        String verifier = PkceUtil.generateCodeVerifier();''',
+                '''    @FunctionalInterface
+    public interface BrowserOpener {
+        void open(String url) throws IOException;
+    }
+
+    private static volatile BrowserOpener browserOpener;
+
+    /** Host app may register a browser opener (e.g. Minecraft Util.getOperatingSystem().open). */
+    public static void setBrowserOpener(BrowserOpener opener) {
+        browserOpener = opener;
+    }
+
+    public Credentials authenticateAndExchange() throws OAuthException {
+        String verifier = PkceUtil.generateCodeVerifier();'''
+        )
+        text = text.replace(
+                '            Desktop.getDesktop().browse(URI.create(authorizeUrl));',
+                '            openAuthorizeUrl(authorizeUrl);'
+        )
+        text = text.replace(
+                '    static String parseParam(String query, String name) {',
+                '''    private static void openAuthorizeUrl(String url) throws IOException {
+        if (browserOpener != null) {
+            browserOpener.open(url);
+            return;
+        }
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            Desktop.getDesktop().browse(URI.create(url));
+            return;
+        }
+        String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+        ProcessBuilder pb;
+        if (os.contains("win")) {
+            pb = new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url);
+        } else if (os.contains("mac")) {
+            pb = new ProcessBuilder("open", url);
+        } else {
+            pb = new ProcessBuilder("xdg-open", url);
+        }
+        pb.start();
+    }
+
+    static String parseParam(String query, String name) {'''
+        )
+        oauthFlow.setText(text, "UTF-8")
+    }
+}
+
+sourceSets.main.java.srcDir dupedbApiSrcDir
+
+tasks.named("compileJava").configure {
+    dependsOn tasks.named("generateBuildConstants")
+    dependsOn tasks.named("prepareDupedbApiSources")
+}
+
+tasks.register("generateYarnLabels") {
+    group = "build"
+    description = "Extract Yarn class/field labels from mappings.tiny for runtime obfuscated-name decoding"
+    dependsOn configurations.mappings
+    inputs.files(configurations.mappings)
+    outputs.file(generatedYarnLabelsDir.map { it.file("dupeclient/yarn_labels.txt") })
+
+    doLast {
+        def mappingsJar = configurations.mappings.files.find { it.name.endsWith(".jar") }
+        if (mappingsJar == null) {
+            throw new GradleException("Yarn mappings jar not found")
+        }
+
+        def classLabels = new LinkedHashMap<String, String>()
+        def yarnClassKeys = new LinkedHashMap<String, String>()
+        def fieldLabels = new LinkedHashMap<String, String>()
+        def recordLabels = new LinkedHashMap<String, String>()
+        def methodLabels = new LinkedHashMap<String, String>()
+        String currentOwnerKey = null
+        int recordCompIndex = 0
+
+        def zip = new java.util.zip.ZipFile(mappingsJar)
+        def tinyEntry = zip.entries().find { it.name.endsWith("mappings.tiny") }
+        if (tinyEntry == null) {
+            zip.close()
+            throw new GradleException("mappings.tiny not found in ${mappingsJar}")
+        }
+
+        zip.getInputStream(tinyEntry).withReader("UTF-8") { reader ->
+            reader.eachLine { String line ->
+                if (line.startsWith("c\t")) {
+                    def parts = line.split("\t", -1)
+                    if (parts.length < 3) {
+                        return
+                    }
+                    def intermediaryPath = parts[1]
+                    def namedPath = parts[2]
+                    def namedSimple = namedPath.contains("/")
+                            ? namedPath.substring(namedPath.lastIndexOf("/") + 1)
+                            : namedPath
+                    def ownerKey = intermediaryPath.contains("/")
+                            ? intermediaryPath.substring(intermediaryPath.lastIndexOf("/") + 1)
+                            : intermediaryPath
+                    classLabels.put(ownerKey, namedSimple)
+                    yarnClassKeys.put(namedSimple, ownerKey)
+                    currentOwnerKey = ownerKey
+                    recordCompIndex = 0
+                } else if (line.startsWith("\tf\t")) {
+                    def parts = line.split("\t", -1)
+                    if (parts.length < 5 || currentOwnerKey == null) {
+                        return
+                    }
+                    def intermediary = parts[3]
+                    def named = parts[4]
+                    if (intermediary.startsWith("comp_") || intermediary.startsWith("field_")) {
+                        fieldLabels.put("${currentOwnerKey}/${intermediary}", named)
+                    }
+                    if (intermediary.startsWith("comp_")) {
+                        recordLabels.put("${currentOwnerKey}/${recordCompIndex}", named)
+                        recordLabels.put("${currentOwnerKey}/\$\$${recordCompIndex}", named)
+                        recordCompIndex++
+                    }
+                } else if (line.startsWith("\tm\t")) {
+                    def parts = line.split("\t", -1)
+                    if (parts.length < 5 || currentOwnerKey == null) {
+                        return
+                    }
+                    def intermediary = parts[3]
+                    def named = parts[4]
+                    if (intermediary.startsWith("method_")) {
+                        methodLabels.put("${currentOwnerKey}/${intermediary}", named)
+                    }
+                }
+            }
+        }
+        zip.close()
+
+        def outFile = generatedYarnLabelsDir.get().file("dupeclient/yarn_labels.txt").asFile
+        outFile.parentFile.mkdirs()
+        outFile.withWriter("UTF-8") { writer ->
+            writer.writeLine("# Generated from Yarn mappings — do not edit")
+            classLabels.each { key, value ->
+                writer.writeLine("C\t${key}\t${value}")
+            }
+            yarnClassKeys.each { key, value ->
+                writer.writeLine("Y\t${key}\t${value}")
+            }
+            recordLabels.each { key, value ->
+                def slash = key.indexOf("/")
+                if (slash < 0) {
+                    return
+                }
+                def suffix = key.substring(slash + 1)
+                def prefix = suffix.startsWith("\$\$") ? "D" : "R"
+                writer.writeLine("${prefix}\t${key.substring(0, slash)}\t${suffix}\t${value}")
+            }
+            fieldLabels.each { key, value ->
+                def slash = key.indexOf("/")
+                if (slash < 0) {
+                    return
+                }
+                writer.writeLine("F\t${key.substring(0, slash)}\t${key.substring(slash + 1)}\t${value}")
+            }
+            methodLabels.each { key, value ->
+                def slash = key.indexOf("/")
+                if (slash < 0) {
+                    return
+                }
+                writer.writeLine("M\t${key.substring(0, slash)}\t${key.substring(slash + 1)}\t${value}")
+            }
+        }
+        logger.lifecycle(
+                "Generated yarn labels: {} classes, {} yarn keys, {} record aliases, {} fields, {} methods -> {}",
+                classLabels.size(),
+                yarnClassKeys.size(),
+                recordLabels.size(),
+                fieldLabels.size(),
+                methodLabels.size(),
+                outFile
+        )
+    }
+}
+
+tasks.named("processResources").configure {
+    dependsOn tasks.named("generateYarnLabels")
+}
+
+tasks.named("jar").configure {
+    dependsOn tasks.named("generateYarnLabels")
+}
+
+afterEvaluate {
+    if (tasks.findByName("sourcesJar") != null) {
+        tasks.named("sourcesJar").configure {
+            dependsOn tasks.named("generateYarnLabels")
+            dependsOn tasks.named("generateBuildConstants")
+            dependsOn tasks.named("prepareDupedbApiSources")
+        }
+    }
+}
+
+version = "${resolvedModVersion}+${selectedProfile.versionSuffix}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+    maven { url = "https://maven.terraformersmc.com/releases/" } // ModMenu
+    maven { url = "https://jitpack.io" }
+    maven { url = "https://maven.bawnorton.com/releases" } // MixinSquared
+    // Meteor Baritone fork (same builds linked from https://meteorclient.com)
+    maven { url = "https://maven.meteordev.org/releases" }
+    maven { url = "https://maven.meteordev.org/snapshots" }
+    exclusiveContent {
+        forRepository { maven { url = "https://api.modrinth.com/maven" } }
+        filter { includeGroup "maven.modrinth" }
+    }
+}
+
+def dupedbApiVersion = "1.0.4"
+
+configurations {
+    dupedbApiSources
+}
+
+dependencies {
+    dupedbApiSources "com.github.DupeDB:java-api:${dupedbApiVersion}:sources"
+    minecraft "com.mojang:minecraft:${selectedProfile.minecraftVersion}"
+    mappings "net.fabricmc:yarn:${selectedProfile.yarnMappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${selectedProfile.loaderVersion}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${selectedProfile.fabricApiVersion}"
+
+    // Meteor Baritone fork — compile-only for macro pathing reflection; not bundled at runtime (version must match MC).
+    modCompileOnly "meteordevelopment:baritone:1.21.10-SNAPSHOT"
+
+    // Optional runtime dependency; mixins are guarded by plugin checks.
+    modCompileOnly "com.terraformersmc:modmenu:${selectedProfile.modmenuVersion}"
+
+    // MixinSquared: cancel Meteor Client's broken AbstractSignEditScreenMixin so fallbacks stay intact (OpSec-style).
+    annotationProcessor "com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.4"
+    modImplementation include("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.2-beta.4")
+
+    // SOCKS proxy handlers for multiplayer connections (not bundled — provided by Minecraft's Netty at runtime).
+    compileOnly "io.netty:netty-handler-proxy:4.1.118.Final"
+
+    modImplementation include("org.xerial:sqlite-jdbc:3.47.2.0")
+}
+
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", selectedProfile.minecraftVersion
+    inputs.property "minecraft_version_range", selectedProfile.minecraftVersionRange
+    inputs.property "loader_version", selectedProfile.loaderVersion
+
+    filesMatching("fabric.mod.json") {
+        expand(
+                "version": project.version,
+                "minecraft_version": selectedProfile.minecraftVersion,
+                "minecraft_version_range": selectedProfile.minecraftVersionRange,
+                "loader_version": selectedProfile.loaderVersion
+        )
+    }
+}
+
+def build12110Inner = tasks.register("build12110Inner", GradleBuild) {
+    tasks = ["clean", "build"]
+    startParameter.projectProperties = ["mcTarget": "mc12110", "skipVersionBump": "true"]
+}
+
+tasks.register("build12110") {
+    group = "build"
+    description = "Build mod for Minecraft 1.21.10"
+    dependsOn build12110Inner
+}
+
+def build12111Inner = tasks.register("build12111Inner", GradleBuild) {
+    tasks = ["clean", "build"]
+    startParameter.projectProperties = ["mcTarget": "mc12111", "skipVersionBump": "true"]
+}
+
+tasks.register("build12111") {
+    group = "build"
+    description = "Build mod for Minecraft 1.21.11"
+    dependsOn build12111Inner
+}
+
+def build261Inner = tasks.register("build261Inner", GradleBuild) {
+    tasks = ["clean", "build"]
+    startParameter.projectProperties = ["mcTarget": "mc261", "skipVersionBump": "true"]
+}
+
+tasks.register("build261") {
+    group = "build"
+    description = "Build mod for Minecraft 26.1.x"
+    dependsOn build261Inner
+}
+
+tasks.register("buildAllMcTargets") {
+    group = "build"
+    description = "Build for 1.21.10, 1.21.11, and 26.1"
+    dependsOn("build12110", "build12111", "build261")
+}
+
+def captureScreenshotsDir = layout.projectDirectory.dir("docs/assets/screenshots").asFile.absolutePath.replace('\\', '/')
+
+if (project.hasProperty("captureScreenshots")) {
+    tasks.named("runClient").configure {
+        jvmArgs "-Ddupeclient.captureScreenshots=true", "-Ddupeclient.captureDir=${captureScreenshotsDir}"
+    }
+}
+
+tasks.register("captureScreenshots") {
+    group = "documentation"
+    description = "Dev-only: capture UI screenshots into docs/assets/screenshots."
+    dependsOn tasks.named("runClient")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = javaRelease
+}
+
+java {
+    withSourcesJar()
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(javaRelease)
+    }
+    sourceCompatibility = JavaVersion.toVersion(javaRelease)
+    targetCompatibility = JavaVersion.toVersion(javaRelease)
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/ui_utils.accesswidener")
+    mixin {
+        useLegacyMixinAp = true
+        defaultRefmapName = "${project.archives_base_name}-refmap.json"
+    }
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}

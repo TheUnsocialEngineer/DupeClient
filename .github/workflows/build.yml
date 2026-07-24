@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mcTarget: mc12110
+            java: "21"
+          - mcTarget: mc12111
+            java: "21"
+          - mcTarget: mc261
+            java: "25"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build
+        run: ./gradlew build -PmcTarget=${{ matrix.mcTarget }} -PskipVersionBump=true --no-daemon
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: dupeclient-${{ matrix.mcTarget }}
+          path: build/libs/dupeclient-*.jar
+          if-no-files-found: error
