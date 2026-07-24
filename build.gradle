@@ -50,7 +50,7 @@ sourceSets.main.resources.exclude "dupeclient/yarn_labels.txt"
 def generatedBuildConstantsDir = layout.buildDirectory.dir("generated/build-constants")
 sourceSets.main.java.srcDir(generatedBuildConstantsDir)
 
-def resolvedPresenceApiBase = (findProperty("presenceApiBase") ?: findProperty("presence_api_base") ?: "https://eokascanner.xyz/api/client/presence").toString().trim()
+def resolvedPresenceApiBase = (findProperty("presenceApiBase") ?: findProperty("presence_api_base") ?: "https://dupeclient-presence.vercel.app/api/client/presence").toString().trim()
 while (resolvedPresenceApiBase.endsWith("/")) {
     resolvedPresenceApiBase = resolvedPresenceApiBase.substring(0, resolvedPresenceApiBase.length() - 1)
 }

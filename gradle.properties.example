@@ -9,4 +9,4 @@
 # mcTarget=mc12111
 
 # Override compile-time presence API URL baked into the jar
-# presenceApiBase=https://example.com/api/client/presence
+# presenceApiBase=https://dupeclient-presence.vercel.app/api/client/presence

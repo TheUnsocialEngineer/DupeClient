@@ -251,7 +251,7 @@ Or use convenience tasks: `build12110`, `build12111`, `build261`, `buildAllMcTar
 | `mcTarget` | `mc12111` | Minecraft profile |
 | `skipVersionBump` | `true` | Keep `mod_version` unchanged on build |
 | `autoVersionBump` | `false` | Bump version on build when enabled |
-| `presenceApiBase` | production URL | Compile-time presence API base |
+| `presenceApiBase` | `https://dupeclient-presence.vercel.app/api/client/presence` | Compile-time presence API base |
 
 Copy `gradle.properties.example` to `gradle.properties.local` for local overrides (gitignored).
 
@@ -269,7 +269,8 @@ Social presence, P2W registry, waypoints, and MCPTools bundle sync are served by
 
 - **Repo:** [TheUnsocialEngineer/REDACTED](https://github.com/TheUnsocialEngineer/REDACTED) (private)
 - **Deploy:** Vercel — see [`REDACTED/README.md`](REDACTED/README.md)
-- **Default client URL:** `https://eokascanner.xyz/api/client/presence` (override at build time with `-PpresenceApiBase=...`)
+- **Default client URL:** `https://dupeclient-presence.vercel.app/api/client/presence` (override at build time with `-PpresenceApiBase=...`)
+- **Health check:** `GET https://dupeclient-presence.vercel.app/api/client/presence/health`
 
 ## Repository layout
 

@@ -5,7 +5,7 @@ package com.dupeclient.client.module.cape;
  * {@link #apiBase} if you mirror the API elsewhere.
  */
 public final class DupeClientPresenceSettings {
-    public static final String DEFAULT_API_BASE = "https://eokascanner.xyz/api/client/presence";
+    public static final String DEFAULT_API_BASE = "https://dupeclient-presence.vercel.app/api/client/presence";
 
     /** When false, no HTTP presence calls are made (capes only for yourself locally). Use {@link Boolean} so Gson omits = still enabled. */
     public Boolean enabled = Boolean.TRUE;

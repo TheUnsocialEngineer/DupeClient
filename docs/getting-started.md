@@ -40,7 +40,11 @@ Some panels require roster verification on online servers. HUD and Security stay
 
 ## Online services
 
-Social presence, P2W registry, and MCPTools bundle sync use remote APIs configured at build time. The mod jar does not include a server.
+Social presence, P2W registry, and MCPTools bundle sync use the production presence API:
+
+**`https://dupeclient-presence.vercel.app/api/client/presence`**
+
+This URL is baked into the mod jar at build time. Override per-client in `.minecraft/config/dupeclient/presence.json` (`apiBase` field), or at build time with `-PpresenceApiBase=...`. The mod does not include a server component.
 
 ## Next steps
 
