@@ -2,7 +2,7 @@
 
 ## Install
 
-1. Install Fabric Loader for your Minecraft version (1.21.10, 1.21.11, or 26.1.x).
+1. Install Fabric Loader for your Minecraft version (1.21.10, 1.21.11, 26.1.x, or 26.2).
 2. Install Fabric API in the `mods` folder.
 3. Add the DupeClient jar built for your version.
 4. Launch the game.
