@@ -27,7 +27,7 @@ public final class InputFocusGuards {
         if (screen instanceof ChatScreen || screen instanceof SleepingChatScreen) {
             return true;
         }
-        String name = screen.getClass().getSimpleName();
+        String name = safeSimpleClassName(screen.getClass());
         return name.contains("Chat")
                 || name.contains("Sign")
                 || name.contains("Anvil")
@@ -98,7 +98,7 @@ public final class InputFocusGuards {
         if (element instanceof TextFieldWidget) {
             return true;
         }
-        String simple = element.getClass().getSimpleName();
+        String simple = safeSimpleClassName(element.getClass());
         return simple.contains("TextField")
                 || simple.contains("EditBox")
                 || simple.contains("TextInput")
@@ -111,5 +111,22 @@ public final class InputFocusGuards {
             return widget.isFocused();
         }
         return false;
+    }
+
+    /**
+     * {@link Class#getSimpleName()} can throw {@link IncompatibleClassChangeError} on mixin-generated
+     * inner classes; {@link Class#getName()} is safe and still exposes enough for heuristics.
+     */
+    private static String safeSimpleClassName(Class<?> clazz) {
+        String name = clazz.getName();
+        int dot = name.lastIndexOf('.');
+        if (dot >= 0) {
+            name = name.substring(dot + 1);
+        }
+        int inner = name.indexOf('$');
+        if (inner >= 0) {
+            name = name.substring(0, inner);
+        }
+        return name;
     }
 }
