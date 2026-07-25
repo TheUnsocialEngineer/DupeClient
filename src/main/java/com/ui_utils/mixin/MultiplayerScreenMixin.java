@@ -1,16 +1,13 @@
 package com.ui_utils.mixin;
 
-import com.dupeclient.client.multiplayer.SessionManager;
-import com.ui_utils.SessionUtils;
 import com.ui_utils.SharedVariables;
 import com.ui_utils.gui.CustomButtonWidget;
+import com.ui_utils.gui.UsernameScreen;
+import com.ui_utils.gui.ViaNotFoundScreen;
 import com.ui_utils.mixin.accessor.ScreenAccessor;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.User;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
@@ -241,77 +238,5 @@ public class MultiplayerScreenMixin {
     @Unique
     private static Component uiUtils$denyLabel() {
         return Component.literal(SharedVariables.resourcePackForceDeny ? "§aDeny" : "Deny");
-    }
-
-    private static final class ViaNotFoundScreen extends Screen {
-        private final Screen parent;
-        private final String message;
-
-        private ViaNotFoundScreen(Screen parent, String message) {
-            super(Component.literal("ViaFabricPlus"));
-            this.parent = parent;
-            this.message = message;
-        }
-
-        @Override
-        protected void init() {
-            int centerX = this.width / 2;
-            int centerY = this.height / 2;
-            this.addRenderableWidget(Button.builder(Component.literal("OK"), button -> Minecraft.getInstance()
-                            .setScreen(this.parent))
-                    .bounds(centerX - 50, centerY + 20, 100, 20)
-                    .build());
-        }
-
-        @Override
-        public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-            super.extractRenderState(context, mouseX, mouseY, delta);
-            context.centeredText(this.font, this.title, this.width / 2, this.height / 2 - 30, 0xFFFFFF);
-            context.centeredText(
-                    this.font, Component.literal(this.message), this.width / 2, this.height / 2, 0xFF5555);
-        }
-    }
-
-    private static final class UsernameScreen extends Screen {
-        private final Screen parent;
-        private final Minecraft mc;
-        private EditBox usernameField;
-
-        private UsernameScreen(Screen parent, Minecraft mc) {
-            super(Component.literal("Set Username"));
-            this.parent = parent;
-            this.mc = mc;
-        }
-
-        @Override
-        protected void init() {
-            int centerX = this.width / 2;
-            int centerY = this.height / 2;
-            this.usernameField = new EditBox(this.font, centerX - 100, centerY - 20, 200, 20, Component.literal("Username"));
-            this.usernameField.setValue(this.mc.getUser().getName());
-            this.usernameField.setMaxLength(16);
-            this.addWidget(this.usernameField);
-            this.addRenderableWidget(Button.builder(Component.literal("Apply"), button -> {
-                        String newName = this.usernameField.getValue().trim();
-                        if (!newName.isEmpty()) {
-                            User oldSession = this.mc.getUser();
-                            User newSession = SessionUtils.copyWith(oldSession, newName, null);
-                            SessionManager.setSession(newSession);
-                        }
-                        this.mc.setScreen(this.parent);
-                    })
-                    .bounds(centerX - 100, centerY + 10, 95, 20)
-                    .build());
-            this.addRenderableWidget(Button.builder(Component.literal("Cancel"), button -> this.mc.setScreen(this.parent))
-                    .bounds(centerX + 5, centerY + 10, 95, 20)
-                    .build());
-        }
-
-        @Override
-        public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
-            super.extractRenderState(context, mouseX, mouseY, delta);
-            context.centeredText(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
-            this.usernameField.extractRenderState(context, mouseX, mouseY, delta);
-        }
     }
 }
