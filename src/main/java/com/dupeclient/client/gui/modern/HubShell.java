@@ -30,6 +30,10 @@ public final class HubShell {
     private int contentScrollTop;
     private int contentScrollH;
     private int sidebarW;
+    private int sidebarRailTop;
+    private int sidebarRailBottom;
+    private double sidebarScrollY;
+    private double sidebarScrollMax;
     private int selectedModuleIndex;
     private int lastSelectedModuleIndex = -1;
     private int navHoverIndex = -1;
@@ -72,6 +76,8 @@ public final class HubShell {
         }
         ensureAllowedSelection();
         ensureScrollBuffers();
+        recomputeLayout(DupeClient.getGuiManager().getPanels());
+        ensureNavItemVisible(selectedModuleIndex);
     }
 
     private void ensureAllowedSelection() {
@@ -117,6 +123,10 @@ public final class HubShell {
             contentW = Math.max(120, vw - 2 * UiTokens.SP_3);
             contentTop = topPad + navBlockH + UiTokens.SP_3;
             contentH = Math.max(48, vh - contentTop - UiTokens.SP_3);
+            sidebarRailTop = 0;
+            sidebarRailBottom = 0;
+            sidebarScrollMax = 0;
+            sidebarScrollY = 0;
         } else {
             int ix = UiTokens.SP_2;
             int iy = topPad + UiTokens.SP_3;
@@ -139,6 +149,15 @@ public final class HubShell {
             contentW = Math.max(160, vw - contentLeft - UiTokens.SP_4);
             contentTop = topPad + UiTokens.SP_3;
             contentH = Math.max(48, vh - contentTop - UiTokens.SP_3);
+            sidebarRailTop = topPad + UiTokens.SP_3;
+            sidebarRailBottom = vh - UiTokens.SP_3;
+            if (n > 0) {
+                int navBottom = navY[n - 1] + navH[n - 1];
+                sidebarScrollMax = Math.max(0, navBottom + UiTokens.SP_2 - sidebarRailBottom);
+            } else {
+                sidebarScrollMax = 0;
+            }
+            sidebarScrollY = Mth.clamp(sidebarScrollY, 0.0, sidebarScrollMax);
         }
         contentScrollTop = contentTop;
         contentScrollH = contentH;
@@ -158,6 +177,21 @@ public final class HubShell {
             return;
         }
         selectedModuleIndex = Mth.clamp(index, 0, n - 1);
+        ensureNavItemVisible(selectedModuleIndex);
+    }
+
+    private void ensureNavItemVisible(int index) {
+        if (viewportW < UiTokens.BP_COMPACT || sidebarScrollMax <= 0 || index < 0 || index >= navCount) {
+            return;
+        }
+        int drawY = navScreenY(index);
+        int drawBottom = drawY + navH[index];
+        if (drawY < sidebarRailTop) {
+            sidebarScrollY -= sidebarRailTop - drawY;
+        } else if (drawBottom > sidebarRailBottom) {
+            sidebarScrollY += drawBottom - sidebarRailBottom;
+        }
+        sidebarScrollY = Mth.clamp(sidebarScrollY, 0.0, sidebarScrollMax);
     }
 
     private void notifyModuleHidden(int index) {
@@ -235,16 +269,22 @@ public final class HubShell {
             context.fillGradient(0, y0, sidebarW, y0 + railH, MidnightPalette.alphaRgb(0xE8, 0x09090B), MidnightPalette.alphaRgb(0xE8, 0x111118));
             context.fill(sidebarW - 1, y0, sidebarW, y0 + railH, MidnightPalette.BORDER_LIGHT);
             List<Panel> panels = DupeClient.getGuiManager().getPanels();
+            context.enableScissor(0, sidebarRailTop, sidebarW, sidebarRailBottom);
             for (int i = 0; i < navCount && i < panels.size(); i++) {
+                int drawY = navScreenY(i);
                 String section = sectionLabelForIndex(i);
                 if (section != null) {
-                    UiComponents.drawNavSectionLabel(tr, context, navX[i], navY[i] - 14, navW[i], section);
+                    UiComponents.drawNavSectionLabel(tr, context, navX[i], drawY - 14, navW[i], section);
                 }
                 boolean sel = i == selectedModuleIndex;
                 boolean hot = i == navHoverIndex;
                 boolean locked = !HubModuleRules.panelAllowed(panels.get(i).getId());
                 String label = panels.get(i).getTitle().getString() + (locked ? " 🔒" : "");
-                UiComponents.drawNavItem(tr, context, navX[i], navY[i], navW[i], navH[i], label, sel, hot);
+                UiComponents.drawNavItem(tr, context, navX[i], drawY, navW[i], navH[i], label, sel, hot);
+            }
+            context.disableScissor();
+            if (sidebarScrollMax > 0.5) {
+                UiDraw.drawScrollbar(context, sidebarW - UiTokens.SP_2, sidebarRailTop, sidebarRailBottom, sidebarScrollY, sidebarScrollMax);
             }
         } else {
             List<Panel> panels = DupeClient.getGuiManager().getPanels();
@@ -283,11 +323,30 @@ public final class HubShell {
     public void updateNavHover(int mouseX, int mouseY) {
         navHoverIndex = -1;
         for (int i = 0; i < navCount; i++) {
-            if (mouseX >= navX[i] && mouseX < navX[i] + navW[i] && mouseY >= navY[i] && mouseY < navY[i] + navH[i]) {
+            if (navHitTest(mouseX, mouseY, i)) {
                 navHoverIndex = i;
                 return;
             }
         }
+    }
+
+    private int navScreenY(int index) {
+        return (int) (navY[index] - sidebarScrollY);
+    }
+
+    private int navDrawY(int index) {
+        return viewportW < UiTokens.BP_COMPACT ? navY[index] : navScreenY(index);
+    }
+
+    private boolean navHitTest(double mx, double my, int index) {
+        int drawY = navDrawY(index);
+        if (mx < navX[index] || mx >= navX[index] + navW[index] || my < drawY || my >= drawY + navH[index]) {
+            return false;
+        }
+        if (sidebarW > 0 && viewportW >= UiTokens.BP_COMPACT) {
+            return my >= sidebarRailTop && my < sidebarRailBottom;
+        }
+        return true;
     }
 
     public boolean handleNavClick(double mx, double my, int button) {
@@ -295,7 +354,7 @@ public final class HubShell {
             return false;
         }
         for (int i = 0; i < navCount; i++) {
-            if (mx >= navX[i] && mx < navX[i] + navW[i] && my >= navY[i] && my < navY[i] + navH[i]) {
+            if (navHitTest(mx, my, i)) {
                 List<Panel> panels = DupeClient.getGuiManager().getPanels();
                 if (i < panels.size() && !HubModuleRules.panelAllowed(panels.get(i).getId())) {
                     return true;
@@ -329,6 +388,18 @@ public final class HubShell {
 
     public boolean handleContentScroll(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         recomputeLayout(DupeClient.getGuiManager().getPanels());
+        if (verticalAmount == 0) {
+            return false;
+        }
+        boolean compact = viewportW < UiTokens.BP_COMPACT;
+        if (!compact && sidebarW > 0
+                && mouseX >= 0 && mouseX < sidebarW
+                && mouseY >= sidebarRailTop && mouseY < sidebarRailBottom
+                && sidebarScrollMax > 0.5) {
+            sidebarScrollY -= verticalAmount * 20.0;
+            sidebarScrollY = Mth.clamp(sidebarScrollY, 0.0, sidebarScrollMax);
+            return true;
+        }
         if (mouseX >= contentLeft
                 && mouseX < contentLeft + contentW
                 && mouseY >= contentScrollTop
