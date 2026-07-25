@@ -35,6 +35,11 @@ public final class HubShell {
     private int sidebarRailBottom;
     private double sidebarScrollY;
     private double sidebarScrollMax;
+    private double compactNavScrollY;
+    private double compactNavScrollMax;
+    private int compactNavAreaTop;
+    private int compactNavAreaBottom;
+    private HubLayout layoutMetrics = HubLayout.forViewport(800, 600, 0, 11, false);
     private int selectedModuleIndex;
     private int lastSelectedModuleIndex = -1;
     private int navHoverIndex = -1;
@@ -59,10 +64,7 @@ public final class HubShell {
     }
 
     public static int sidebarWidthForViewport(int vw) {
-        if (vw < UiTokens.BP_COMPACT) {
-            return 0;
-        }
-        return MathHelper.clamp(148, 140, 160);
+        return HubLayout.sidebarWidthForViewport(vw);
     }
 
     public void onScreenOpen() {
@@ -97,17 +99,18 @@ public final class HubShell {
         int n = panels.size();
         int vw = viewportW;
         int vh = viewportH;
-        boolean compact = vw < UiTokens.BP_COMPACT;
         int topPad = reserveTopForVanillaCloseButton ? UiTokens.APP_BAR_H : 0;
-        sidebarW = compact ? 0 : sidebarWidthForViewport(vw);
+        layoutMetrics = HubLayout.forViewport(vw, vh, topPad, n, reserveTopForVanillaCloseButton);
+        boolean compact = layoutMetrics.compactNav;
+        sidebarW = compact ? 0 : layoutMetrics.sidebarWidth;
 
         navCount = n;
         if (compact) {
-            int perRow = vw >= 720 ? 4 : 3;
-            int gap = UiTokens.SP_2;
-            int pillH = 32;
+            int perRow = vw >= 920 ? 5 : (vw >= 720 ? 4 : (vw >= 480 ? 3 : 2));
+            int gap = layoutMetrics.pillGap;
+            int pillH = layoutMetrics.pillH;
             int navBlockTop = topPad + UiTokens.SP_2;
-            int btnW = Math.max(72, (vw - UiTokens.SP_4 * 2) / perRow - gap);
+            int btnW = Math.max(64, (vw - UiTokens.SP_4 * 2 - gap * (perRow - 1)) / perRow);
 
             for (int i = 0; i < n; i++) {
                 int row = i / perRow;
@@ -118,12 +121,21 @@ public final class HubShell {
                 navH[i] = pillH;
             }
 
-            int rows = (n + perRow - 1) / perRow;
-            int navBlockH = rows > 0 ? rows * (28 + gap) + gap : 0;
+            int navBlockH = layoutMetrics.estimatedSidebarNavHeight;
+            compactNavAreaTop = layoutMetrics.navAreaTop;
+            compactNavAreaBottom = layoutMetrics.navAreaBottom;
+            if (n > 0) {
+                int navBottom = navY[n - 1] + navH[n - 1];
+                compactNavScrollMax = Math.max(0, navBottom + UiTokens.SP_2 - compactNavAreaBottom);
+            } else {
+                compactNavScrollMax = 0;
+            }
+            compactNavScrollY = MathHelper.clamp(compactNavScrollY, 0.0, compactNavScrollMax);
+
             contentLeft = UiTokens.SP_3;
             contentW = Math.max(120, vw - 2 * UiTokens.SP_3);
-            contentTop = topPad + navBlockH + UiTokens.SP_3;
-            contentH = Math.max(48, vh - contentTop - UiTokens.SP_3);
+            contentTop = navBlockTop + navBlockH + UiTokens.SP_3;
+            contentH = Math.max(HubLayout.MIN_CONTENT_HEIGHT / 2, vh - contentTop - UiTokens.SP_3);
             sidebarRailTop = 0;
             sidebarRailBottom = 0;
             sidebarScrollMax = 0;
@@ -132,9 +144,9 @@ public final class HubShell {
             int ix = UiTokens.SP_2;
             int iy = topPad + UiTokens.SP_3;
             int iw = sidebarW - 2 * UiTokens.SP_2;
-            int ih = 38;
-            int railGap = 8;
-            int sectionHeaderH = 14;
+            int ih = layoutMetrics.navItemH;
+            int railGap = layoutMetrics.navGap;
+            int sectionHeaderH = layoutMetrics.sectionHeaderH;
             for (int i = 0; i < n; i++) {
                 String section = sectionLabelForIndex(i);
                 if (section != null) {
@@ -149,9 +161,11 @@ public final class HubShell {
             contentLeft = sidebarW + UiTokens.SP_4;
             contentW = Math.max(160, vw - contentLeft - UiTokens.SP_4);
             contentTop = topPad + UiTokens.SP_3;
-            contentH = Math.max(48, vh - contentTop - UiTokens.SP_3);
-            sidebarRailTop = topPad + UiTokens.SP_3;
-            sidebarRailBottom = vh - UiTokens.SP_3;
+            contentH = Math.max(HubLayout.MIN_CONTENT_HEIGHT / 2, vh - contentTop - UiTokens.SP_3);
+            sidebarRailTop = layoutMetrics.navAreaTop;
+            sidebarRailBottom = layoutMetrics.navAreaBottom;
+            compactNavScrollMax = 0;
+            compactNavScrollY = 0;
             if (n > 0) {
                 int navBottom = navY[n - 1] + navH[n - 1];
                 sidebarScrollMax = Math.max(0, navBottom + UiTokens.SP_2 - sidebarRailBottom);
@@ -182,7 +196,24 @@ public final class HubShell {
     }
 
     private void ensureNavItemVisible(int index) {
-        if (viewportW < UiTokens.BP_COMPACT || sidebarScrollMax <= 0 || index < 0 || index >= navCount) {
+        if (index < 0 || index >= navCount) {
+            return;
+        }
+        if (layoutMetrics.compactNav) {
+            if (compactNavScrollMax <= 0) {
+                return;
+            }
+            int drawY = navScreenY(index);
+            int drawBottom = drawY + navH[index];
+            if (drawY < compactNavAreaTop) {
+                compactNavScrollY -= compactNavAreaTop - drawY;
+            } else if (drawBottom > compactNavAreaBottom) {
+                compactNavScrollY += drawBottom - compactNavAreaBottom;
+            }
+            compactNavScrollY = MathHelper.clamp(compactNavScrollY, 0.0, compactNavScrollMax);
+            return;
+        }
+        if (sidebarScrollMax <= 0) {
             return;
         }
         int drawY = navScreenY(index);
@@ -247,7 +278,7 @@ public final class HubShell {
         this.viewportW = vw;
         this.viewportH = vh;
         applyEmbeddedLayout(tr);
-        boolean compact = vw < UiTokens.BP_COMPACT;
+        boolean compact = layoutMetrics.compactNav;
 
         if (reserveTopForVanillaCloseButton) {
             UiDraw.drawTopFullWidthBand(context, vw, UiTokens.APP_BAR_H);
@@ -275,7 +306,7 @@ public final class HubShell {
                 int drawY = navScreenY(i);
                 String section = sectionLabelForIndex(i);
                 if (section != null) {
-                    UiComponents.drawNavSectionLabel(tr, context, navX[i], drawY - 14, navW[i], section);
+                    UiComponents.drawNavSectionLabel(tr, context, navX[i], drawY - layoutMetrics.sectionHeaderH, navW[i], section);
                 }
                 boolean sel = i == selectedModuleIndex;
                 boolean hot = i == navHoverIndex;
@@ -289,12 +320,18 @@ public final class HubShell {
             }
         } else {
             List<Panel> panels = DupeClient.getGuiManager().getPanels();
+            context.enableScissor(0, compactNavAreaTop, vw, compactNavAreaBottom);
             for (int i = 0; i < navCount && i < panels.size(); i++) {
+                int drawY = navScreenY(i);
                 boolean sel = i == selectedModuleIndex;
                 boolean hot = i == navHoverIndex;
                 boolean locked = !HubModuleRules.panelAllowed(panels.get(i).getId());
                 String label = panels.get(i).getTitle().getString() + (locked ? " 🔒" : "");
-                UiComponents.drawNavPill(tr, context, navX[i], navY[i], navW[i], navH[i], label, sel, hot);
+                UiComponents.drawNavPill(tr, context, navX[i], drawY, navW[i], navH[i], label, sel, hot);
+            }
+            context.disableScissor();
+            if (compactNavScrollMax > 0.5) {
+                UiDraw.drawScrollbar(context, vw - UiTokens.SP_2, compactNavAreaTop, compactNavAreaBottom, compactNavScrollY, compactNavScrollMax);
             }
         }
 
@@ -332,11 +369,14 @@ public final class HubShell {
     }
 
     private int navScreenY(int index) {
+        if (layoutMetrics.compactNav) {
+            return (int) (navY[index] - compactNavScrollY);
+        }
         return (int) (navY[index] - sidebarScrollY);
     }
 
     private int navDrawY(int index) {
-        return viewportW < UiTokens.BP_COMPACT ? navY[index] : navScreenY(index);
+        return navScreenY(index);
     }
 
     private boolean navHitTest(double mx, double my, int index) {
@@ -344,7 +384,10 @@ public final class HubShell {
         if (mx < navX[index] || mx >= navX[index] + navW[index] || my < drawY || my >= drawY + navH[index]) {
             return false;
         }
-        if (sidebarW > 0 && viewportW >= UiTokens.BP_COMPACT) {
+        if (layoutMetrics.compactNav) {
+            return my >= compactNavAreaTop && my < compactNavAreaBottom;
+        }
+        if (sidebarW > 0) {
             return my >= sidebarRailTop && my < sidebarRailBottom;
         }
         return true;
@@ -392,12 +435,19 @@ public final class HubShell {
         if (verticalAmount == 0) {
             return false;
         }
-        boolean compact = viewportW < UiTokens.BP_COMPACT;
-        if (!compact && sidebarW > 0
+        double scrollStep = verticalAmount * Math.max(14.0, layoutMetrics.navItemH * 0.55);
+        if (layoutMetrics.compactNav
+                && mouseY >= compactNavAreaTop && mouseY < compactNavAreaBottom
+                && compactNavScrollMax > 0.5) {
+            compactNavScrollY -= scrollStep;
+            compactNavScrollY = MathHelper.clamp(compactNavScrollY, 0.0, compactNavScrollMax);
+            return true;
+        }
+        if (!layoutMetrics.compactNav && sidebarW > 0
                 && mouseX >= 0 && mouseX < sidebarW
                 && mouseY >= sidebarRailTop && mouseY < sidebarRailBottom
                 && sidebarScrollMax > 0.5) {
-            sidebarScrollY -= verticalAmount * 20.0;
+            sidebarScrollY -= scrollStep;
             sidebarScrollY = MathHelper.clamp(sidebarScrollY, 0.0, sidebarScrollMax);
             return true;
         }
@@ -416,7 +466,7 @@ public final class HubShell {
                 return true;
             }
             double maxScroll = Math.max(0.0, (double) DupeClient.getGuiManager().getPanels().get(si).getLayoutContentHeight() - contentScrollH);
-            moduleScrollY[si] -= verticalAmount * 20.0;
+            moduleScrollY[si] -= scrollStep;
             moduleScrollY[si] = MathHelper.clamp(moduleScrollY[si], 0.0, maxScroll);
             return true;
         }
