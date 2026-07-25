@@ -1,7 +1,6 @@
 package com.dupeclient.client.multiplayer;
 
 import com.dupeclient.client.module.security.SecurityManager;
-import com.ui_utils.SessionUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.session.Session;
 
@@ -20,7 +19,12 @@ public final class OfflineAccountManager {
             return;
         }
         Session oldSession = client.getSession();
-        Session newSession = SessionUtils.copyWith(oldSession, account.username(), account.uuid());
+        Session newSession = new Session(
+                account.username(),
+                account.uuid(),
+                oldSession.getAccessToken(),
+                oldSession.getXuid(),
+                oldSession.getClientId());
         SecurityManager.INSTANCE.onSessionUsernameChanged(account.username());
         SessionManager.setSession(newSession);
         activeUsername = account.username();

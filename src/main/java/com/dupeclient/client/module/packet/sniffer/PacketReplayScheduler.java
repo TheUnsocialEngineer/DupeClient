@@ -102,11 +102,25 @@ public final class PacketReplayScheduler {
     }
 
     public void stop() {
+        stop(false);
+    }
+
+    /** Stops replay without chat feedback (for periodic module suppressors). */
+    public void stopQuietly() {
+        stop(true);
+    }
+
+    private void stop(boolean quiet) {
+        if (!running && pending.isEmpty()) {
+            return;
+        }
         pending.clear();
         running = false;
         sent = 0;
         total = 0;
-        PacketSnifferManager.INSTANCE.feedback("Replay queue stopped");
+        if (!quiet) {
+            PacketSnifferManager.INSTANCE.feedback("Replay queue stopped");
+        }
     }
 
     private void finish() {

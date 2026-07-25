@@ -240,7 +240,8 @@ public final class PresenceRosterSync {
 
         List<String> staffIds = parseStaffIds(root);
         String canonical = PayloadCanonicalizer.staffPayload(issuedAt, ttlMs, nonce, staffIds);
-        boolean sigOk = PayloadHmac.verifySha256Hmac(canonical, signature, SessionSecrets.presenceStaffHmacKey());
+        byte[] hmacKey = SessionSecrets.presenceStaffHmacKey();
+        boolean sigOk = PayloadHmac.verifySha256Hmac(canonical, signature, hmacKey);
         long now = System.currentTimeMillis();
         boolean timeOk = issuedAt > 0L && Math.abs(now - issuedAt) <= MAX_CLOCK_SKEW_MS + Math.max(30_000L, ttlMs);
 
@@ -252,6 +253,15 @@ public final class PresenceRosterSync {
         lastError = lastSignatureValid
                 ? ""
                 : (sigOk ? "roster expired" : "roster signature invalid");
+        if (!lastSignatureValid && !sigOk) {
+            if (hmacKey == null || hmacKey.length == 0) {
+                DupeClient.LOGGER.error("Presence roster verification failed: staff HMAC key is not configured");
+            } else {
+                DupeClient.LOGGER.warn("Presence roster signature invalid (viewer={})", viewer);
+            }
+        } else if (lastSignatureValid) {
+            DupeClient.LOGGER.info("Presence roster verified (viewer={}, staff={})", viewer, staffIds.size());
+        }
         lastValidIssuedAt = issuedAt;
         lastValidTtlMs = ttlMs;
         lastNonce = nonce;
