@@ -1,21 +1,18 @@
 package com.ui_utils.mixin;
 
-import com.dupeclient.client.multiplayer.SessionManager;
-import com.ui_utils.SessionUtils;
 import com.ui_utils.SharedVariables;
 import com.ui_utils.gui.CustomButtonWidget;
+import com.ui_utils.gui.UsernameScreen;
+import com.ui_utils.gui.ViaNotFoundScreen;
 import com.ui_utils.mixin.accessor.ScreenAccessor;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.input.MouseInput;
-import net.minecraft.client.session.Session;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -240,77 +237,5 @@ public class MultiplayerScreenMixin {
     @Unique
     private static Text uiUtils$denyLabel() {
         return Text.literal(SharedVariables.resourcePackForceDeny ? "§aDeny" : "Deny");
-    }
-
-    private static final class ViaNotFoundScreen extends Screen {
-        private final Screen parent;
-        private final String message;
-
-        private ViaNotFoundScreen(Screen parent, String message) {
-            super(Text.literal("ViaFabricPlus"));
-            this.parent = parent;
-            this.message = message;
-        }
-
-        @Override
-        protected void init() {
-            int centerX = this.width / 2;
-            int centerY = this.height / 2;
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("OK"), button -> MinecraftClient.getInstance()
-                            .setScreen(this.parent))
-                    .dimensions(centerX - 50, centerY + 20, 100, 20)
-                    .build());
-        }
-
-        @Override
-        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-            super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, this.height / 2 - 30, 0xFFFFFF);
-            context.drawCenteredTextWithShadow(
-                    this.textRenderer, Text.literal(this.message), this.width / 2, this.height / 2, 0xFF5555);
-        }
-    }
-
-    private static final class UsernameScreen extends Screen {
-        private final Screen parent;
-        private final MinecraftClient mc;
-        private TextFieldWidget usernameField;
-
-        private UsernameScreen(Screen parent, MinecraftClient mc) {
-            super(Text.literal("Set Username"));
-            this.parent = parent;
-            this.mc = mc;
-        }
-
-        @Override
-        protected void init() {
-            int centerX = this.width / 2;
-            int centerY = this.height / 2;
-            this.usernameField = new TextFieldWidget(this.textRenderer, centerX - 100, centerY - 20, 200, 20, Text.literal("Username"));
-            this.usernameField.setText(this.mc.getSession().getUsername());
-            this.usernameField.setMaxLength(16);
-            this.addSelectableChild(this.usernameField);
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("Apply"), button -> {
-                        String newName = this.usernameField.getText().trim();
-                        if (!newName.isEmpty()) {
-                            Session oldSession = this.mc.getSession();
-                            Session newSession = SessionUtils.copyWith(oldSession, newName, null);
-                            SessionManager.setSession(newSession);
-                        }
-                        this.mc.setScreen(this.parent);
-                    })
-                    .dimensions(centerX - 100, centerY + 10, 95, 20)
-                    .build());
-            this.addDrawableChild(ButtonWidget.builder(Text.literal("Cancel"), button -> this.mc.setScreen(this.parent))
-                    .dimensions(centerX + 5, centerY + 10, 95, 20)
-                    .build());
-        }
-
-        @Override
-        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-            super.render(context, mouseX, mouseY, delta);
-            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
-            this.usernameField.render(context, mouseX, mouseY, delta);
-        }
     }
 }
