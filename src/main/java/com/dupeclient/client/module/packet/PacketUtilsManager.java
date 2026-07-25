@@ -441,6 +441,25 @@ public class PacketUtilsManager {
         moduleFeedback("UI Utils: sent " + n + " queued packet(s).");
     }
 
+    /** Flush delayed UI packets, then disconnect from the server (Leave & Send). */
+    public void leaveAndSendUiUtilsPackets(MinecraftClient client) {
+        SharedVariables.delayUIPackets = false;
+        uiUtilsFlushQueuedAtMs = -1L;
+        int n = SharedVariables.delayedUIPackets.size();
+        if (client != null && client.getNetworkHandler() != null) {
+            for (Packet<?> packet : SharedVariables.delayedUIPackets) {
+                client.getNetworkHandler().sendPacket(packet);
+            }
+            SharedVariables.delayedUIPackets.clear();
+            client.getNetworkHandler().getConnection().disconnect(Text.literal("Leave & Send Packets"));
+            moduleFeedback("UI Utils: sent " + n + " queued packet(s) and disconnected.");
+        } else {
+            SharedVariables.delayedUIPackets.clear();
+            moduleFeedback("UI Utils: sent " + n + " queued packet(s).");
+        }
+        save();
+    }
+
     private void tickUiUtilsDelayedFlush(MinecraftClient client) {
         if (uiUtilsFlushQueuedAtMs < 0L) {
             return;
