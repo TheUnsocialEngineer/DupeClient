@@ -3,7 +3,17 @@ package com.ui_utils;
 import com.dupeclient.client.gui.ClientGuiScreen;
 import com.dupeclient.client.gui.DupeClientUtilityScreen;
 import com.dupeclient.client.gui.MacroEditorScreen;
+import com.dupeclient.client.gui.SocialScreen;
+import com.dupeclient.client.gui.WaypointsScreen;
 import com.dupeclient.client.gui.overlay.IngameModuleOverlayScreen;
+import com.dupeclient.client.module.dupedb.search.ServerScannerScreen;
+import com.dupeclient.client.module.dupedb.search.ServerSearchAuthScreen;
+import com.dupeclient.client.module.hud.HudEditorScreen;
+import com.dupeclient.client.module.packet.sniffer.PacketWorkbenchScreen;
+import com.dupeclient.client.module.serverpassword.ServerPasswordScreen;
+import com.dupeclient.client.multiplayer.OfflineAccountsScreen;
+import com.dupeclient.client.multiplayer.ProxiesScreen;
+import com.dupeclient.client.multiplayer.SsidLoginScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -45,6 +55,36 @@ public final class UiUtilsScreens {
             return false;
         }
         if (screen instanceof DupeClientUtilityScreen) {
+            return false;
+        }
+        if (screen instanceof HudEditorScreen) {
+            return false;
+        }
+        if (screen instanceof ServerPasswordScreen) {
+            return false;
+        }
+        if (screen instanceof ServerSearchAuthScreen) {
+            return false;
+        }
+        if (screen instanceof ServerScannerScreen) {
+            return false;
+        }
+        if (screen instanceof ProxiesScreen) {
+            return false;
+        }
+        if (screen instanceof OfflineAccountsScreen) {
+            return false;
+        }
+        if (screen instanceof SsidLoginScreen) {
+            return false;
+        }
+        if (screen instanceof SocialScreen) {
+            return false;
+        }
+        if (screen instanceof WaypointsScreen) {
+            return false;
+        }
+        if (screen instanceof PacketWorkbenchScreen) {
             return false;
         }
         return true;

@@ -1,6 +1,7 @@
 package com.dupeclient.client.module.dupedb.search;
 
 import com.dupeclient.client.DupeClient;
+import com.dupeclient.client.multiplayer.MultiplayerNavigable;
 import com.dupeclient.client.multiplayer.MultiplayerScreens;
 
 import com.dupeclient.client.module.dupedb.search.api.ApiClient;
@@ -17,7 +18,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
-public final class ServerSearchAuthScreen extends Screen {
+public final class ServerSearchAuthScreen extends Screen implements MultiplayerNavigable {
    private static final long MIN_POLL_INTERVAL_MS = 2000L;
    private final Screen parent;
    private final AddonAuth auth = new AddonAuth();

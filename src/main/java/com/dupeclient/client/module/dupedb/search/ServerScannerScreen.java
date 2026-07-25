@@ -2,6 +2,7 @@ package com.dupeclient.client.module.dupedb.search;
 
 import com.dupeclient.client.DupeClient;
 import com.dupeclient.client.gui.DupeClientToasts;
+import com.dupeclient.client.multiplayer.MultiplayerNavigable;
 import com.dupeclient.client.multiplayer.MultiplayerScreens;
 
 import com.google.gson.JsonArray;
@@ -46,7 +47,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
 
-public class ServerScannerScreen extends Screen {
+public class ServerScannerScreen extends Screen implements MultiplayerNavigable {
    private static final String API_SERVERS_URL = "https://minecraftserversearch.com/api/addon/v1/servers";
    private static final String API_STATS_URL = "https://minecraftserversearch.com/api/addon/v1/stats";
    private static final String API_LIVE_URL = "https://minecraftserversearch.com/api/addon/v1/live";
@@ -195,6 +196,11 @@ public class ServerScannerScreen extends Screen {
       super(Component.literal("Minecraft Server Scanner"));
       this.parent = parent;
       this.apiClient = apiClient;
+   }
+
+   @Override
+   public Screen getNavigationParent() {
+      return this.parent;
    }
 
    private void goBack() {

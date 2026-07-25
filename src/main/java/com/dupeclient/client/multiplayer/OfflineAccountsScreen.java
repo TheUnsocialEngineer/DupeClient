@@ -14,7 +14,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.PlayerSkin;
 
-public class OfflineAccountsScreen extends Screen {
+public class OfflineAccountsScreen extends Screen implements MultiplayerNavigable {
     private static final int ROW_H = 28;
     private static final int HEAD_SIZE = 18;
     private static final int PANEL_TOP = 24;
@@ -34,6 +34,11 @@ public class OfflineAccountsScreen extends Screen {
     public OfflineAccountsScreen(Screen parent) {
         super(Component.literal("Accounts"));
         this.parent = parent;
+    }
+
+    @Override
+    public Screen getNavigationParent() {
+        return parent;
     }
 
     @Override

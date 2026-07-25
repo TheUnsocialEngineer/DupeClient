@@ -12,7 +12,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
-public class SsidLoginScreen extends Screen {
+public class SsidLoginScreen extends Screen implements MultiplayerNavigable {
     private static final int PANEL_TOP = 24;
 
     private final Screen parent;
@@ -26,6 +26,11 @@ public class SsidLoginScreen extends Screen {
     public SsidLoginScreen(Screen parent) {
         super(Component.literal("SSID Login"));
         this.parent = parent;
+    }
+
+    @Override
+    public Screen getNavigationParent() {
+        return parent;
     }
 
     @Override
