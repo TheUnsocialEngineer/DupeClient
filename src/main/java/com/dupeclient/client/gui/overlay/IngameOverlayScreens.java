@@ -15,16 +15,16 @@ public final class IngameOverlayScreens {
         if (client == null || client.player == null) {
             return;
         }
-        Screen current = client.screen;
+        Screen current = client.gui.screen();
         boolean needHost = IngameOverlayHost.needsBlockingOverlayScreen();
         if (needHost) {
             if (current == null) {
-                client.setScreen(IngameModuleOverlayScreen.get());
+                client.gui.setScreen(IngameModuleOverlayScreen.get());
             }
             return;
         }
         if (IngameModuleOverlayScreen.isShowing(current)) {
-            client.setScreen(null);
+            client.gui.setScreen(null);
         }
     }
 }

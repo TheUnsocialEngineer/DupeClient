@@ -177,7 +177,7 @@ public class ClientGuiScreen extends Screen {
     @Override
     public void onClose() {
         if (this.minecraft != null) {
-            this.minecraft.setScreen(returnScreen);
+            this.minecraft.gui.setScreen(returnScreen);
         }
     }
 

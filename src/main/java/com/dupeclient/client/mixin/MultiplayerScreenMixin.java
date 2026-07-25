@@ -79,7 +79,7 @@ public abstract class MultiplayerScreenMixin extends Screen {
         dupeClient$vaultButton = Button.builder(Component.literal(DUPECLIENT$VAULT_LABEL), button -> {
             Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new ServerPasswordScreen((JoinMultiplayerScreen) (Object) this));
+                client.gui.setScreen(new ServerPasswordScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$VAULT_BTN_W, 20).build();
         this.addRenderableWidget(dupeClient$vaultButton);
@@ -87,7 +87,7 @@ public abstract class MultiplayerScreenMixin extends Screen {
         dupeClient$serverSearchButton = Button.builder(Component.literal(DUPECLIENT$SEARCH_LABEL), button -> {
             Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new ServerSearchAuthScreen((JoinMultiplayerScreen) (Object) this));
+                client.gui.setScreen(new ServerSearchAuthScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$SEARCH_BTN_W, 20).build();
         this.addRenderableWidget(dupeClient$serverSearchButton);
@@ -95,7 +95,7 @@ public abstract class MultiplayerScreenMixin extends Screen {
         dupeClient$proxiesButton = Button.builder(Component.literal(DUPECLIENT$PROXIES_LABEL), button -> {
             Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new ProxiesScreen((JoinMultiplayerScreen) (Object) this));
+                client.gui.setScreen(new ProxiesScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$HEADER_BTN_W, 20).build();
         this.addRenderableWidget(dupeClient$proxiesButton);
@@ -103,7 +103,7 @@ public abstract class MultiplayerScreenMixin extends Screen {
         dupeClient$accountsButton = Button.builder(Component.literal(DUPECLIENT$ACCOUNTS_LABEL), button -> {
             Minecraft client = Minecraft.getInstance();
             if (client != null) {
-                client.setScreen(new OfflineAccountsScreen((JoinMultiplayerScreen) (Object) this));
+                client.gui.setScreen(new OfflineAccountsScreen((JoinMultiplayerScreen) (Object) this));
             }
         }).size(DUPECLIENT$HEADER_BTN_W, 20).build();
         this.addRenderableWidget(dupeClient$accountsButton);

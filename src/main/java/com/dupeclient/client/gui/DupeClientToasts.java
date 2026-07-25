@@ -20,11 +20,10 @@ public final class DupeClientToasts {
             safeBody = safeBody.substring(0, 117) + "…";
         }
         String finalBody = safeBody;
-        client.execute(() -> client.getToastManager().addToast(
-                SystemToast.multiline(
-                        client,
-                        SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                        Component.literal(safeTitle),
-                        Component.literal(finalBody))));
+        client.execute(() -> SystemToast.add(
+                client.gui.toastManager(),
+                SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                Component.literal(safeTitle),
+                Component.literal(finalBody)));
     }
 }

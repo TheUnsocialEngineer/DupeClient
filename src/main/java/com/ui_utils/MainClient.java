@@ -63,7 +63,7 @@ public class MainClient implements ClientModInitializer {
                         || client.player == null) {
                     continue;
                 }
-                client.setScreen(SharedVariables.storedScreen);
+                client.gui.setScreen(SharedVariables.storedScreen);
                 client.player.containerMenu = SharedVariables.storedScreenHandler;
             }
         });
@@ -98,7 +98,7 @@ public class MainClient implements ClientModInitializer {
 
         access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y, w, Component.nullToEmpty("Close without packet"), button -> {
             PacketUtilsManager.INSTANCE.moduleFeedback("UI Utils: close without packet (overlay).");
-            mc.setScreen(null);
+            mc.gui.setScreen(null);
         }));
 
         access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + h + spacing, w, Component.nullToEmpty("Desync"), button -> {
@@ -166,8 +166,8 @@ public class MainClient implements ClientModInitializer {
                 }));
 
         access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 7, w, Component.nullToEmpty("Copy GUI Title JSON"), button -> {
-            if (mc.screen != null) {
-                Component title = mc.screen.getTitle();
+            if (mc.gui.screen() != null) {
+                Component title = mc.gui.screen().getTitle();
                 String json = getTextAsJson(title, mc);
                 mc.keyboardHandler.setClipboard(json);
                 if (mc.player != null) {
@@ -180,9 +180,9 @@ public class MainClient implements ClientModInitializer {
 
         access.uiUtils$addRenderableWidget(CustomButtonWidget.create(x, y + (h + spacing) * 8, halfW, Component.nullToEmpty("Save GUI"), button -> {
             if (mc.player != null) {
-                SharedVariables.storedScreen = mc.screen;
+                SharedVariables.storedScreen = mc.gui.screen();
                 SharedVariables.storedScreenHandler = mc.player.containerMenu;
-                SharedVariables.savedScreens.put("default", mc.screen);
+                SharedVariables.savedScreens.put("default", mc.gui.screen());
                 SharedVariables.savedScreenHandlers.put("default", mc.player.containerMenu);
                 mc.player.sendSystemMessage(Component.literal("§7[§c*§7] §7GUI saved"));
             }
@@ -193,7 +193,7 @@ public class MainClient implements ClientModInitializer {
                     if (SharedVariables.storedScreen != null
                             && SharedVariables.storedScreenHandler != null
                             && mc.player != null) {
-                        mc.setScreen(SharedVariables.storedScreen);
+                        mc.gui.setScreen(SharedVariables.storedScreen);
                         mc.player.containerMenu = SharedVariables.storedScreenHandler;
                     }
                 }));

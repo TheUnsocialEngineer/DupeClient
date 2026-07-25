@@ -188,10 +188,10 @@ public final class HudManager {
         if (!active) {
             return;
         }
-        if (settings.hideInMenus && client.screen != null) {
+        if (settings.hideInMenus && client.gui.screen() != null) {
             return;
         }
-        if (client.options.hideGui || client.getDebugOverlay().showDebugScreen()) {
+        if (client.gui.hud.isHidden() || client.getDebugOverlay().showDebugScreen()) {
             return;
         }
         for (HudElementState st : activeElements) {

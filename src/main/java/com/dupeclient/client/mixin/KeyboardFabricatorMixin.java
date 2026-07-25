@@ -28,7 +28,7 @@ public abstract class KeyboardFabricatorMixin {
 
     @Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
     private void dupeclient$overlayKey(long window, int action, KeyEvent input, CallbackInfo ci) {
-        if (IngameModuleOverlayScreen.isShowing(minecraft.screen)) {
+        if (IngameModuleOverlayScreen.isShowing(minecraft.gui.screen())) {
             if (action != GLFW.GLFW_PRESS && action != GLFW.GLFW_REPEAT) {
                 return;
             }
@@ -60,13 +60,13 @@ public abstract class KeyboardFabricatorMixin {
 
     @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
     private void dupeclient$overlayChar(long window, CharacterEvent input, CallbackInfo ci) {
-        if (IngameModuleOverlayScreen.isShowing(minecraft.screen)) {
+        if (IngameModuleOverlayScreen.isShowing(minecraft.gui.screen())) {
             if (IngameOverlayHost.onCharTyped(input.codepoint())) {
                 ci.cancel();
             }
             return;
         }
-        if (minecraft.screen instanceof AbstractContainerScreen<?>) {
+        if (minecraft.gui.screen() instanceof AbstractContainerScreen<?>) {
             if (IngameOverlayHost.onFocusedOverlayCharTyped(input.codepoint())) {
                 ci.cancel();
                 return;

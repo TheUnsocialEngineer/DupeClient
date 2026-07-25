@@ -71,7 +71,7 @@ public final class WaypointsScreen extends Screen {
                 null,
                 DupeClientWaypointManager.INSTANCE.defaultShareAudience()
             );
-            minecraft.setScreen(new WaypointEditScreen(this, wp, true));
+            minecraft.gui.setScreen(new WaypointEditScreen(this, wp, true));
         }));
         addRenderableWidget(new StylishButtonWidget(innerX + 156, y, (innerW - 156) / 2 - 3, 20,
             Component.literal("New default: " + DupeClientWaypointManager.INSTANCE.defaultShareAudience().label()), () -> {
@@ -123,7 +123,7 @@ public final class WaypointsScreen extends Screen {
             if (row.editable()) {
                 addRenderableWidget(new StylishButtonWidget(editX, rowY + (CARD_H - 20) / 2, editW, 20, Component.literal("Edit"), () -> {
                     if (row.local() != null) {
-                        minecraft.setScreen(new WaypointEditScreen(this, row.local(), false));
+                        minecraft.gui.setScreen(new WaypointEditScreen(this, row.local(), false));
                     }
                 }));
                 addRenderableWidget(new StylishButtonWidget(delX, rowY + (CARD_H - 20) / 2, delW, 20, Component.literal("Delete"), () -> {
@@ -138,7 +138,7 @@ public final class WaypointsScreen extends Screen {
 
         addRenderableWidget(new StylishButtonWidget(width / 2 - 100, height - 28, 200, 20, CommonComponents.GUI_BACK, () -> {
             if (minecraft != null) {
-                minecraft.setScreen(parent);
+                minecraft.gui.setScreen(parent);
             }
         }));
     }
@@ -165,7 +165,7 @@ public final class WaypointsScreen extends Screen {
     @Override
     public void onClose() {
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 
@@ -229,7 +229,7 @@ public final class WaypointsScreen extends Screen {
         if (row.editable()) {
             items.add(new GuiContextMenu.Entry("Edit", () -> {
                 if (minecraft != null && row.local() != null) {
-                    minecraft.setScreen(new WaypointEditScreen(this, row.local(), false));
+                    minecraft.gui.setScreen(new WaypointEditScreen(this, row.local(), false));
                 }
             }));
             items.add(new GuiContextMenu.Entry("Delete", () -> {

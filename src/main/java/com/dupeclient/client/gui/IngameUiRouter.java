@@ -22,7 +22,7 @@ public final class IngameUiRouter {
         if (client == null) {
             return;
         }
-        client.setScreen(new ClientGuiScreen(client.screen));
+        client.gui.setScreen(new ClientGuiScreen(client.gui.screen()));
     }
 
     public static void openSocial(Screen from) {
@@ -31,7 +31,7 @@ public final class IngameUiRouter {
         }
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
-            mc.setScreen(new SocialScreen(from));
+            mc.gui.setScreen(new SocialScreen(from));
         }
     }
 
@@ -41,14 +41,14 @@ public final class IngameUiRouter {
         }
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
-            mc.setScreen(new WaypointsScreen(from));
+            mc.gui.setScreen(new WaypointsScreen(from));
         }
     }
 
     public static void openHudEditor(Screen from) {
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
-            mc.setScreen(new HudEditorScreen(from));
+            mc.gui.setScreen(new HudEditorScreen(from));
         }
     }
 
@@ -57,11 +57,11 @@ public final class IngameUiRouter {
         if (client == null) {
             return;
         }
-        Screen current = client.screen;
+        Screen current = client.gui.screen();
         if (current == null || !shouldCloseOnPlaySessionLeave(current)) {
             return;
         }
-        client.setScreen(null);
+        client.gui.setScreen(null);
     }
 
     private static boolean shouldCloseOnPlaySessionLeave(Screen screen) {

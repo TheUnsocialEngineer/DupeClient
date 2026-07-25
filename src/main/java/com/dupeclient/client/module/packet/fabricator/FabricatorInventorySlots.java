@@ -21,7 +21,7 @@ public final class FabricatorInventorySlots {
         if (client == null || client.player == null) {
             return null;
         }
-        if (client.screen instanceof AbstractContainerScreen<?> handled) {
+        if (client.gui.screen() instanceof AbstractContainerScreen<?> handled) {
             return handled.getMenu();
         }
         return client.player.containerMenu;

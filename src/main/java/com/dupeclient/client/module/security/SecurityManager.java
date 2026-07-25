@@ -180,13 +180,7 @@ public final class SecurityManager {
     }
 
     public void onNoTextureRotationsChanged(boolean enabled) {
-        Minecraft client = Minecraft.getInstance();
-        if (client == null) {
-            return;
-        }
-        if (client.levelRenderer != null) {
-            client.levelRenderer.allChanged();
-        }
+        // 26.2 removed LevelRenderer#allChanged; chunk meshes refresh on next resource reload cycle.
     }
 
     public void feedback(String message) {
@@ -700,8 +694,10 @@ public final class SecurityManager {
         if (client == null) {
             return;
         }
-        client.execute(() -> client.getToastManager().addToast(
-                SystemToast.multiline(client, SystemToast.SystemToastId.PERIODIC_NOTIFICATION, Component.literal(title), Component.literal(shorten(body, 120)))
-        ));
+        client.execute(() -> SystemToast.add(
+                client.gui.toastManager(),
+                SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                Component.literal(title),
+                Component.literal(shorten(body, 120))));
     }
 }

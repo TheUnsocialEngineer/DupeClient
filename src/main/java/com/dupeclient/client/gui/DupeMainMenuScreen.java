@@ -40,20 +40,20 @@ public class DupeMainMenuScreen extends TitleScreen {
         int x = (this.width - buttonWidth) / 2;
 
         addRenderableWidget(new StylishButtonWidget(x, startY, buttonWidth, buttonHeight, Component.literal("Singleplayer"),
-                () -> this.minecraft.setScreen(new SelectWorldScreen(this))));
+                () -> this.minecraft.gui.setScreen(new SelectWorldScreen(this))));
         addRenderableWidget(new StylishButtonWidget(x, startY + 24, buttonWidth, buttonHeight, Component.literal("Multiplayer"),
-                () -> this.minecraft.setScreen(new JoinMultiplayerScreen(this))));
+                () -> this.minecraft.gui.setScreen(new JoinMultiplayerScreen(this))));
         addRenderableWidget(new StylishButtonWidget(x, startY + 48, buttonWidth, buttonHeight, Component.literal("Minecraft Realms"),
-                () -> this.minecraft.setScreen(new RealmsMainScreen(this))));
+                () -> this.minecraft.gui.setScreen(new RealmsMainScreen(this))));
         addRenderableWidget(new StylishButtonWidget(x, startY + 72, buttonWidth, buttonHeight, Component.literal("Mods"),
                 this::openModsScreen));
         addRenderableWidget(new StylishButtonWidget(x, startY + 96, buttonWidth, buttonHeight, Component.literal("DupeClient settings"),
-                () -> this.minecraft.setScreen(new DupeClientSettingsScreen(this))));
+                () -> this.minecraft.gui.setScreen(new DupeClientSettingsScreen(this))));
 
         int smallWidth = 150;
         int smallGap = 4;
         addRenderableWidget(new StylishButtonWidget(x, startY + 120, smallWidth, buttonHeight, Component.literal("Options"),
-                () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options, false))));
+                () -> this.minecraft.gui.setScreen(new OptionsScreen(this, this.minecraft.options, false))));
         addRenderableWidget(new StylishButtonWidget(x + smallWidth + smallGap, startY + 120, smallWidth, buttonHeight, Component.literal("Quit Game"),
                 () -> this.minecraft.stop()));
     }
@@ -61,7 +61,7 @@ public class DupeMainMenuScreen extends TitleScreen {
     private void openModsScreen() {
         try {
             Class<?> clazz = Class.forName("com.terraformersmc.modmenu.gui.ModsScreen");
-            this.minecraft.setScreen((Screen) clazz.getConstructor(Screen.class).newInstance(this));
+            this.minecraft.gui.setScreen((Screen) clazz.getConstructor(Screen.class).newInstance(this));
         } catch (Exception e) {
             DupeClient.LOGGER.warn("ModMenu not available, Mods button ignored.");
         }

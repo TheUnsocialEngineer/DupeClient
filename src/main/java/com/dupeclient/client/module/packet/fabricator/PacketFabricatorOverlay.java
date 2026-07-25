@@ -236,7 +236,7 @@ implements IngameModuleOverlay {
 
     private static void snapOverlayBesideUiUtils(PacketUtilsSettings s) {
         Minecraft client = Minecraft.getInstance();
-        if (client == null || !(client.screen instanceof AbstractContainerScreen)) {
+        if (client == null || !(client.gui.screen() instanceof AbstractContainerScreen)) {
             return;
         }
         if (!SharedVariables.enabled && !s.uiUtilsOverlayEnabled) {

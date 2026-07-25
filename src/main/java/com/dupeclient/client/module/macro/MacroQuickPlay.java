@@ -42,7 +42,7 @@ public final class MacroQuickPlay {
         if (InputFocusGuards.shouldBlockGlobalHotkeys(client)) {
             return;
         }
-        if (client.screen != null) {
+        if (client.gui.screen() != null) {
             return;
         }
         if (dirty || --rescanCooldown <= 0) {

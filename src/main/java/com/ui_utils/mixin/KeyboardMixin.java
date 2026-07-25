@@ -25,7 +25,7 @@ public abstract class KeyboardMixin {
 
     @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
     private void uiutils$onChar(long window, CharacterEvent input, CallbackInfo ci) {
-        if (!(this.minecraft.screen instanceof AbstractContainerScreen<?> screen)) {
+        if (!(this.minecraft.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
             return;
         }
         if (!UiUtilsScreens.shouldAttachWidgets(screen)) {

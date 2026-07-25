@@ -2,9 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main, 1.21.10, 1.21.11, 26.1]
+    branches: [main, 1.21.10, 1.21.11, 26.1, 26.2]
   pull_request:
-    branches: [main, 1.21.10, 1.21.11, 26.1]
+    branches: [main, 1.21.10, 1.21.11, 26.1, 26.2]
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
       - name: Resolve Java version
         id: java
         run: |
-          if [ "${{ github.ref_name }}" = "26.1" ]; then
+          if [ "${{ github.ref_name }}" = "26.1" ] || [ "${{ github.ref_name }}" = "26.2" ]; then
             echo "version=25" >> "$GITHUB_OUTPUT"
           else
             echo "version=21" >> "$GITHUB_OUTPUT"

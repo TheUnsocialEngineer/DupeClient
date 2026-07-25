@@ -1,6 +1,7 @@
 package com.dupeclient.client.multiplayer;
 
 import com.mojang.authlib.minecraft.UserApiService;
+import com.mojang.authlib.yggdrasil.FriendsService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.dupeclient.client.mixin.MinecraftClientSessionAccessor;
 import com.dupeclient.client.mixin.MinecraftClientUserApiAccessor;
@@ -9,6 +10,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.User;
 import net.minecraft.client.gui.screens.social.PlayerSocialManager;
+import net.minecraft.client.gui.screens.social.RemoteFriendListUpdateHandler;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
 import net.minecraft.client.multiplayer.chat.report.ReportEnvironment;
 import net.minecraft.client.multiplayer.chat.report.ReportingContext;
@@ -85,11 +87,14 @@ public final class SessionManager {
                 () -> client.services().sessionService().fetchProfile(session.getProfileId(), true),
                 Util.nonCriticalIoPool()));
         accessor.dupeClient$setSplashTextLoader(new SplashManager(session));
-        UserApiService userApiService = new YggdrasilAuthenticationService(client.getProxy())
-                .createUserApiService(session.getAccessToken());
+        YggdrasilAuthenticationService authService = new YggdrasilAuthenticationService(client.getProxy());
+        UserApiService userApiService = authService.createUserApiService(session.getAccessToken());
+        FriendsService friendsService = authService.createFriendsService(session.getAccessToken());
         MinecraftClientUserApiAccessor userApi = (MinecraftClientUserApiAccessor) client;
         userApi.dupeClient$setUserApiService(userApiService);
-        accessor.dupeClient$setSocialInteractionsManager(new PlayerSocialManager(client, userApiService));
+        RemoteFriendListUpdateHandler friendUpdates = new RemoteFriendListUpdateHandler(friendsService, client);
+        accessor.dupeClient$setSocialInteractionsManager(
+                new PlayerSocialManager(client, userApiService, friendsService, friendUpdates));
         accessor.dupeClient$setProfileKeys(ProfileKeyPairManager.create(
                 userApiService, session, FabricLoader.getInstance().getGameDir()));
         accessor.dupeClient$setAbuseReportContext(ReportingContext.create(

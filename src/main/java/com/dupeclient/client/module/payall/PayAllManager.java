@@ -75,7 +75,7 @@ public final class PayAllManager {
             return;
         }
         tickPayment(client);
-        if (client.screen == null && this.settings.excludeStaff && client.getWindow() != null) {
+        if (client.gui.screen() == null && this.settings.excludeStaff && client.getWindow() != null) {
             this.syncStaffExclusions(client);
         }
         if (client.getWindow() == null || InputFocusGuards.shouldBlockOverlayToggleHotkeys(client)) {

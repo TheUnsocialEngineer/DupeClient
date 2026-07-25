@@ -21,7 +21,7 @@ public class ViaNotFoundScreen extends Screen {
         int centerX = this.width / 2;
         int centerY = this.height / 2;
         this.addRenderableWidget(Button.builder(Component.literal("OK"), button -> Minecraft.getInstance()
-                        .setScreen(this.parent))
+                        .gui.setScreen(this.parent))
                 .bounds(centerX - 50, centerY + 20, 100, 20)
                 .build());
     }

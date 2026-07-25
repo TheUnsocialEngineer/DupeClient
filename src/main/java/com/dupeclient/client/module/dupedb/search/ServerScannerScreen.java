@@ -637,7 +637,7 @@ public class ServerScannerScreen extends Screen implements MultiplayerNavigable 
       invalidateSearchCache();
       invalidateLiveCache();
       if (this.minecraft != null) {
-         this.minecraft.setScreen(new ServerSearchAuthScreen(this.parent));
+         this.minecraft.gui.setScreen(new ServerSearchAuthScreen(this.parent));
       }
    }
 
@@ -1364,7 +1364,7 @@ public class ServerScannerScreen extends Screen implements MultiplayerNavigable 
             DupeClient.LOGGER.info("Returning to login screen: {}", reason);
          }
 
-         this.minecraft.setScreen(new ServerSearchAuthScreen(this.parent));
+         this.minecraft.gui.setScreen(new ServerSearchAuthScreen(this.parent));
       }
    }
 

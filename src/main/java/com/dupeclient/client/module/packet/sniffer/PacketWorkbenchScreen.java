@@ -86,7 +86,7 @@ public final class PacketWorkbenchScreen extends Screen {
         }
         Minecraft client = Minecraft.getInstance();
         if (client != null) {
-            client.setScreen(new PacketWorkbenchScreen(normalizeParent(parent), entry));
+            client.gui.setScreen(new PacketWorkbenchScreen(normalizeParent(parent), entry));
         }
     }
 
@@ -101,7 +101,7 @@ public final class PacketWorkbenchScreen extends Screen {
     public static void openFabrication(@Nullable Screen parent) {
         Minecraft client = Minecraft.getInstance();
         if (client != null) {
-            client.setScreen(new PacketWorkbenchScreen(normalizeParent(parent), null));
+            client.gui.setScreen(new PacketWorkbenchScreen(normalizeParent(parent), null));
         }
     }
 
@@ -776,7 +776,7 @@ public final class PacketWorkbenchScreen extends Screen {
 
     private void closeScreen() {
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 

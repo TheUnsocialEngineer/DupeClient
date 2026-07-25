@@ -25,11 +25,11 @@ public class UpdateScreen extends Screen {
         int backX = centerX + 5;
 
         this.addRenderableWidget(Button.builder(Component.nullToEmpty("Quit"), (button) -> {
-            this.minecraft.destroy();
+            this.minecraft.stop();
         }).width(80).pos(quitX, 145).build());
 
         this.addRenderableWidget(Button.builder(Component.nullToEmpty("Back"), (button) -> {
-            this.minecraft.setScreen(null);
+            this.minecraft.gui.setScreen(null);
         }).width(80).pos(backX, 145).build());
     }
 

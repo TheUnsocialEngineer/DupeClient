@@ -105,7 +105,7 @@ extends Panel {
             return true;
         }
         if (SocialPanel.rect(mouseX, mouseY, rx, lineY += 30, inner, 22)) {
-            IngameUiRouter.openSocial(Minecraft.getInstance().screen);
+            IngameUiRouter.openSocial(Minecraft.getInstance().gui.screen());
             return true;
         }
         if (this.clickBindValue(mouseX, mouseY, rx, lineY += 30, inner)) {

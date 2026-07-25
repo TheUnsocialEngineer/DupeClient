@@ -112,7 +112,7 @@ public final class WaypointsPanel extends Panel {
         }
         lineY += UiTokens.ROW_STEP;
         if (rect(mouseX, mouseY, rx, lineY, inner, BTN_H)) {
-            IngameUiRouter.openWaypoints(Minecraft.getInstance().screen);
+            IngameUiRouter.openWaypoints(Minecraft.getInstance().gui.screen());
             return true;
         }
         lineY += BTN_H + UiTokens.SP_2;

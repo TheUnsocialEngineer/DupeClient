@@ -39,7 +39,7 @@ public final class InputFocusGuards {
         if (client == null) {
             return false;
         }
-        Screen screen = client.screen;
+        Screen screen = client.gui.screen();
         if (isTypingScreen(screen)) {
             return true;
         }

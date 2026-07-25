@@ -5,7 +5,7 @@ import java.util.Locale;
 public enum MacroStepType {
     WAIT_TICKS,
     SEND_CHAT,
-    /** {@code client.setScreen(null)} — closes the overlay immediately; does not send {@code CloseHandledScreenC2S}. */
+    /** {@code client.gui.setScreen(null)} — closes the overlay immediately; does not send {@code CloseHandledScreenC2S}. */
     CLOSE_SCREEN,
     /** Player {@code closeHandledScreen()} — vanilla container close + {@code CloseHandledScreenC2S} packet. */
     CLOSE_GUI,

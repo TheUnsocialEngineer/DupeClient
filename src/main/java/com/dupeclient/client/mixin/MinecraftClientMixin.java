@@ -46,7 +46,7 @@ public abstract class MinecraftClientMixin {
         ci.cancel();
         dupeClient$redirectingScreen = true;
         try {
-            client.setScreen(new StartupBlockedScreen());
+            client.gui.setScreen(new StartupBlockedScreen());
         } finally {
             dupeClient$redirectingScreen = false;
         }
@@ -65,7 +65,7 @@ public abstract class MinecraftClientMixin {
             dupeClient$redirectingScreen = true;
             try {
                 Minecraft client = (Minecraft) (Object) this;
-                client.setScreen(DupeClient.createMainMenu());
+                client.gui.setScreen(DupeClient.createMainMenu());
             } finally {
                 dupeClient$redirectingScreen = false;
             }

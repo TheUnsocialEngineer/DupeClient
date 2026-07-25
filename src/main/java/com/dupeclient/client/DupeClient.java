@@ -142,7 +142,7 @@ public final class DupeClient implements ClientModInitializer {
                 }
                 Minecraft c = Minecraft.getInstance();
                 if (c != null) {
-                    c.setScreen(new ServerSearchAuthScreen(c.screen));
+                    c.gui.setScreen(new ServerSearchAuthScreen(c.gui.screen()));
                 }
                 return 1;
             }));
@@ -332,16 +332,16 @@ public final class DupeClient implements ClientModInitializer {
         }
         HudSettings hudSettings = HudManager.INSTANCE.settings();
         if (consumeGlfwKeyPress(client, hudSettings.editorOpenKey, true, false)) {
-            IngameUiRouter.openHudEditor(client.screen);
+            IngameUiRouter.openHudEditor(client.gui.screen());
         }
         DupeClientPresenceSettings presenceSettings = DupeClientPresenceConfigManager.get();
         if (consumeGlfwKeyPress(client, presenceSettings.openSocialKey, false, true)
                 && HubModuleRules.socialFeaturesAllowed()) {
-            IngameUiRouter.openSocial(client.screen);
+            IngameUiRouter.openSocial(client.gui.screen());
         }
         if (consumeGlfwKeyPress(client, presenceSettings.openWaypointsKey, false, false)
                 && HubModuleRules.socialFeaturesAllowed()) {
-            IngameUiRouter.openWaypoints(client.screen);
+            IngameUiRouter.openWaypoints(client.gui.screen());
         }
     }
 
@@ -423,7 +423,7 @@ public final class DupeClient implements ClientModInitializer {
         if (client == null) {
             return;
         }
-        if (client.screen instanceof ClientGuiScreen hub) {
+        if (client.gui.screen() instanceof ClientGuiScreen hub) {
             hub.onClose();
             return;
         }
@@ -435,7 +435,7 @@ public final class DupeClient implements ClientModInitializer {
     public static void openModsGui(Minecraft client, Screen parent) {
         try {
             Class<?> clazz = Class.forName("com.terraformersmc.modmenu.gui.ModsScreen");
-            client.setScreen((Screen) clazz.getConstructor(Screen.class).newInstance(parent));
+            client.gui.setScreen((Screen) clazz.getConstructor(Screen.class).newInstance(parent));
         } catch (Exception e) {
             LOGGER.warn("ModMenu not available, keybind ignored.");
         }

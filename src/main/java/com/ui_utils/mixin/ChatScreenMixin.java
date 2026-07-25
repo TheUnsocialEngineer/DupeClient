@@ -18,14 +18,14 @@ public class ChatScreenMixin {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
-        mc.gui.getChat().addRecentChat(chatText);
+        mc.gui.hud.getChat().addRecentChat(chatText);
         String result = CommandSystem.execute(chatText.substring(SharedVariables.commandPrefix.length()));
         if (mc.player != null && result != null && !result.isEmpty()) {
             for (String line : result.split("\n")) {
                 mc.player.sendSystemMessage(Component.literal(line));
             }
         }
-        mc.setScreen(null);
+        mc.gui.setScreen(null);
         ci.cancel();
     }
 }

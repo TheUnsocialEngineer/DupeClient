@@ -27,7 +27,7 @@ public final class P2wAlertScreen extends Screen {
                 Component.literal("Acknowledge"), () -> {
                     P2wServerPolicy.INSTANCE.onPolicyUiDismissed(this.server);
                     if (this.minecraft != null) {
-                        this.minecraft.setScreen(null);
+                        this.minecraft.gui.setScreen(null);
                     }
                 }));
     }

@@ -56,7 +56,7 @@ public final class ScreenshotWorldBootstrap {
                 WORLD_DIR,
                 info,
                 WorldOptions.testWorldWithRandomSeed(),
-                WorldPresets::createFlatWorldDimensions,
+                WorldPresets::createTestWorldDimensions,
                 (Screen) null
         );
     }

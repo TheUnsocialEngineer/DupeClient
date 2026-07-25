@@ -31,7 +31,7 @@ public final class NbtEditCommand {
             return 0;
         }
         ItemStack snapshot = held.copy();
-        client.execute(() -> client.setScreen(new NbtEditScreen(null, snapshot)));
+        client.execute(() -> client.gui.setScreen(new NbtEditScreen(null, snapshot)));
         feedback(ctx, "Opened NBT editor for " + ItemStackNbtCodec.itemSummary(held));
         return 1;
     }

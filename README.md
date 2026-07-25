@@ -8,9 +8,9 @@ DupeClient is a Dupe/Exploit hunting focuse Fabric client mod with an in-game mo
 
 | Component | Version |
 |-----------|---------|
-| Minecraft | 1.21.10, 1.21.11, or 26.1.x (build per target) |
-| Java | 21+ (Java 25 for Minecraft 26.1 builds) |
-| Fabric Loader | 0.18.4+ |
+| Minecraft | 1.21.10, 1.21.11, 26.1.x, or 26.2 (build per target) |
+| Java | 21+ (Java 25 for Minecraft 26.x builds) |
+| Fabric Loader | 0.18.4+ (0.19.3+ for 26.2) |
 | Fabric API | Required at runtime |
 
 Optional:
@@ -217,6 +217,7 @@ Each Minecraft version has its own branch — check out the branch for the versi
 | [`1.21.11`](https://github.com/TheUnsocialEngineer/DupeClient/tree/1.21.11) | 1.21.11 | `+1.21.11` |
 | [`1.21.10`](https://github.com/TheUnsocialEngineer/DupeClient/tree/1.21.10) | 1.21.10 | `+1.21.10` |
 | [`26.1`](https://github.com/TheUnsocialEngineer/DupeClient/tree/26.1) | 26.1.x | `+26.1-26.1.2` |
+| [`26.2`](https://github.com/TheUnsocialEngineer/DupeClient/tree/26.2) | 26.2 | `+26.2-26.2` |
 
 `main` tracks **1.21.11** (primary development). Version-specific Gradle settings live in `gradle.properties` on each branch; version-specific sources use `src/*-1210/` vs `src/*-default/` trees wired by `mc_sources_variant`.
 

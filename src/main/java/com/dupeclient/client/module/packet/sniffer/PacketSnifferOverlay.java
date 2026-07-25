@@ -815,7 +815,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
                 case 0 -> PacketReplayer.replay(entry);
                 case 1 -> {
                     Minecraft client = Minecraft.getInstance();
-                    PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.screen : null, entry);
+                    PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.gui.screen() : null, entry);
                 }
                 case 2 -> {
                     String id = MacroSnifferBridge.createMacroFromSelection(entry.id);
@@ -1174,7 +1174,7 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         }
         if (inRect(mouseX, mouseY, hitFabX, hitBtnY, hitBtnW, BTN_H)) {
             Minecraft client = Minecraft.getInstance();
-            PacketWorkbenchScreen.openFabrication(client != null ? client.screen : null);
+            PacketWorkbenchScreen.openFabrication(client != null ? client.gui.screen() : null);
             return true;
         }
         PacketSnifferEntry selected = selectedEntry();
@@ -1184,12 +1184,12 @@ public final class PacketSnifferOverlay extends AbstractDraggableOverlay impleme
         }
         if (inRect(mouseX, mouseY, hitEditX, hitActionY, hitActionW, BTN_H) && selected != null && selected.canFabricate()) {
             Minecraft client = Minecraft.getInstance();
-            PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.screen : null, selected);
+            PacketWorkbenchScreen.openFabricationFromEntry(client != null ? client.gui.screen() : null, selected);
             return true;
         }
         if (inRect(mouseX, mouseY, hitOpenX, hitActionY, hitActionW, BTN_H) && selected != null) {
             Minecraft client = Minecraft.getInstance();
-            PacketWorkbenchScreen.openCaptured(client != null ? client.screen : null, selected);
+            PacketWorkbenchScreen.openCaptured(client != null ? client.gui.screen() : null, selected);
             return true;
         }
         if (inRect(mouseX, mouseY, hitQueueX, hitActionY, hitActionW, BTN_H) && selected != null && selected.canReplay()) {

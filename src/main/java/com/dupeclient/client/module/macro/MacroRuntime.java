@@ -165,7 +165,7 @@ public final class MacroRuntime {
                 yield true;
             }
             case CLOSE_SCREEN -> {
-                client.setScreen(null);
+                client.gui.setScreen(null);
                 yield true;
             }
             case CLOSE_GUI -> {
@@ -221,7 +221,7 @@ public final class MacroRuntime {
             }
             case GUI_ITEM -> tickGuiItem(client, step);
             case CLICK_SLOT -> {
-                if (client.screen instanceof AbstractContainerScreen<?> hs) {
+                if (client.gui.screen() instanceof AbstractContainerScreen<?> hs) {
                     AbstractContainerMenu handler = hs.getMenu();
                     ContainerInput action = MacroSlotActions.toVanilla(step.clickSlotAction);
                     MacroAutomation.clickSlot(client, handler, step.clickSlotId, action, step.clickSlotButton);
@@ -464,7 +464,7 @@ public final class MacroRuntime {
     }
 
     private boolean tickGuiItem(Minecraft client, MacroStep step) {
-        if (!(client.screen instanceof AbstractContainerScreen<?> handled)) {
+        if (!(client.gui.screen() instanceof AbstractContainerScreen<?> handled)) {
             return false;
         }
         AbstractContainerMenu handler = handled.getMenu();

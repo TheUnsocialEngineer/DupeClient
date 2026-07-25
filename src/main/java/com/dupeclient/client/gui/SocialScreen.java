@@ -71,7 +71,7 @@ extends Screen {
     protected void init() {
         if (!SocialHubRules.socialUiAllowed()) {
             if (this.minecraft != null) {
-                this.minecraft.setScreen(this.parent);
+                this.minecraft.gui.setScreen(this.parent);
             }
             return;
         }
@@ -83,12 +83,12 @@ extends Screen {
         this.addRenderableWidget(new StylishButtonWidget(cx - 172, TOOLBAR_Y, 72, TOOLBAR_H, Component.literal("Refresh"), this::requestList));
         this.addRenderableWidget(new StylishButtonWidget(cx + 82, TOOLBAR_Y, 72, TOOLBAR_H, Component.literal("Waypoints"), () -> {
             if (this.minecraft != null) {
-                this.minecraft.setScreen(new WaypointsScreen(this));
+                this.minecraft.gui.setScreen(new WaypointsScreen(this));
             }
         }));
         this.addRenderableWidget(new StylishButtonWidget(cx + 158, TOOLBAR_Y, 72, TOOLBAR_H, Component.literal("Done"), () -> {
             if (this.minecraft != null) {
-                this.minecraft.setScreen(this.parent);
+                this.minecraft.gui.setScreen(this.parent);
             }
         }));
         this.requestList();

@@ -55,7 +55,7 @@ public abstract class MousePopOutOverlayMixin {
 
     @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
     private void dupeclient$overlayScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
-        boolean hostScreen = IngameModuleOverlayScreen.isShowing(minecraft.screen);
+        boolean hostScreen = IngameModuleOverlayScreen.isShowing(minecraft.gui.screen());
         if (!hostScreen && !IngameOverlayHost.shouldRouteOverlayMouse(minecraft)) {
             return;
         }

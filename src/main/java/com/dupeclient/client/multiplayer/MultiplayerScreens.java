@@ -14,18 +14,18 @@ public final class MultiplayerScreens {
             return;
         }
         if (isInGame(client)) {
-            client.setScreen(inGameReturnTarget(parent));
+            client.gui.setScreen(inGameReturnTarget(parent));
             return;
         }
         if (parent instanceof JoinMultiplayerScreen multiplayer) {
-            client.setScreen(multiplayer);
+            client.gui.setScreen(multiplayer);
             return;
         }
         if (parent != null) {
-            client.setScreen(parent);
+            client.gui.setScreen(parent);
             return;
         }
-        client.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
+        client.gui.setScreen(new JoinMultiplayerScreen(new TitleScreen()));
     }
 
     private static boolean isInGame(Minecraft client) {

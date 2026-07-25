@@ -232,7 +232,7 @@ extends Screen {
     public void onClose() {
         this.closeContextMenu();
         HudManager.INSTANCE.save();
-        this.minecraft.setScreen(this.parent);
+        this.minecraft.gui.setScreen(this.parent);
     }
 
     private record ContextMenuEntry(String label, Runnable action) {

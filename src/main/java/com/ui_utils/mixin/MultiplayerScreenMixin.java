@@ -126,7 +126,7 @@ public class MultiplayerScreenMixin {
 
         int rightX = self.width - margin - buttonWidth;
         uiUtils$userButton = CustomButtonWidget.createSmall(
-                rightX, bottomY, buttonWidth, Component.nullToEmpty("User"), button -> mc.setScreen(new UsernameScreen(self, mc)));
+                rightX, bottomY, buttonWidth, Component.nullToEmpty("User"), button -> mc.gui.setScreen(new UsernameScreen(self, mc)));
         access.uiUtils$addRenderableWidget(uiUtils$userButton);
 
         if (!FabricLoader.getInstance().isModLoaded("viafabricplus")) {
@@ -142,20 +142,20 @@ public class MultiplayerScreenMixin {
                                         Class.forName("com.viaversion.fabric.mc121.gui.ViaConfigScreen");
                                 Screen viaScreen = (Screen)
                                         viaScreenClass.getConstructor(Screen.class).newInstance(self);
-                                mc.setScreen(viaScreen);
+                                mc.gui.setScreen(viaScreen);
                             } catch (Exception e1) {
                                 try {
                                     Class<?> viaScreenClass = Class.forName(
                                             "com.github.creeper123123321.viafabric.gui.ViaConfigScreen");
                                     Screen viaScreen = (Screen)
                                             viaScreenClass.getConstructor(Screen.class).newInstance(self);
-                                    mc.setScreen(viaScreen);
+                                    mc.gui.setScreen(viaScreen);
                                 } catch (Exception e2) {
-                                    mc.setScreen(new ViaNotFoundScreen(self, "Error opening ViaFabric"));
+                                    mc.gui.setScreen(new ViaNotFoundScreen(self, "Error opening ViaFabric"));
                                 }
                             }
                         } else {
-                            mc.setScreen(new ViaNotFoundScreen(self, "ViaFabric(Plus) not installed!"));
+                            mc.gui.setScreen(new ViaNotFoundScreen(self, "ViaFabric(Plus) not installed!"));
                         }
                     });
             access.uiUtils$addRenderableWidget(uiUtils$viaButton);

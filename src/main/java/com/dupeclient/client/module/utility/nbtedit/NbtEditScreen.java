@@ -725,7 +725,7 @@ public final class NbtEditScreen extends Screen implements DupeClientUtilityScre
 
     private void goBack() {
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 

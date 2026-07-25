@@ -28,7 +28,7 @@ public class TitleScreenMixin extends Screen {
         if (UpdateUtils.isOutdated) {
             if (!UpdateUtils.messageShown) {
                 Minecraft client = Minecraft.getInstance();
-                ToastManager toastManager = client.getToastManager();
+                ToastManager toastManager = client.gui.toastManager();
                 Component title = Component.nullToEmpty("UI-Utils " + UpdateUtils.version + " is out for " + UpdateUtils.mcVersion + "!");
                 Component description = Component.nullToEmpty("Download it from the top left corner!");
                 SystemToast.add(toastManager, new SystemToast.SystemToastId(30000L), title, description);

@@ -274,7 +274,7 @@ public class MacrosPanel extends Panel {
                 UiComponents.PillActionStyle.PRIMARY_BLUE);
         hits.add(tx, ty, sw, BTN_H, () -> {
             captureMacroIdOrNull = null;
-            MacroPromptScreen.open(mc, mc.screen);
+            MacroPromptScreen.open(mc, mc.gui.screen());
         });
         ty += BTN_H + GAP;
 
@@ -285,7 +285,7 @@ public class MacrosPanel extends Panel {
             captureMacroIdOrNull = null;
             String hint = studioSelectedIndex >= 0 && studioSelectedIndex < macroIds.size()
                     ? macroIds.get(studioSelectedIndex) : null;
-            MacroShareScreen.open(mc, mc.screen, hint);
+            MacroShareScreen.open(mc, mc.gui.screen(), hint);
         });
 
         UiComponents.drawPillActionButton(tr, context, tx + half + GAP, ty, half, BTN_H, "Export",
@@ -377,10 +377,10 @@ public class MacrosPanel extends Panel {
 
     private void openConfirmDeleteMacro(String macroId) {
         Minecraft mc = Minecraft.getInstance();
-        Screen parent = mc.screen;
+        Screen parent = mc.gui.screen();
         final String target = macroId;
-        mc.setScreen(new ConfirmScreen(yes -> {
-            mc.setScreen(parent);
+        mc.gui.setScreen(new ConfirmScreen(yes -> {
+            mc.gui.setScreen(parent);
             if (!yes) {
                 return;
             }

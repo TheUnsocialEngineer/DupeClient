@@ -38,11 +38,11 @@ public class UsernameScreen extends Screen implements KeyboardConsumingScreen {
                         User newSession = SessionUtils.copyWith(oldSession, newName, null);
                         SessionManager.setSession(newSession);
                     }
-                    this.mc.setScreen(this.parent);
+                    this.mc.gui.setScreen(this.parent);
                 })
                 .bounds(centerX - 100, centerY + 10, 95, 20)
                 .build());
-        this.addRenderableWidget(Button.builder(Component.literal("Cancel"), button -> this.mc.setScreen(this.parent))
+        this.addRenderableWidget(Button.builder(Component.literal("Cancel"), button -> this.mc.gui.setScreen(this.parent))
                 .bounds(centerX + 5, centerY + 10, 95, 20)
                 .build());
     }

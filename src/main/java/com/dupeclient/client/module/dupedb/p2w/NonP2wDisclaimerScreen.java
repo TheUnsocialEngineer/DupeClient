@@ -24,7 +24,7 @@ public final class NonP2wDisclaimerScreen extends Screen {
                 Component.literal("I understand — modules stay disabled"), () -> {
                     P2wServerPolicy.INSTANCE.onPolicyUiDismissed(this.server);
                     if (this.minecraft != null) {
-                        this.minecraft.setScreen(null);
+                        this.minecraft.gui.setScreen(null);
                     }
                 }));
     }

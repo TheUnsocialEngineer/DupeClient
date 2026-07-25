@@ -254,7 +254,7 @@ public final class ServerSearchAuthScreen extends Screen implements MultiplayerN
    private void openScanner() {
       Minecraft mc = Minecraft.getInstance();
       if (mc != null) {
-         mc.setScreen(new ServerScannerScreen(this.parent, this.apiClient));
+         mc.gui.setScreen(new ServerScannerScreen(this.parent, this.apiClient));
       }
    }
 

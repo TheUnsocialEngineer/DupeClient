@@ -185,11 +185,11 @@ extends Screen implements KeyboardConsumingScreen {
         if (client == null) {
             return;
         }
-        Screen cur = client.screen;
+        Screen cur = client.gui.screen();
         if (cur instanceof MacroEditorScreen) {
             return;
         }
-        client.setScreen((Screen)new MacroEditorScreen(cur, loadMacroIdOrNull));
+        client.gui.setScreen((Screen)new MacroEditorScreen(cur, loadMacroIdOrNull));
     }
 
     protected void init() {
@@ -568,8 +568,8 @@ extends Screen implements KeyboardConsumingScreen {
         }
         MacroEditorScreen self = this;
         String targetId = macroFileId;
-        c.setScreen((Screen)new ConfirmScreen(yes -> {
-            c.setScreen((Screen)self);
+        c.gui.setScreen((Screen)new ConfirmScreen(yes -> {
+            c.gui.setScreen((Screen)self);
             if (!yes) {
                 return;
             }
@@ -982,7 +982,7 @@ extends Screen implements KeyboardConsumingScreen {
 
     private void openGroupStyleEditor(MacroGraphGroup g) {
         if (this.minecraft != null && g != null) {
-            this.minecraft.setScreen((Screen)new MacroGroupStyleEditScreen(g));
+            this.minecraft.gui.setScreen((Screen)new MacroGroupStyleEditScreen(g));
         }
     }
 
@@ -1081,8 +1081,8 @@ extends Screen implements KeyboardConsumingScreen {
             return;
         }
         MacroEditorScreen self = this;
-        c.setScreen((Screen)new ConfirmScreen(yes -> {
-            c.setScreen((Screen)self);
+        c.gui.setScreen((Screen)new ConfirmScreen(yes -> {
+            c.gui.setScreen((Screen)self);
             if (yes) {
                 this.graphGroups.removeIf(g -> g != null && target.id.equals(g.id));
                 self.syncDefFromGraph();
@@ -3908,7 +3908,7 @@ extends Screen implements KeyboardConsumingScreen {
             return;
         }
         MacroEditorScreen self = this;
-        c.setScreen((Screen)new ConfirmScreen(confirmed -> {
+        c.gui.setScreen((Screen)new ConfirmScreen(confirmed -> {
             if (confirmed) {
                 try {
                     self.captureHeader();
@@ -3918,22 +3918,22 @@ extends Screen implements KeyboardConsumingScreen {
                     self.def.steps.clear();
                     MacroStorage.save(self.def);
                     self.clearDirty();
-                    c.setScreen(self.parent);
+                    c.gui.setScreen(self.parent);
                 }
                 catch (Exception e) {
-                    c.setScreen((Screen)self);
+                    c.gui.setScreen((Screen)self);
                     MacroEditorScreen.toast(e.getMessage() == null ? "Save failed" : e.getMessage());
                 }
             } else {
                 self.clearDirty();
-                c.setScreen(self.parent);
+                c.gui.setScreen(self.parent);
             }
         }, Component.literal("Save macro?"), Component.literal("You have unsaved changes. Yes writes to disk; No discards.")));
     }
 
     private void exitToParent() {
         if (this.minecraft != null) {
-            this.minecraft.setScreen(this.parent);
+            this.minecraft.gui.setScreen(this.parent);
         }
     }
 
@@ -3997,7 +3997,7 @@ extends Screen implements KeyboardConsumingScreen {
             this.addRenderableWidget(new StylishButtonWidget(cx, y += 36, 96, 20, Component.literal("Done"), this::applyAndClose));
             this.addRenderableWidget(new StylishButtonWidget(cx + 104, y, 96, 20, Component.literal("Cancel"), () -> {
                 if (MacroEditorScreen.this.minecraft != null) {
-                    MacroEditorScreen.this.minecraft.setScreen((Screen)MacroEditorScreen.this);
+                    MacroEditorScreen.this.minecraft.gui.setScreen((Screen)MacroEditorScreen.this);
                 }
             }));
         }
@@ -4008,7 +4008,7 @@ extends Screen implements KeyboardConsumingScreen {
                 int f = MacroEditorScreen.parseArgbHex(this.fillField.getValue());
                 MacroEditorScreen.this.applyGroupStyleFromDialog(this.target, this.labelField.getValue(), b, f);
                 if (MacroEditorScreen.this.minecraft != null) {
-                    MacroEditorScreen.this.minecraft.setScreen((Screen)MacroEditorScreen.this);
+                    MacroEditorScreen.this.minecraft.gui.setScreen((Screen)MacroEditorScreen.this);
                 }
             }
             catch (Exception e) {
@@ -4019,7 +4019,7 @@ extends Screen implements KeyboardConsumingScreen {
         public boolean keyPressed(KeyEvent keyInput) {
             if (keyInput.key() == 256) {
                 if (MacroEditorScreen.this.minecraft != null) {
-                    MacroEditorScreen.this.minecraft.setScreen((Screen)MacroEditorScreen.this);
+                    MacroEditorScreen.this.minecraft.gui.setScreen((Screen)MacroEditorScreen.this);
                 }
                 return true;
             }

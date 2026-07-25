@@ -85,7 +85,7 @@ public final class MacroCommands {
                     if (SlashCommandGate.blockExploit(ctx.getSource())) {
                         return 0;
                     }
-                    MacroPromptScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().screen);
+                    MacroPromptScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().gui.screen());
                     feedback(ctx, "Opening macro prompt generator.");
                     return 1;
                 }).then(argument("text", StringArgumentType.greedyString()).executes(ctx -> {
@@ -120,7 +120,7 @@ public final class MacroCommands {
                     if (SlashCommandGate.blockExploit(ctx.getSource())) {
                         return 0;
                     }
-                    MacroShareScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().screen, null);
+                    MacroShareScreen.open(ctx.getSource().getClient(), ctx.getSource().getClient().gui.screen(), null);
                     feedback(ctx, "Opening macro import screen (clipboard JSON).");
                     return 1;
                 }))

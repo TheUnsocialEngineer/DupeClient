@@ -114,7 +114,7 @@ public final class DupedbP2wScorer {
         if (client == null) {
             return;
         }
-        Screen screen = client.screen;
+        Screen screen = client.gui.screen();
         if (screen == null) {
             lastTrackedScreenTitle = "";
             return;

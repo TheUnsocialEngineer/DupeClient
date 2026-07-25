@@ -17,7 +17,7 @@ public final class HudCommands {
         dispatcher.register(literal("hud")
                 .then(literal("editor").executes(ctx -> {
                     Minecraft client = ctx.getSource().getClient();
-                    IngameUiRouter.openHudEditor(client.screen);
+                    IngameUiRouter.openHudEditor(client.gui.screen());
                     feedback(ctx.getSource(), "Opened HUD editor.");
                     return 1;
                 }))

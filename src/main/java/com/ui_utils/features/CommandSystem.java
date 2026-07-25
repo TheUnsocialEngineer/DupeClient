@@ -101,7 +101,7 @@ public class CommandSystem {
 
     private static String closeCommand(String args) {
         Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> mc.setScreen(null));
+        mc.execute(() -> mc.gui.setScreen(null));
         return "\u00a77[\u00a7c*\u00a77] Screen closed";
     }
 
@@ -179,10 +179,10 @@ public class CommandSystem {
                 if (slot.isEmpty()) {
                     yield "\u00a77[\u00a7c*\u00a77] \u00a7cUsage: screen save <slot>";
                 }
-                if (mc.screen == null || mc.player == null) {
+                if (mc.gui.screen() == null || mc.player == null) {
                     yield "\u00a77[\u00a7c*\u00a77] \u00a7cNo screen to save";
                 }
-                SharedVariables.savedScreens.put(slot, mc.screen);
+                SharedVariables.savedScreens.put(slot, mc.gui.screen());
                 SharedVariables.savedScreenHandlers.put(slot, mc.player.containerMenu);
                 yield "\u00a77[\u00a7c*\u00a77] Saved to: \u00a7c" + slot;
             }
@@ -195,7 +195,7 @@ public class CommandSystem {
                     yield "\u00a77[\u00a7c*\u00a77] \u00a7cNo screen in slot: \u00a77" + slot;
                 }
                 mc.execute(() -> {
-                    mc.setScreen(screen);
+                    mc.gui.setScreen(screen);
                     if (mc.player != null && SharedVariables.savedScreenHandlers.containsKey(slot)) {
                         mc.player.containerMenu = SharedVariables.savedScreenHandlers.get(slot);
                     }

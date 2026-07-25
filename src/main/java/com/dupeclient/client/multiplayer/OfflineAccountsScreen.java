@@ -87,7 +87,7 @@ public class OfflineAccountsScreen extends Screen implements MultiplayerNavigabl
         }));
         addRenderableWidget(new StylishButtonWidget(innerX + innerW - 100, fieldY, 100, 20, Component.literal("SSID Login"), () -> {
             if (minecraft != null) {
-                minecraft.setScreen(new SsidLoginScreen(this));
+                minecraft.gui.setScreen(new SsidLoginScreen(this));
             }
         }));
 

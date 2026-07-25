@@ -23,9 +23,9 @@ public final class SessionGate {
         if (client.getConnection() != null) {
             client.getConnection().getConnection().disconnect(Component.literal("DupeClient startup check failed"));
         }
-        if (client.screen instanceof StartupBlockedScreen) {
+        if (client.gui.screen() instanceof StartupBlockedScreen) {
             return;
         }
-        client.setScreen(new StartupBlockedScreen());
+        client.gui.setScreen(new StartupBlockedScreen());
     }
 }

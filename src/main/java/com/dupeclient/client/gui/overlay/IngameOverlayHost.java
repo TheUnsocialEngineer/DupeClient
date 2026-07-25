@@ -141,7 +141,7 @@ public final class IngameOverlayHost {
     }
 
     public static boolean shouldRenderOnHud(Minecraft client) {
-        if (client == null || client.player == null || client.screen != null) {
+        if (client == null || client.player == null || client.gui.screen() != null) {
             return false;
         }
         return IngameOverlayHost.hasAnyActive() || IngameOverlayHost.isClickslotFabricatorActive();
@@ -152,7 +152,7 @@ public final class IngameOverlayHost {
     }
 
     public static boolean shouldRouteOverlayMouse(Minecraft client) {
-        if (client == null || client.screen != null) {
+        if (client == null || client.gui.screen() != null) {
             return false;
         }
         return IngameOverlayHost.hasAnyActive() || IngameOverlayHost.isClickslotFabricatorActive();
@@ -355,7 +355,7 @@ public final class IngameOverlayHost {
 
     public static boolean shouldBlockGameInput(Minecraft client) {
         double my;
-        if (client == null || client.screen != null) {
+        if (client == null || client.gui.screen() != null) {
             return false;
         }
         IngameModuleOverlay top = IngameOverlayHost.topBlockingActive();

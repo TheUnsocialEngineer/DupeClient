@@ -82,6 +82,6 @@ public class UpdateUtils {
         } catch (IOException | URISyntaxException e) {
             MainClient.LOGGER.info(e.getLocalizedMessage(), Level.SEVERE);
         }
-        Minecraft.getInstance().setScreen(new UpdateScreen(Component.empty()));
+        Minecraft.getInstance().gui.setScreen(new UpdateScreen(Component.empty()));
     }
 }

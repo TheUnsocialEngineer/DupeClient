@@ -121,7 +121,7 @@ public final class ScreenshotCaptureService {
                     return;
                 }
                 hideAllOverlays();
-                client.setScreen(null);
+                client.gui.setScreen(null);
                 phase = Phase.PREPARE;
             }
             case PREPARE -> {
@@ -145,7 +145,7 @@ public final class ScreenshotCaptureService {
                     CaptureTarget target = targets.get(index);
                     pendingCaptureId = target.id();
                     pendingCapture = new CompletableFuture<>();
-                    Screenshot.takeScreenshot(client.getMainRenderTarget(), pendingCapture::complete);
+                    Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(), pendingCapture::complete);
                     captureWaitTicks = 0;
                     return;
                 }
@@ -261,7 +261,7 @@ public final class ScreenshotCaptureService {
         List<CaptureTarget> out = new ArrayList<>();
         out.add(new CaptureTarget("hub", c -> {
             hideAllOverlays();
-            c.setScreen(new ClientGuiScreen(c.screen));
+            c.gui.setScreen(new ClientGuiScreen(c.gui.screen()));
         }));
 
         List<Panel> panels = DupeClient.getGuiManager().getPanels();
@@ -271,57 +271,57 @@ public final class ScreenshotCaptureService {
             int idx = i;
             out.add(new CaptureTarget(id, c -> {
                 openHub(idx);
-                c.setScreen(new ClientGuiScreen(c.screen));
+                c.gui.setScreen(new ClientGuiScreen(c.gui.screen()));
             }));
         }
 
         out.add(new CaptureTarget("overlay-dupedb", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             showOverlay(DupedbOverlay.INSTANCE);
         }));
         out.add(new CaptureTarget("overlay-sniffer", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             PacketSnifferManager.INSTANCE.getSettings().enabled = true;
             PacketSnifferManager.INSTANCE.save();
             showOverlay(PacketSnifferOverlay.INSTANCE);
         }));
         out.add(new CaptureTarget("overlay-fabricator", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             PacketUtilsManager.INSTANCE.getSettings().fabricatorEnabled = true;
             PacketUtilsManager.INSTANCE.getSettings().fabricatorVisible = true;
             PacketUtilsManager.INSTANCE.save();
             showOverlay(PacketFabricatorOverlay.INSTANCE);
         }));
         out.add(new CaptureTarget("overlay-payall", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             PayAllManager.INSTANCE.getSettings().enabled = true;
             PayAllManager.INSTANCE.getSettings().overlayVisible = true;
             PayAllManager.INSTANCE.saveSettings();
             showOverlay(PayAllOverlay.INSTANCE);
         }));
         out.add(new CaptureTarget("overlay-mcptools", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             McpToolsManager.INSTANCE.getSettings().enabled = true;
             McpToolsManager.INSTANCE.getSettings().overlayVisible = true;
             McpToolsManager.INSTANCE.saveSettings();
             showOverlay(McpToolsOverlay.INSTANCE);
         }));
         out.add(new CaptureTarget("overlay-ac-audit", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             AcAuditManager.INSTANCE.setEnabled(true);
             AcAuditManager.INSTANCE.getSettings().overlayVisible = true;
             AcAuditManager.INSTANCE.save();
             showOverlay(AcAuditOverlay.INSTANCE);
         }));
         out.add(new CaptureTarget("overlay-fuzzer", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             EconomyFuzzerManager.INSTANCE.getSettings().enabled = true;
             EconomyFuzzerManager.INSTANCE.getSettings().overlayVisible = true;
             EconomyFuzzerManager.INSTANCE.save();
             showOverlay(FuzzerOverlay.INSTANCE);
         }));
         out.add(new CaptureTarget("overlay-chat-games", c -> {
-            c.setScreen(null);
+            c.gui.setScreen(null);
             ChatGamesManager.INSTANCE.getSettings().overlayVisible = true;
             ChatGamesManager.INSTANCE.save();
             showOverlay(ChatGamesOverlay.INSTANCE);
@@ -329,11 +329,11 @@ public final class ScreenshotCaptureService {
 
         out.add(new CaptureTarget("screen-social", c -> {
             hideAllOverlays();
-            c.setScreen(new SocialScreen(c.screen));
+            c.gui.setScreen(new SocialScreen(c.gui.screen()));
         }));
         out.add(new CaptureTarget("screen-waypoints", c -> {
             hideAllOverlays();
-            c.setScreen(new WaypointsScreen(c.screen));
+            c.gui.setScreen(new WaypointsScreen(c.gui.screen()));
         }));
         out.add(new CaptureTarget("screen-macro-studio", c -> {
             hideAllOverlays();
@@ -341,26 +341,26 @@ public final class ScreenshotCaptureService {
         }));
         out.add(new CaptureTarget("screen-hud-editor", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
-            c.setScreen(new HudEditorScreen(c.screen));
+            c.gui.setScreen(new HudEditorScreen(c.gui.screen()));
         }));
         out.add(new CaptureTarget("screen-vault", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
-            c.setScreen(new ServerPasswordScreen(c.screen));
+            c.gui.setScreen(new ServerPasswordScreen(c.gui.screen()));
         }));
         out.add(new CaptureTarget("screen-nbt-edit", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
             equipSampleItem(c);
             if (c.player != null) {
-                c.setScreen(new NbtEditScreen(c.screen, c.player.getMainHandItem().copy()));
+                c.gui.setScreen(new NbtEditScreen(c.gui.screen(), c.player.getMainHandItem().copy()));
             }
         }));
         out.add(new CaptureTarget("screen-server-search", SETTLE_TICKS_HEAVY, c -> {
             hideAllOverlays();
-            c.setScreen(new ServerScannerScreen(c.screen, new ApiClient(new AddonAuth())));
+            c.gui.setScreen(new ServerScannerScreen(c.gui.screen(), new ApiClient(new AddonAuth())));
         }));
         out.add(new CaptureTarget("screen-server-search-auth", c -> {
             hideAllOverlays();
-            c.setScreen(new ServerSearchAuthScreen(c.screen));
+            c.gui.setScreen(new ServerSearchAuthScreen(c.gui.screen()));
         }));
         return out;
     }

@@ -18,6 +18,8 @@ jobs:
             java: "21"
           - branch: 26.1
             java: "25"
+          - branch: 26.2
+            java: "25"
     steps:
       - name: Checkout version branch
         uses: actions/checkout@v4

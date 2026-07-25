@@ -50,8 +50,8 @@ public final class MacroPromptScreen extends Screen {
         if (client == null) {
             return;
         }
-        Screen back = parent != null ? parent : client.screen;
-        client.setScreen(new MacroPromptScreen(back));
+        Screen back = parent != null ? parent : client.gui.screen();
+        client.gui.setScreen(new MacroPromptScreen(back));
     }
 
     @Override
@@ -90,7 +90,7 @@ public final class MacroPromptScreen extends Screen {
 
         addRenderableWidget(new StylishButtonWidget(contentLeft, height - PAD - BTN_H, 96, BTN_H, Component.literal("Back"), () -> {
             if (minecraft != null) {
-                minecraft.setScreen(parent);
+                minecraft.gui.setScreen(parent);
             }
         }));
         addRenderableWidget(new StylishButtonWidget(contentLeft + contentWidth - 148, height - PAD - BTN_H, 148, BTN_H,

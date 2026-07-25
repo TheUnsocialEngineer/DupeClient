@@ -357,7 +357,7 @@ public final class SecurityPanel extends Panel {
         if (this.vaultRowY >= 0 && SecurityPanel.rect(mouseX, mouseY, rx, this.vaultRowY, rowInner, 18)) {
             Minecraft mc = Minecraft.getInstance();
             if (mc != null) {
-                mc.setScreen(new ServerPasswordScreen(mc.screen));
+                mc.gui.setScreen(new ServerPasswordScreen(mc.gui.screen()));
             }
             return true;
         }

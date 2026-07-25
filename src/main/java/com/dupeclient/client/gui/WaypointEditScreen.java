@@ -90,20 +90,20 @@ public final class WaypointEditScreen extends Screen {
         addRenderableWidget(new StylishButtonWidget(innerX, y, innerW / 2 - 4, 20, Component.literal("Save"), this::save));
         addRenderableWidget(new StylishButtonWidget(innerX + innerW / 2 + 4, y, innerW / 2 - 4, 20, CommonComponents.GUI_CANCEL, () -> {
             if (minecraft != null) {
-                minecraft.setScreen(parent);
+                minecraft.gui.setScreen(parent);
             }
         }));
         if (!creating) {
             addRenderableWidget(new StylishButtonWidget(innerX, y + 26, innerW, 20, Component.literal("Delete waypoint"), () -> {
                 DupeClientWaypointManager.INSTANCE.delete(original.id());
                 if (minecraft != null) {
-                    minecraft.setScreen(parent);
+                    minecraft.gui.setScreen(parent);
                 }
             }));
         }
         addRenderableWidget(new StylishButtonWidget(width / 2 - 100, height - 28, 200, 20, CommonComponents.GUI_BACK, () -> {
             if (minecraft != null) {
-                minecraft.setScreen(parent);
+                minecraft.gui.setScreen(parent);
             }
         }));
         setInitialFocus(nameField);
@@ -142,14 +142,14 @@ public final class WaypointEditScreen extends Screen {
             DupeClientWaypointManager.INSTANCE.update(updated);
         }
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 
     @Override
     public void onClose() {
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 

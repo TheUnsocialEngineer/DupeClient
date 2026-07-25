@@ -43,8 +43,8 @@ public final class MacroShareScreen extends Screen {
         if (client == null) {
             return;
         }
-        Screen back = parent != null ? parent : client.screen;
-        client.setScreen(new MacroShareScreen(back, suggestedId));
+        Screen back = parent != null ? parent : client.gui.screen();
+        client.gui.setScreen(new MacroShareScreen(back, suggestedId));
     }
 
     @Override
@@ -80,7 +80,7 @@ public final class MacroShareScreen extends Screen {
 
         addRenderableWidget(new StylishButtonWidget(contentLeft, height - PAD - BTN_H, 96, BTN_H, Component.literal("Back"), () -> {
             if (minecraft != null) {
-                minecraft.setScreen(parent);
+                minecraft.gui.setScreen(parent);
             }
         }));
         addRenderableWidget(new StylishButtonWidget(contentLeft + contentWidth - 148, height - PAD - BTN_H, 148, BTN_H,
@@ -148,7 +148,7 @@ public final class MacroShareScreen extends Screen {
         if (openEditor) {
             MacroEditorScreen.open(minecraft, result.savedId());
         } else {
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
         }
     }
 

@@ -139,7 +139,7 @@ public final class P2wServerPolicy {
             enforceCooldownTicks = 0;
             forceDisableAllModules(client);
             if (shouldShowNonP2wScreen(client, server, afterLocalMark)) {
-                client.setScreen(new NonP2wDisclaimerScreen(server));
+                client.gui.setScreen(new NonP2wDisclaimerScreen(server));
             }
             return;
         }
@@ -151,7 +151,7 @@ public final class P2wServerPolicy {
             currentKind = ServerKind.P2W;
             currentP2wScore = p2w.score();
             if (shouldShowP2wAlert(client, server, afterLocalMark)) {
-                client.setScreen(new P2wAlertScreen(server, currentP2wScore));
+                client.gui.setScreen(new P2wAlertScreen(server, currentP2wScore));
             }
             return;
         }
@@ -184,7 +184,7 @@ public final class P2wServerPolicy {
         if (server.equals(policyUiDismissedForServer)) {
             return false;
         }
-        return !(client.screen instanceof NonP2wDisclaimerScreen);
+        return !(client.gui.screen() instanceof NonP2wDisclaimerScreen);
     }
 
     private boolean shouldShowP2wAlert(Minecraft client, String server, boolean afterLocalMark) {
@@ -195,7 +195,7 @@ public final class P2wServerPolicy {
         if (server.equals(policyUiDismissedForServer)) {
             return false;
         }
-        return !(client.screen instanceof P2wAlertScreen);
+        return !(client.gui.screen() instanceof P2wAlertScreen);
     }
 
     private static Map<String, P2wPresenceApi.ServerMark> toMap(List<P2wPresenceApi.ServerMark> list) {

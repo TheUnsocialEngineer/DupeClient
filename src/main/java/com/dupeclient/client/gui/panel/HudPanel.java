@@ -95,7 +95,7 @@ public final class HudPanel extends Panel {
         int cw = cardW - 20;
 
         if (rect(mouseX, mouseY, cx, cy, cw, BTN_H)) {
-            IngameUiRouter.openHudEditor(Minecraft.getInstance().screen);
+            IngameUiRouter.openHudEditor(Minecraft.getInstance().gui.screen());
             return true;
         }
         cy += BTN_H + GAP;

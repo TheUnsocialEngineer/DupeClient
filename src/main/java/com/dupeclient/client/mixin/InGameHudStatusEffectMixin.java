@@ -40,7 +40,7 @@ public abstract class InGameHudStatusEffectMixin {
     }
 
     private int effectOffset() {
-        if (!(minecraft.screen instanceof AbstractContainerScreen<?> screen)) {
+        if (!(minecraft.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
             return 0;
         }
         if (!HandledScreenGuiScale.isActive()) {

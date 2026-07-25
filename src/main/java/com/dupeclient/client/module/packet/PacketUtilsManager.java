@@ -357,7 +357,7 @@ public class PacketUtilsManager {
         if (hotkeys.consumePress(client, settings.uiUtilsCloseWithoutPacketKey)) {
             moduleFeedback("Close without packet hotkey → closing current screen");
             if (client != null) {
-                client.setScreen(null);
+                client.gui.setScreen(null);
             }
         }
         if (hotkeys.consumePress(client, settings.uiUtilsDelayToggleKey)) {
