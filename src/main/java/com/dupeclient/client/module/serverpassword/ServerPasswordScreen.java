@@ -6,6 +6,7 @@ import com.dupeclient.client.gui.modern.UiDraw;
 import com.dupeclient.client.gui.modern.UiTokens;
 import com.dupeclient.client.gui.widget.StylishButtonWidget;
 import com.dupeclient.client.gui.widget.StylishTextFieldWidget;
+import com.dupeclient.client.multiplayer.MultiplayerNavigable;
 import com.dupeclient.client.multiplayer.MultiplayerScreens;
 import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
@@ -16,7 +17,7 @@ import net.minecraft.client.input.KeyInput;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 
-public class ServerPasswordScreen extends Screen {
+public class ServerPasswordScreen extends Screen implements MultiplayerNavigable {
    private static final int PANEL_TOP = 24;
    private static final int PANEL_BOTTOM_PAD = 24;
    private static final int PANEL_HEADER_H = 30;
@@ -79,6 +80,11 @@ public class ServerPasswordScreen extends Screen {
    public ServerPasswordScreen(Screen parent) {
       super(Text.literal("Server Password Vault"));
       this.parent = parent;
+   }
+
+   @Override
+   public Screen getNavigationParent() {
+      return this.parent;
    }
 
    private void goBack() {

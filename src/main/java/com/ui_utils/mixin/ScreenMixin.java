@@ -31,6 +31,7 @@ public abstract class ScreenMixin {
     public void uiutils$onInit(CallbackInfo ci) {
         Screen screen = (Screen) (Object) this;
         if (!UiUtilsScreens.shouldAttachWidgets(screen)) {
+            MainClient.clearQueueDisplayReference();
             return;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -46,6 +47,9 @@ public abstract class ScreenMixin {
     @Inject(at = @At("TAIL"), method = "render")
     public void uiutils$onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         Screen screen = (Screen) (Object) this;
+        if (UiUtilsScreens.shouldAttachWidgets(screen)) {
+            MainClient.refreshQueueDisplay();
+        }
         if (!UiUtilsScreens.shouldRenderSyncPanel(screen)) {
             return;
         }

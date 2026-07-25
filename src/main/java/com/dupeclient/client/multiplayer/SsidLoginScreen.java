@@ -12,7 +12,7 @@ import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-public class SsidLoginScreen extends Screen {
+public class SsidLoginScreen extends Screen implements MultiplayerNavigable {
     private static final int PANEL_TOP = 24;
 
     private final Screen parent;
@@ -26,6 +26,11 @@ public class SsidLoginScreen extends Screen {
     public SsidLoginScreen(Screen parent) {
         super(Text.literal("SSID Login"));
         this.parent = parent;
+    }
+
+    @Override
+    public Screen getNavigationParent() {
+        return parent;
     }
 
     @Override
