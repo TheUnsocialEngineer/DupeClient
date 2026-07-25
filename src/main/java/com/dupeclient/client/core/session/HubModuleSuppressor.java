@@ -1,5 +1,6 @@
 package com.dupeclient.client.core.session;
 
+import com.dupeclient.client.docs.ScreenshotCaptureMode;
 import com.dupeclient.client.module.acaudit.AcAuditManager;
 import com.dupeclient.client.module.fuzzer.MinimessageFuzzerManager;
 import com.dupeclient.client.module.fuzzer.SqliFuzzerManager;
@@ -10,6 +11,7 @@ import com.dupeclient.client.module.packet.fabricator.FabricatorSendScheduler;
 import com.dupeclient.client.module.packet.fabricator.PacketFabricatorOverlay;
 import com.dupeclient.client.module.packet.sniffer.PacketReplayScheduler;
 import com.dupeclient.client.module.packet.sniffer.PacketSnifferManager;
+import com.dupeclient.client.module.packet.sniffer.PacketSnifferOverlay;
 import com.dupeclient.client.module.payall.PayAllManager;
 import com.dupeclient.client.module.mcptools.McpToolsManager;
 import com.dupeclient.client.module.dupedb.DupedbManager;
@@ -25,13 +27,23 @@ public final class HubModuleSuppressor {
     }
 
     public static void tick(@Nullable MinecraftClient client) {
-        boolean restricted = HubModuleRules.viewerRestricted();
+        boolean restricted = shouldSuppressExploits();
         if (restricted && !lastRestricted) {
-            suppressExploits(client);
+            suppressExploits(client, HubModuleRules.viewerRestricted());
         } else if (restricted) {
             suppressExploitsSilent(client);
         }
         lastRestricted = restricted;
+    }
+
+    private static boolean shouldSuppressExploits() {
+        if (ScreenshotCaptureMode.isActive()) {
+            return false;
+        }
+        if (HubModuleRules.viewerRestricted()) {
+            return true;
+        }
+        return !HubModuleRules.exploitFeaturesAllowed();
     }
 
     private static void suppressExploitsSilent(@Nullable MinecraftClient client) {
@@ -45,13 +57,14 @@ public final class HubModuleSuppressor {
         SqliFuzzerManager.INSTANCE.stop(null);
         MinimessageFuzzerManager.INSTANCE.stop(null);
         PacketSnifferManager.INSTANCE.setEnabled(false);
+        PacketSnifferOverlay.INSTANCE.setOverlayVisible(false);
         AcAuditManager.INSTANCE.setEnabled(false);
         ChatGamesManager.INSTANCE.setEnabled(false);
         CrashesManager.INSTANCE.setChestCrashEnabled(false);
         CrashesManager.INSTANCE.setArmorPlaceEnabled(false);
         FabricatorSendScheduler.INSTANCE.stop(null);
         PacketFabricatorOverlay.INSTANCE.setVisible(false);
-        PacketReplayScheduler.INSTANCE.stop();
+        PacketReplayScheduler.INSTANCE.stopQuietly();
         DupedbManager.INSTANCE.abortActiveScan();
     }
 
@@ -59,24 +72,26 @@ public final class HubModuleSuppressor {
         return lastRestricted;
     }
 
-    private static void suppressExploits(@Nullable MinecraftClient client) {
+    private static void suppressExploits(@Nullable MinecraftClient client, boolean staffLock) {
         if (client != null) {
             MacroEngine.INSTANCE.stop(client);
         }
         MacroQuickPlay.disableForStaffLock();
         PayAllManager.INSTANCE.cancelIfActive();
         McpToolsManager.INSTANCE.onStaffLock();
-        EconomyFuzzerManager.INSTANCE.stop("Staff account restricted.");
-        SqliFuzzerManager.INSTANCE.stop("Staff account restricted.");
-        MinimessageFuzzerManager.INSTANCE.stop("Staff account restricted.");
+        String reason = staffLock ? "Staff account restricted." : "Module access restricted.";
+        EconomyFuzzerManager.INSTANCE.stop(reason);
+        SqliFuzzerManager.INSTANCE.stop(reason);
+        MinimessageFuzzerManager.INSTANCE.stop(reason);
         PacketSnifferManager.INSTANCE.setEnabled(false);
+        PacketSnifferOverlay.INSTANCE.setOverlayVisible(false);
         AcAuditManager.INSTANCE.setEnabled(false);
         ChatGamesManager.INSTANCE.setEnabled(false);
         CrashesManager.INSTANCE.setChestCrashEnabled(false);
         CrashesManager.INSTANCE.setArmorPlaceEnabled(false);
-        FabricatorSendScheduler.INSTANCE.stop("Staff account restricted.");
+        FabricatorSendScheduler.INSTANCE.stop(reason);
         PacketFabricatorOverlay.INSTANCE.setVisible(false);
-        PacketReplayScheduler.INSTANCE.stop();
+        PacketReplayScheduler.INSTANCE.stopQuietly();
         DupedbManager.INSTANCE.abortActiveScan();
     }
 }
