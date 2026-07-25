@@ -3,8 +3,8 @@ package com.ui_utils.mixin;
 import com.ui_utils.SessionUtils;
 import com.ui_utils.SharedVariables;
 import com.ui_utils.gui.CustomButtonWidget;
+import com.dupeclient.client.multiplayer.SessionManager;
 import com.ui_utils.mixin.accessor.ScreenAccessor;
-import java.lang.reflect.Field;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
@@ -181,14 +181,9 @@ public class MultiplayerScreenMixin {
             this.addDrawableChild(ButtonWidget.builder(Text.literal("Apply"), button -> {
                         String newName = this.usernameField.getText().trim();
                         if (!newName.isEmpty()) {
-                            try {
-                                Session oldSession = this.mc.getSession();
-                                Session newSession = SessionUtils.copyWith(oldSession, newName, null);
-                                Field sessionField = MinecraftClient.class.getDeclaredField("session");
-                                sessionField.setAccessible(true);
-                                sessionField.set(this.mc, newSession);
-                            } catch (Exception ignored) {
-                            }
+                            Session oldSession = this.mc.getSession();
+                            Session newSession = SessionUtils.copyWith(oldSession, newName, null);
+                            SessionManager.setSession(newSession);
                         }
                         this.mc.setScreen(this.parent);
                     })
