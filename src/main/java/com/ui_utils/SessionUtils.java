@@ -15,6 +15,16 @@ public final class SessionUtils {
         String token = oldSession.getAccessToken();
 
         try {
+            return new User(
+                    targetUsername,
+                    targetUuid,
+                    token,
+                    oldSession.getXuid(),
+                    oldSession.getClientId());
+        } catch (Exception ignored) {
+        }
+
+        try {
             for (Constructor<?> ctor : User.class.getDeclaredConstructors()) {
                 Class<?>[] params = ctor.getParameterTypes();
                 if (params.length != 6) {

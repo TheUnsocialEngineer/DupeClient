@@ -1,5 +1,6 @@
 package com.dupeclient.client.core.session;
 
+import com.dupeclient.DupeBuildConstants;
 import java.nio.charset.StandardCharsets;
 
 final class SessionSecrets {
@@ -14,6 +15,10 @@ final class SessionSecrets {
         String prop = System.getProperty("dupeclient.presence.staff.hmac");
         if (prop != null && !prop.isBlank()) {
             return prop.trim().getBytes(StandardCharsets.UTF_8);
+        }
+        String baked = DupeBuildConstants.PRESENCE_STAFF_HMAC;
+        if (baked != null && !baked.isBlank()) {
+            return baked.trim().getBytes(StandardCharsets.UTF_8);
         }
         return null;
     }
