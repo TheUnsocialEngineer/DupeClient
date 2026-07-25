@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class MainClient implements ClientModInitializer {
     private static boolean initialized;
+    private static CustomButtonWidget queueDisplayButton;
 
     public static Logger LOGGER = LoggerFactory.getLogger("ui-utils");
     public static MinecraftClient mc = MinecraftClient.getInstance();
@@ -132,16 +133,7 @@ public class MainClient implements ClientModInitializer {
                 }));
 
         screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 4, w, Text.of("Leave & Send Packets"), button -> {
-            int queued = SharedVariables.delayedUIPackets.size();
-            SharedVariables.delayUIPackets = false;
-            if (mc.getNetworkHandler() != null) {
-                for (Packet<?> packet : SharedVariables.delayedUIPackets) {
-                    mc.getNetworkHandler().sendPacket(packet);
-                }
-            }
-            SharedVariables.delayedUIPackets.clear();
-            PacketUtilsManager.INSTANCE.moduleFeedback("UI Utils: leave and sent " + queued + " queued packet(s).");
-            mc.setScreen(null);
+            PacketUtilsManager.INSTANCE.leaveAndSendUiUtilsPackets(mc);
         }));
 
         CustomButtonWidget fabricatorButton = CustomButtonWidget.create(
@@ -214,12 +206,13 @@ public class MainClient implements ClientModInitializer {
             }
         }));
 
-        screen.addDrawableChild(CustomButtonWidget.create(
+        queueDisplayButton = CustomButtonWidget.create(
                 x + halfW + spacing,
                 y + (h + spacing) * 9,
                 halfW,
-                Text.of("Queue: 0"),
-                button -> button.setMessage(Text.of("Queue: " + SharedVariables.delayedUIPackets.size()))));
+                Text.of(queueLabel()),
+                button -> {});
+        screen.addDrawableChild(queueDisplayButton);
 
         screen.addDrawableChild(CustomButtonWidget.create(x, y + (h + spacing) * 10, halfW, Text.of("Resync Inv"), button -> {
             if (mc.getNetworkHandler() != null && mc.player != null) {
@@ -305,6 +298,20 @@ public class MainClient implements ClientModInitializer {
                         mc.player.sendMessage(Text.literal("§7[§c*§7] §cNo packets in queue"), false);
                     }
                 }));
+    }
+
+    private static String queueLabel() {
+        return "Queue: " + SharedVariables.delayedUIPackets.size();
+    }
+
+    public static void refreshQueueDisplay() {
+        if (queueDisplayButton != null) {
+            queueDisplayButton.setMessage(Text.of(queueLabel()));
+        }
+    }
+
+    public static void clearQueueDisplayReference() {
+        queueDisplayButton = null;
     }
 
     private static String clickslotFabricatorButtonLabel() {

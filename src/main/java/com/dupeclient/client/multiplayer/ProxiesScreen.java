@@ -12,7 +12,7 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProxiesScreen extends Screen {
+public class ProxiesScreen extends Screen implements MultiplayerNavigable {
     private static final int ROW_H = 30;
     private static final int PANEL_TOP = 24;
     private static final int LABEL_H = 10;
@@ -39,6 +39,11 @@ public class ProxiesScreen extends Screen {
     public ProxiesScreen(Screen parent) {
         super(Text.literal("Proxies"));
         this.parent = parent;
+    }
+
+    @Override
+    public Screen getNavigationParent() {
+        return parent;
     }
 
     @Override
